@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Savana - Transactional Workspaces for Subversion
+# Copyright (C) 2006  Bazaarvoice Inc.
+# 
+# This file is part of Savana.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+SAVANA_HOME="`dirname $0`/.."
+
+BIN_DIR="$SAVANA_HOME/bin"
+LIB_DIR="$SAVANA_HOME/lib"
+
+CLASSPATH="$SAVANA_HOME"
+for I in $LIB_DIR/*.jar
+do
+  CLASSPATH="$CLASSPATH:$I"
+done
+
+usage() {
+
+cat <<USAGE
+Usage: savana <subcommand> [args]
+
+Available subcommands:
+     createreleasebranch (crb)
+     createuserbranch (cub, cb)
+     deleteuserbranch (dub, db)
+     listchanges (lc, diff)
+     listuserbranches (lb, lub)
+     listworkingcopyinfo (lwci, workingcopyinfo, wci, info)
+     promote
+     reverttosource (rs, revert)
+     setbranch (sb)
+     sync (resync)
+USAGE
+
+exit 1
+
+}
+
+
+if [ $# -lt 1 -o "x$1" == "x-h" -o "x$1" == "x--help" ]
+then
+  usage
+fi
+
+COMMAND="$1" ; shift
+
+
+case "$COMMAND" in
+
+"createreleasebranch"|"crb") SCRIPT_CLASS=org.codehaus.savana.scripts.CreateBranch ;;
+"createuserbranch"|"cub"|"cb") SCRIPT_CLASS=org.codehaus.savana.scripts.CreateUserBranch ;;
+"deleteuserbranch"|"dub"|"db") SCRIPT_CLASS=org.codehaus.savana.scripts.DeleteUserBranch ;;
+"diffchangesfromsource"|"diff") SCRIPT_CLASS=org.codehaus.savana.scripts.DiffChangesFromSource ;;
+"listchangesfromsource"|"listchanges"|"lc") SCRIPT_CLASS=org.codehaus.savana.scripts.ListChangesFromSource ;;
+"listuserbranches"|"listbranches"|"lub"|"lb") SCRIPT_CLASS=org.codehaus.savana.scripts.ListUserBranches ;;
+"listworkingcopyinfo"|"lwci"|"workingcopyinfo"|"wci"|"info") SCRIPT_CLASS=org.codehaus.savana.scripts.ListWorkingCopyInfo ;;
+"promote") SCRIPT_CLASS=org.codehaus.savana.scripts.Promote ;;
+"sync"|"resync"|"synchronize") SCRIPT_CLASS=org.codehaus.savana.scripts.Synchronize ;;
+"reverttosource"|"rs"|"revert") SCRIPT_CLASS=org.codehaus.savana.scripts.RevertToSource ;;
+"setbranch"|"sb") SCRIPT_CLASS=org.codehaus.savana.scripts.SetBranch ;;
+"createmetadatafile"|"bootstrap") SCRIPT_CLASS=org.codehaus.savana.scripts.admin.CreateMetadataFile ;;
+
+*)
+  echo "Unknown command: $1" >&2
+  usage
+;;
+
+esac
+
+java -classpath "$CLASSPATH" -Dsavana.home=$SAVANA_HOME org.codehaus.savana.scripts.SVNScript "$SCRIPT_CLASS" "$@"
+
+exit
+
+#__END__
+#
+#=pod
+#
+#=head1 SYNOPSIS
+#
+#TODO
+#
+#=cut
