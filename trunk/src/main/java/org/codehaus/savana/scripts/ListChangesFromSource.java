@@ -9,6 +9,8 @@ import org.tmatesoft.svn.core.wc.SVNDiffClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.util.Set;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -69,16 +71,23 @@ public class ListChangesFromSource extends SVNScript {
         printFileList("Deleted Files:", diffGenerator.getDeletedFilePaths(), workingCopyPath);
     }
 
-    private void printFileList(String title, Set<String> paths, String workingCopyPath) {
-        if (!paths.isEmpty()) {
-            getOut().println(title);
-            getOut().println("-------------------------------------------------");
-            for (String path : paths) {
-                if (!workingCopyPath.equals(path)) {
-                    getOut().println(path.substring(workingCopyPath.length() + 1));
+    private void printFileList(String title, Set<String> paths, String workingCopyPath)
+            throws SVNScriptException {
+        try {
+            workingCopyPath = new File(workingCopyPath).getCanonicalPath();
+            if (!paths.isEmpty()) {
+                getOut().println(title);
+                getOut().println("-------------------------------------------------");
+                for (String path : paths) {
+                    path = new File(path).getCanonicalPath();
+                    if (!workingCopyPath.equals(path)) {
+                        getOut().println(path.substring(workingCopyPath.length() + 1));
+                    }
                 }
+                getOut().println("");
             }
-            getOut().println("");
+        } catch (IOException e) {
+            throw new SVNScriptException(e);
         }
     }
 
