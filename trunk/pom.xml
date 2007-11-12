@@ -29,7 +29,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     <name>savana</name>
     <version>0.9-SNAPSHOT</version>
     <description>
-        savana - transactional workspaces for subversion
+        Savana augments the capabilities of the Subversion version control system by adding the notion of
+        Transactional Workspaces.  Transactional Workspaces are, in Subversion terms, branches that are
+        aware of the branch (or trunk) from which they were created.  
     </description>
     <url>http://savana.codehaus.org</url>
 
@@ -213,6 +215,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
                 <role>despot</role>
                 <role>developer</role>
             </roles>
+            <timezone>-6</timezone>
         </developer>
         <developer>
             <name>Bryon Jacob</name>
@@ -223,6 +226,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
                 <role>despot</role>
                 <role>developer</role>
             </roles>
+            <timezone>-6</timezone>
         </developer>
         <developer>
             <name>Chris Berry</name>
@@ -232,6 +236,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
             <roles>
                 <role>developer</role>
             </roles>
+            <timezone>-6</timezone>
         </developer>
     </developers>
 
