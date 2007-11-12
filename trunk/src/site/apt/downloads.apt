@@ -2,17 +2,25 @@
   Downloads
   ---------
 
-Maven Repositories
+Download Project Artifacts
 
-  Savana builds are published to a {{{http://maven.apache.org}Maven}} repository.
+  Savana build artifacts are deployed to a {{{http://maven.apache.org}Maven}} repository,
+  from which you can download them over HTTP.
 
-  SNAPSHOT versions of the development trunk are available in the repository at:
+* Release Versions
+
+  Release versions of Savana are available from the maven repository at:
+
+  <<{{http://repository.codehaus.org/org/codehaus/savana/}}>>
+
+* Snapshot Versions
+
+  SNAPSHOT versions built from the development trunk are available in the snapshot
+  repository at:
 
   <<{{http://snapshots.repository.codehaus.org/org/codehaus/savana/}}>>
 
-  whereas full released versions of Savana are available from the maven repository at:
-
-  <<{{http://repository.codehaus.org/org/codehaus/savana/}}>>
+* Directory Structure
 
   These directories are organized with one directory per version, and each versioned
   directory contains:
