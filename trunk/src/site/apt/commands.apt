@@ -1,0 +1,234 @@
+  --------
+  Commands
+  --------
+
+Savana Commands
+
+createuserbranch (cub, cb)
+
+  The createuserbranch script is used to create a new user branch for development work.  The
+  source can be either the trunk or a non-user branch.  It is not possible to create a branch
+  with a user branch as the source.
+
+  The createuserbranch command will convert the current working copy into the new branch.
+  Therefore, it should only be run in a directory that contains a working copy that you wish to
+  change into a new user branch (for example /svnwork/prr/trunk/working).  The new user branch
+  will use the same Project and Source that the current working copy uses.
+
+  The createuserbranch command takes one mandatory argument and one optional flag:
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+| Branch name| The name for the new branch (Ex: brian-295, andy-438)                  |           |
+*------------+------------------------------------------------------------------------+-----------+
+| --force    | Will force the branch to be created even if the current working copy   |           |
+|            | contains uncommitted changes.  These changes will be merged into the   |           |
+|            | new branch.                                                            |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+createreleasebranch (crb)
+
+  The createreleasebranch script is used to create a new release branch for stabilization work.
+  The source can be either the trunk or a non-user branch, though in practice, the trunk is almost
+  always the source of a release branch.  Release branches can be used as the source for a user
+  branch.
+
+  The createreleasebranch command will convert the current working copy into the new branch.
+  Therefore, it should only be run in a directory that contains a working copy that you wish to
+  change into a new release branch (for example /svnwork/prr/trunk/working).  The new release
+  branch will use the same Project and Source that the current working copy uses.
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+| Branch name| The name for the new branch (Ex: b1.0.x, b1.1.x)                       |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+deleteuserbranch (dub, db)
+
+  The deleteuserbranch script is used to delete a user branch that is no longer necessary.  Since
+  the promote command automatically deletes the user branch after it has been promoted, the only
+  typical use of this command is to remove abandoned branches.
+
+  The deleteuserbranch command does not affect the local file system.  All commands are executed
+  directly on the server, thus, the deleteuserbranch command can be run from any directory on the
+  local machine.
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+|Project name| The name of the project containing the branch to delete (Ex: myProject)|           |
+*------------+------------------------------------------------------------------------+-----------+
+| Branch name| The name of the branch to delete (Ex: b1.0.x, b1.1.x)                  |           |
+*------------+------------------------------------------------------------------------+-----------+
+| --force    | Delete the branch even if it's never been promoted.                    |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+setbranch (sb)
+
+  The setbranch script is used to switch the context of a working directory from one branch to
+  another.  The script will update the working directory to look like the new branch but files in
+  the working directory will be reused if possible.  This way, a developer can use a single working
+  directory but switch the branch that the directory refers to without needing to pull the entire
+  directory structure down from the repository.
+
+  The setbranch command must be run from a directory that previously contained a branch.  Also, all
+  changes in the working directory must be committed before the working directory can be switched
+  to another branch.
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+| Branch name| The name of the branch into which we're switching (Ex: trunk, al-123)  |           |
+*------------+------------------------------------------------------------------------+-----------+
+|--changeRoot| Set the branch even if the new branch and the current working copy do  |           |
+|            | not share the same source path.                                        |           |
+*------------+------------------------------------------------------------------------+-----------+
+| --force    | Set the branch even if the working copy has uncommitted changes.       |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+listworkingcopyinfo (lwci, info)
+
+  The listworkingcopyinfo command shows the user which branch his working copy is currently set to.
+
+  Since the script is looking for information about the current working copy, it must be run from
+  a directory on the local file system that is part of a branch.  It does not need to be run from
+  the root of the branch, however.
+
+  The output from listworkingcopyinfo shows the user the following information:
+
+  *	The name of the branch.
+
+  *	The type of the branch (trunk, release branch, user branch)
+
+  *	The source of the branch
+
+  *	The repository revision when the branch was created
+
+  *	The last repository revision that was merged into the branch.  See the mergesourcetobranch command for more information.
+
+  *	The last repository revision that was merged from this branch back into the source
+
+listchangesfromsource (listchanges, lc)
+
+  The listchanges command shows the user which files he has changed relative to the source.  This
+  command is similar to the 'svn status' subversion command.  However the 'svn status' command only
+  shows changes between the working copy and the HEAD of the current branch.  When working in a
+  user branch, a developer will likely commit his changes to the user branch many times before the
+  work is done.  This makes the 'svn status' command less useful for determining what files have
+  been changed in the user branch.  Therefore, the listchanges script will compute the files that
+  have changed by comparing the working copy to the source branch for that working copy.
+  Specifically, the working copy is compared with the last point that the source was merged into
+  the user branch (see the mergesourcetobranch command for more information).  This keeps
+  non-merged changes from looking like changes that were made in the user branch.
+
+  Since the script is looking for information about the current working copy, it must be run from a
+  directory on the local file system that is part of a branch.  It does not need to be run from the
+  root of the branch, however.
+
+diffchangesfromsource (diff)
+
+  The diffchangesfromsource script shows the exact differences between the files in the working
+  copy of the user branch and the files in the source of the user branch.  This command is similar
+  to the 'svn diff' subversion command.  However, the 'svn diff' command only shows changes between
+  the working copy and the HEAD of the current branch.  When working in a user branch, a developer
+  will likely commit his changes to the user branch many times before the work is done.  This makes
+  the 'svn diff' command less useful for determining how the files have been changed in the user
+  branch.
+
+  Since the script is looking for information about the current working copy, it must be run from a
+  directory on the local file system that is part of a branch.  It does not need to be run from the
+  root of the branch, however.
+
+  While this script will show you all of the differences in your user branch, the recommended
+  method is to simply use a 3rd party diff tools such as Beyond Compare.  Just have to tool display
+  the differences between your working copy and the trunk (or branch depending on the source of
+  your user branch).
+
+reverttosource (rs, revert)
+
+  The reverttosource command will revert all changes made to a file in the user branch so that the
+  file is in the same state that it has in the source.  This command is similar to the 'svn revert'
+  subversion command.  However the 'svn revert' command only reverts the working copy to the last
+  copy that was committed.   The reverttosource script will undo all changes done in the user
+  branch, even if they have been committed.  This includes, deleting files that were added in the
+  user branch, resurrecting files that were deleted in the user branch, and undoing any working
+  copy changes.
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+| Path       | The path of the file to revert.                                        |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+  The following status letters may be displayed.  These status values have the same meaning as they
+  would for a 'svn update' command:
+
+*----------+--------------------------------------------------------------------------------------+
+|<<Status>>|<<Description>>                                                                       |
+*----------+--------------------------------------------------------------------------------------+
+| A        | The file was added to the working copy.                                              |
+*----------+--------------------------------------------------------------------------------------+
+| D        | The file was deleted from the working copy.  The file will remain in the file system,|
+|          | but it has been removed from source control.                                         |
+*----------+--------------------------------------------------------------------------------------+
+| U        | The file was updated in the working copy.                                            |
+*----------+--------------------------------------------------------------------------------------+
+
+synchronize (sync, resync)
+
+  The sync command pulls any changes that have been made in the source into the user branch.
+  Behind the scenes, this command determines which revision was the last one to be merged into the
+  user branch.  Then, if there have been any changes to the user branch from that revision to the
+  head, those changes are merged into the user branch.  The output from this command is exactly the
+  output that would come from a 'svn merge' subversion command.
+
+  Note that the sync command pulls source changes into user brunch but does not commit those
+  changes. Run svn commit command after the sync is complete.
+
+  Since the script is looking for information about the current working copy, it must be run from a
+  directory on the local file system that is part of a branch.  It does not need to be run from the
+  root of the branch, however.
+
+promote
+
+  The promote command pushes any changes that have been made in the user branch into the source.
+  Behind the scenes, this script commits all changes into the user branch and then merges and
+  commits those changes into the source.  The output from this command is exactly the output that
+  would come from a 'svn merge' subversion command.
+
+  The promote command will fail if there are any new changes in the source that have not been
+  merged into the branch.  In other words, the user branch must be in sync with the source before
+  the user branch changes can be pushed back into the source.  This restriction forces the
+  developer to resolve any merge conflicts in his user branch rather than letting those conflicts
+  be discovered in the source.  The total effect is that the source will look exactly like the user
+  branch after the merge is complete.
+
+  When the script is complete, it deletes the user branch that was just promoted.
+
+  Since the script is looking for information about the current working copy, it must be run from a
+  directory on the local file system that is part of a branch.  It does not need to be run from the
+  root of the branch, however.
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+| Comment    | The comment that will be used for committing changes in the user branch|           |
+|            | before the merge and in the source after the merge.                    |           |
+*------------+------------------------------------------------------------------------+-----------+
+
+listuserbranches (lb, lub)
+
+  The listuserbranches command displays all user branches that currently exist in the repository.
+  The output displays the branch name as well as some information about that branch (source,
+  branch point, etc).
+
+*------------+------------------------------------------------------------------------+-----------+
+|<<Argument>>|<<Description>>                                                         |<<Default>>|
+*------------+------------------------------------------------------------------------+-----------+
+|Project name| The name of the project for which to list the branches (Ex: myProject) |           |
+*------------+------------------------------------------------------------------------+-----------+
+| Name Filter| A filter to restrict the branches that are listed.  The '*' wildcard   |           |
+|            | character is accepted (Ex: brian*)                                     |           |
+*------------+------------------------------------------------------------------------+-----------+

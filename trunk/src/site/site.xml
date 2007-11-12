@@ -23,6 +23,10 @@
             <item name="Installation" href="install.html"/>
         </menu>
 
+        <menu name="Usage">
+            <item name="Commands" href="commands.html"/>
+        </menu>
+
         ${reports}
 
     </body>
