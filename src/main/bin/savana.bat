@@ -1,16 +1,36 @@
 @ECHO OFF
+
+REM  Savana - Transactional Workspaces for Subversion
+REM  Copyright (C) 2006  Bazaarvoice Inc.
+REM
+REM  This file is part of Savana.
+REM
+REM  This program is free software; you can redistribute it and/or
+REM  modify it under the terms of the GNU Lesser General Public License
+REM  as published by the Free Software Foundation; either version 3
+REM  of the License, or (at your option) any later version.
+REM
+REM  This program is distributed in the hope that it will be useful,
+REM  but WITHOUT ANY WARRANTY; without even the implied warranty of
+REM  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+REM  GNU Lesser General Public License for more details.
+REM
+REM  You should have received a copy of the GNU Lesser General Public License
+REM  along with this program; if not, write to the Free Software
+REM  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 SETLOCAL
 
 
 :setupVariables
-SET BIN_DIR=%SVNSCRIPTS_HOME%\bin
-SET LIB_DIR=%SVNSCRIPTS_HOME%\lib
-SET OUT_DIR=%SVNSCRIPTS_HOME%\out
-SET RES_DIR=%SVNSCRIPTS_HOME%\res
+SET BIN_DIR=%SAVANA_HOME%\bin
+SET LIB_DIR=%SAVANA_HOME%\lib
+SET OUT_DIR=%SAVANA_HOME%\out
+SET RES_DIR=%SAVANA_HOME%\res
 
 :setupClasspath
 setlocal EnableDelayedExpansion
-SET CLASSPATH=%SVNSCRIPTS_HOME%
+SET CLASSPATH=%SAVANA_HOME%
 FOR %%J IN ("%LIB_DIR%\*.jar") DO SET CLASSPATH=!CLASSPATH!;%%J
 rem FOR %%J IN ("%LIB_DIR%/*.jar") DO ECHO [%%J] 
 endlocal & set CLASSPATH=%CLASSPATH%
@@ -69,6 +89,9 @@ IF "%SCRIPT_NAME%"=="revert" GOTO revertToSource
 IF "%SCRIPT_NAME%"=="setbranch" GOTO setBranch
 IF "%SCRIPT_NAME%"=="sb" GOTO setBranch
 
+IF "%SCRIPT_NAME%"=="createmetadatafile" GOTO createMetadataFile
+IF "%SCRIPT_NAME%"=="bootstrap" GOTO createMetadataFile
+
 GOTO unknownScript
 
 :createReleaseBranch
@@ -104,6 +127,9 @@ GOTO run
 :setBranch
 SET SCRIPT_CLASS=org.codehaus.savana.scripts.SetBranch
 GOTO run
+:createMetadataFile
+SET SCRIPT_CLASS=org.codehaus.savana.scripts.admin.CreateMetadataFile
+GOTO run
 
 
 :run
@@ -130,6 +156,7 @@ ECHO     promote
 ECHO     reverttosource (rs, revert)
 ECHO     setbranch (sb)
 ECHO     synchronize (sync, resync)
+ECHO     createmetadatafile (bootstrap)
 GOTO end
 
 
