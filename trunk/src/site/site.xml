@@ -16,11 +16,11 @@
       <item name="Release Notes" href="releases.html"/>
     </links>
 
-<!--
-    <menu name="">
-      <item name="" href=""/>
+    <menu name="Main">
+        <item name="Home" href="index.html"/>
+        <item name="Release Notes" href="releases.html"/>
+        <item name="Downloads" href="downloads.html"/>
     </menu>
--->
 
     ${reports}
 
