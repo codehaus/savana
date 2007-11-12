@@ -1,0 +1,28 @@
+  ---------
+  Downloads
+  ---------
+
+Maven Repositories
+
+  Savana builds are published to a {{{http://maven.apache.org}Maven}} repository.
+
+  SNAPSHOT versions of the development trunk are available in the repository at:
+
+  <<{{http://snapshots.repository.codehaus.org/org/codehaus/savana/}}>>
+
+  whereas full released versions of Savana are available from the maven repository at:
+
+  <<{{http://repository.codehaus.org/org/codehaus/savana/}}>>
+
+  These directories are organized with one directory per version, and each versioned
+  directory contains:
+
+  * <<savana-<VERSION>.jar>> - the .jar file containing the compiled java sources for
+    savana
+
+  * <<savana-<VERSION>-install.tar.gz>> - a gzipped tarball containing the installable
+    binary distribution of savana
+
+  * <<savana-<VERSION>.pom>> - the maven project descriptors
+  
+  * <<MD5 and SHA1 hashes>> - hashes to validate the authenticity of artifacts
