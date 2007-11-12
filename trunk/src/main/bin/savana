@@ -46,6 +46,7 @@ Available subcommands:
      reverttosource (rs, revert)
      setbranch (sb)
      sync (resync)
+     createmetadatafile (bootstrap)
 USAGE
 
 exit 1
