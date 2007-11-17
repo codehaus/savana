@@ -4,33 +4,22 @@
 
 Download Project Artifacts
 
-  Savana build artifacts are deployed to a {{{http://maven.apache.org}Maven}} repository,
-  from which you can download them over HTTP.
-
 * Release Versions
 
-  Release versions of Savana are available from the maven repository at:
-
+  <All release versions of Savana are available from the maven repository at:>
   <<{{http://repository.codehaus.org/org/codehaus/savana/}}>>
 
 * Snapshot Versions
 
-  SNAPSHOT versions built from the development trunk are available in the snapshot
-  repository at:
+  * <<0.9-SNAPSHOT>>
 
+    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT-install.tar.gz}installer}}
+      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT-install.tar.gz.md5}MD5}})
+
+    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT.jar}jar}}
+      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT.jar.md5}MD5}})
+
+  []
+
+  <All SNAPSHOT versions built from the development trunk are available in the snapshot repository at:>
   <<{{http://snapshots.repository.codehaus.org/org/codehaus/savana/}}>>
-
-* Directory Structure
-
-  These directories are organized with one directory per version, and each versioned
-  directory contains:
-
-  * <<savana-<VERSION>.jar>> - the .jar file containing the compiled java sources for
-    savana
-
-  * <<savana-<VERSION>-install.tar.gz>> - a gzipped tarball containing the installable
-    binary distribution of savana
-
-  * <<savana-<VERSION>.pom>> - the maven project descriptors
-  
-  * <<MD5 and SHA1 hashes>> - hashes to validate the authenticity of artifacts
