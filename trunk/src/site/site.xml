@@ -37,4 +37,11 @@
         <logo name="Subversion" href="http://subversion.tigris.org/"
               img="http://subversion.tigris.org/images/subversion_logo_hor-468x64.png"/>
     </poweredBy>
+
+    <skin>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-skin</artifactId>
+        <version>1.0</version>
+    </skin>
+
 </project>
