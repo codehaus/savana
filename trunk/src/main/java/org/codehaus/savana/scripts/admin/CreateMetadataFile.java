@@ -43,6 +43,10 @@ public class CreateMetadataFile extends SVNScript {
     private String _branchType = null;
     private String _sourcePath = null;
     private String _commitMessage = "Added SVNScript Metadata File";
+    private String _projectRoot = null;
+    private String _trunkPath = MetadataFile.DEFAULT_TRUNK_PATH;
+    private String _branchesPath = MetadataFile.DEFAULT_BRANCHES_PATH;
+    private String _userBranchesPath = MetadataFile.DEFAULT_USER_BRANCHES_PATH;
 
     public CreateMetadataFile()
             throws SVNException, SVNScriptException {}
@@ -51,12 +55,37 @@ public class CreateMetadataFile extends SVNScript {
             throws IllegalArgumentException {
         try {
             boolean settingMessageOption = false;
+            boolean settingProjectRootOption = false;
+            boolean settingTrunkPathOption = false;
+            boolean settingBranchesPathOption = false;
+            boolean settingUserBranchesPathOption = false;
             for (String arg : args) {
+                // TODO: switch to apache CLI.
                 if (settingMessageOption) {
                     _commitMessage = arg;
                     settingMessageOption = false;
                 } else if ("-m".equals(arg)) {
                     settingMessageOption = true;
+                } else if (settingProjectRootOption) {
+                    _projectRoot = arg;
+                    settingProjectRootOption = false;
+                } else if ("-p".equals(arg)) {
+                    settingProjectRootOption = true;
+                } else if (settingTrunkPathOption) {
+                    _trunkPath = arg;
+                    settingTrunkPathOption = false;
+                } else if ("-t".equals(arg)) {
+                    settingTrunkPathOption = true;
+                } else if (settingBranchesPathOption) {
+                    _branchesPath = arg;
+                    settingBranchesPathOption = false;
+                } else if ("-b".equals(arg)) {
+                    settingBranchesPathOption = true;
+                } else if (settingUserBranchesPathOption) {
+                    _userBranchesPath = arg;
+                    settingUserBranchesPathOption = false;
+                } else if ("-u".equals(arg)) {
+                    settingUserBranchesPathOption = true;
                 } else if (_projectName == null) {
                     _projectName = arg;
                 } else if (_branchPath == null) {
@@ -74,6 +103,9 @@ public class CreateMetadataFile extends SVNScript {
             }
             if (_branchType == null) {
                 throw new IllegalArgumentException("not enough arguments!");
+            }
+            if (_projectRoot == null) {
+                _projectRoot = _projectName;
             }
         }
         catch (Exception e) {
@@ -152,6 +184,10 @@ public class CreateMetadataFile extends SVNScript {
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_PATH, _branchPath, false, false, null);
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_TYPE, _branchType, false, false, null);
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, _sourcePath, false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_ROOT, _projectRoot, false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, _trunkPath, false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCHES_PATH, _branchesPath, false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, _userBranchesPath, false, false, null);
 
             //If we aren't on the trunk
             if (!MetadataFile.BRANCH_TYPE_TRUNK.equals(_branchType)) {

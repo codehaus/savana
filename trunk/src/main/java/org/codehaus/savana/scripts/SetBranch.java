@@ -102,14 +102,14 @@ public class SetBranch extends SVNScript {
         //Get the project name from the working copy
         String projectName = wcInfo.getProjectName();
 
-        String branchPath = _pathGenerator.getUserBranchPath(projectName, _branchName);
+        String branchPath = wcInfo.getUserBranchPath(_branchName);
 
         //If the path doesn't exist
         logStart("Check for the path");
         if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
             //Try a release branch instead
             logStart("Check for the path as a release branch");
-            branchPath = _pathGenerator.getReleaseBranchPath(projectName, _branchName);
+            branchPath = wcInfo.getReleaseBranchPath(_branchName);
 
             //If the path doesn't exist as a release branch either, throw an error
             if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {

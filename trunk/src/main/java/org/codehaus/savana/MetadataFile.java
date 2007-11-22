@@ -35,6 +35,15 @@ public class MetadataFile extends File {
     public static final String PROP_LAST_MERGE_REVISION = "LAST_MERGE_REVISION";
     public static final String PROP_LAST_PROMOTE_REVISION = "LAST_PROMOTE_REVISION";
 
+    public static final String PROP_PROJECT_ROOT = "PROJECT_ROOT";
+    public static final String PROP_TRUNK_PATH = "TRUNK_PATH";
+    public static final String PROP_BRANCHES_PATH = "BRANCHES_PATH";
+    public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
+
+    public static final String DEFAULT_TRUNK_PATH = "trunk";
+    public static final String DEFAULT_BRANCHES_PATH = "branches";
+    public static final String DEFAULT_USER_BRANCHES_PATH = "branches/user";
+
     public static final String BRANCH_TYPE_TRUNK = "TRUNK";
     public static final String BRANCH_TYPE_RELEASE_BRANCH = "RELEASE BRANCH";
     public static final String BRANCH_TYPE_USER_BRANCH = "USER BRANCH";

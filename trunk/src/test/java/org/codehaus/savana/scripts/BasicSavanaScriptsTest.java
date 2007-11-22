@@ -1,51 +1,43 @@
 package org.codehaus.savana.scripts;
 
-import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
-import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
-import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.text.MessageFormat;
 
-public class SavanaScriptsTest extends TestCase {
+public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
-    private static final Log log = LogFactory.getLog(SavanaScriptsTest.class);
-    private static final SVNClientManager SVN =
-            SVNClientManager.newInstance(new DefaultSVNOptions(), "savana-user", "");
+    private static final Log log = LogFactory.getLog(BasicSavanaScriptsTest.class);
 
-    private static final File REPO_DIR = tempDir("savana-test-repo");
-    private static final File WC1 = tempDir("savana-test-wc1");
-    private static final File WC2 = tempDir("savana-test-wc2");
 
-    private static SVNURL TRUNK_URL;
+    protected static final File REPO_DIR = tempDir("savana-test-repo");
+    protected static final File WC1 = tempDir("savana-test-wc1");
+    protected static final File WC2 = tempDir("savana-test-wc2");
 
-    private static final String TEST_PROJECT_NAME = "test-project";
+    protected static SVNURL TRUNK_URL;
 
     static {
         try {
             // create the test repository, and set up the URLs to the repo, the project, and the project's trunk
             log.info("creating test repository");
             SVNAdminClient adminClient = SVN.getAdminClient();
-            FSRepositoryFactory.setup();
             SVNURL repoUrl = adminClient.doCreateRepository(REPO_DIR, null, false, true);
             SVNURL projectUrl = repoUrl.appendPath(TEST_PROJECT_NAME, true);
             TRUNK_URL = projectUrl.appendPath("trunk", true);
 
             // get the directory from the classpath that contains the project to import, and import the project
             // into the repository
-            File importDir = new File(SavanaScriptsTest.class.getClassLoader().getResource(TEST_PROJECT_NAME).toURI());
+            File importDir = new File(
+                    BasicSavanaScriptsTest.class.getClassLoader().getResource(TEST_PROJECT_NAME).toURI());
             log.info("importing project");
             SVN.getCommitClient().doImport(importDir, projectUrl, "initial import", true);
 
@@ -61,7 +53,6 @@ public class SavanaScriptsTest extends TestCase {
             e.printStackTrace();
         }
     }
-
 
     protected void setUp() throws Exception {
         super.setUp();
@@ -373,61 +364,5 @@ public class SavanaScriptsTest extends TestCase {
         log.info("committing the reverted change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "reverted change", false, true);
-    }
-
-    /**
-     * execute the given savana script with the given arguments, returning script output as a string.
-     *
-     * @param scriptClass the script class to run
-     * @param args        the arguments to the script
-     * @return the script output
-     * @throws Exception on error
-     */
-    private static String savana(Class scriptClass, String... args) throws Exception {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SVNScript script = ((SVNScript) scriptClass.newInstance());
-        SVNScript.setOut(new PrintStream(outputStream));
-        script.initialize(args);
-        script.run();
-        return outputStream.toString("UTF-8").trim();
-    }
-
-    /**
-     * set the current working directory to the given directory.
-     *
-     * @param dir the directory to which we want to change
-     */
-    private static void cd(File dir) {
-        System.setProperty("user.dir", dir.getAbsolutePath());
-    }
-
-    /**
-     * create a new temporary directory with the given name, deleting any existing directory with that name first.
-     *
-     * @param tempDirName the name of the temporary directory to create
-     * @return the directory
-     */
-    private static File tempDir(String tempDirName) {
-        File dir = new File(new File(System.getProperty("java.io.tmpdir")), tempDirName);
-        deleteIfExists(dir);
-        return dir;
-    }
-
-    /**
-     * delete the given file, if it exists, traversing recursively if it is a directory.
-     *
-     * @param file the file or directory to delete
-     */
-    private static void deleteIfExists(File file) {
-        if (file.exists()) {
-            // traverse depth-first through directories, so directories are always empty when
-            // we want to delete them
-            if (file.isDirectory()) {
-                for (File child : file.listFiles()) {
-                    deleteIfExists(child);
-                }
-            }
-            file.delete();
-        }
     }
 }

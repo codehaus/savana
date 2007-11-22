@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.ListDirEntryHandler;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
+import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -85,10 +86,12 @@ public class ListBranches extends SVNScript {
 
     public void run()
             throws SVNException, SVNScriptException {
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+
         //Find the source of the branch
         String branchesRootPath = (_userBranch) ?
-                                  _pathGenerator.getUserBranchPath(_projectName, null) :
-                                  _pathGenerator.getReleaseBranchPath(_projectName, null);
+                                  wcInfo.getUserBranchPath(null) :
+                                  wcInfo.getReleaseBranchPath(null);
 
         //Make sure the branch exists
         logStart("Check if path exists");

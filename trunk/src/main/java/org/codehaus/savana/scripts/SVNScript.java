@@ -3,7 +3,6 @@ package org.codehaus.savana.scripts;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.savana.IPathGenerator;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.SVNVersion;
 import org.codehaus.savana.util.PropertiesLoader;
@@ -51,7 +50,6 @@ import java.util.*;
  */
 public abstract class SVNScript {
     private static final String SAVANA_PROPS_FILE = "savana.properties";
-    private static final String PROP_PATH_GENERATOR_CLASS = "path.generator";
     private static final String PROP_SVN_VERSION = "svn.version";
 
     private static final String USERS_FILE = ".savana-userinfo";
@@ -60,7 +58,6 @@ public abstract class SVNScript {
             "help", "-help", "/help", "?", "-?", "/?"));
 
     protected final Log _sLog = LogFactory.getLog(getClass());
-    protected IPathGenerator _pathGenerator;
     protected SVNRepository _repository;
     protected SVNClientManager _clientManager;
 
@@ -94,26 +91,6 @@ public abstract class SVNScript {
         logStart("Load Properties");
         Properties savanaProps = PropertiesLoader.getInstance().getProperties(SAVANA_PROPS_FILE);
         logEnd("Load Properties");
-
-        //Create the path generator
-        logStart("Create Path Generator");
-        String pathGeneratorClass = savanaProps.getProperty(PROP_PATH_GENERATOR_CLASS, "org.codehaus.savana.DefaultPathGenerator");
-        try {
-            _pathGenerator = (IPathGenerator) Class.forName(pathGeneratorClass).newInstance();
-        }
-        catch (ClassNotFoundException e) {
-            System.err.println("ERROR: Could not find path generator: " + pathGeneratorClass);
-            System.exit(1);
-        }
-        catch (InstantiationException e) {
-            System.err.println("ERROR: Could not instantiate path generator: " + pathGeneratorClass);
-            System.exit(1);
-        }
-        catch (IllegalAccessException e) {
-            System.err.println("ERROR: Could not access path generator: " + pathGeneratorClass);
-            System.exit(1);
-        }
-        logEnd("Create Path Generator");
 
         //Set the working copy format
         logStart("Load SVN Version");
