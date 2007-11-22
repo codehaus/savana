@@ -2,6 +2,7 @@ package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
+import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -82,10 +83,12 @@ public class DeleteBranch extends SVNScript {
 
     public void run()
             throws SVNException, SVNScriptException {
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+
         //Find the source of the branch
         String branchPath = (_userBranch) ?
-                            _pathGenerator.getUserBranchPath(_projectName, _branchName) :
-                            _pathGenerator.getReleaseBranchPath(_projectName, _branchName);
+                            wcInfo.getUserBranchPath(_branchName) :
+                            wcInfo.getReleaseBranchPath(_branchName);
 
         //Make sure the branch exists
         logStart("Check if branch exists");

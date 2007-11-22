@@ -39,6 +39,11 @@ public class WorkingCopyInfo {
     private String _branchPath;
     private String _sourcePath;
     private String _branchType;
+    private String _projectRoot = null;
+    private String _trunkPath = MetadataFile.DEFAULT_TRUNK_PATH;
+    private String _branchesPath = MetadataFile.DEFAULT_BRANCHES_PATH;
+    private String _userBranchesPath = MetadataFile.DEFAULT_USER_BRANCHES_PATH;
+
     private SVNRevision _branchPointRevision;
     private SVNRevision _lastMergeRevision;
     private SVNRevision _lastPromoteRevision;
@@ -71,12 +76,16 @@ public class WorkingCopyInfo {
         SVNPropertyData branchPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_PATH, null, SVNRevision.WORKING, false);
         SVNPropertyData sourcePathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_SOURCE_PATH, null, SVNRevision.WORKING, false);
         SVNPropertyData branchTypeProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_TYPE, null, SVNRevision.WORKING, false);
+        SVNPropertyData projectRootProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_PROJECT_ROOT, null, SVNRevision.WORKING, false);
+        SVNPropertyData trunkPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_TRUNK_PATH, null, SVNRevision.WORKING, false);
+        SVNPropertyData branchesPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCHES_PATH, null, SVNRevision.WORKING, false);
+        SVNPropertyData userBranchesPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, null, SVNRevision.WORKING, false);
         SVNPropertyData branchPointRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, null, SVNRevision.WORKING, false);
         SVNPropertyData lastMergeRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, null, SVNRevision.WORKING, false);
         SVNPropertyData lastPromoteRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_PROMOTE_REVISION, null, SVNRevision.WORKING, false);
 
         if (projectNameProps != null) {
-            _projectName = projectNameProps.getValue();
+            _projectName = _projectRoot = projectNameProps.getValue();
         }
 
         if (branchPathProps != null) {
@@ -89,6 +98,22 @@ public class WorkingCopyInfo {
 
         if (branchTypeProps != null) {
             _branchType = branchTypeProps.getValue();
+        }
+
+        if (projectRootProps != null) {
+            _projectRoot = projectRootProps.getValue();
+        }
+
+        if (trunkPathProps != null) {
+            _trunkPath = trunkPathProps.getValue();
+        }
+
+        if (branchesPathProps != null) {
+            _branchesPath = branchesPathProps.getValue();
+        }
+
+        if (userBranchesPathProps != null) {
+            _userBranchesPath = userBranchesPathProps.getValue();
         }
 
         if (branchPointRevisionProps != null) {
@@ -118,6 +143,22 @@ public class WorkingCopyInfo {
 
     public String getBranchPath() {
         return _branchPath;
+    }
+
+    public String getProjectRoot() {
+        return _projectRoot;
+    }
+
+    public String getTrunkPath() {
+        return _trunkPath;
+    }
+
+    public String getBranchesPath() {
+        return _branchesPath;
+    }
+
+    public String getUserBranchesPath() {
+        return _userBranchesPath;
     }
 
     public String getBranchName() {
@@ -166,5 +207,13 @@ public class WorkingCopyInfo {
                 "\nSource:                " + ((getSourceName() != null) ? getSourceName() : "none") +
                 "\nBranch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none") +
                 "\nLast Merge Revision:   " + ((_lastMergeRevision != null) ? _lastMergeRevision : "none");
+    }
+
+    public String getReleaseBranchPath(String branchName) {
+        return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), getBranchesPath()), branchName);
+    }
+
+    public String getUserBranchPath(String branchName) {
+        return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), getUserBranchesPath()), branchName);
     }
 }

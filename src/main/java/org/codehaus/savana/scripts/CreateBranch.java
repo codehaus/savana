@@ -118,8 +118,8 @@ public class CreateBranch extends SVNScript {
 
         //Get the branch path for the new branch
         String branchPath = (_userBranch) ?
-                            _pathGenerator.getUserBranchPath(projectName, _branchName) :
-                            _pathGenerator.getReleaseBranchPath(projectName, _branchName);
+                            wcInfo.getUserBranchPath(_branchName) :
+                            wcInfo.getReleaseBranchPath(_branchName);
 
         //Make sure the branch doesn't exist
         logStart("Check that the branch doesn't exist");
