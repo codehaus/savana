@@ -238,6 +238,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
             </roles>
             <timezone>-6</timezone>
         </developer>
+        <developer>
+            <name>Alex Victoria</name>
+            <organization>HomeAway</organization>
+            <organizationUrl>http://www.homeaway.com</organizationUrl>
+            <email>alex.victoria@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>-6</timezone>
+        </developer>
     </developers>
 
     <organization>
