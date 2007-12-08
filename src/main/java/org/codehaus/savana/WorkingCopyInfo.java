@@ -43,6 +43,7 @@ public class WorkingCopyInfo {
     private String _trunkPath = MetadataFile.DEFAULT_TRUNK_PATH;
     private String _branchesPath = MetadataFile.DEFAULT_BRANCHES_PATH;
     private String _userBranchesPath = MetadataFile.DEFAULT_USER_BRANCHES_PATH;
+    private SVNVersion _svnVersion = SVNVersion.SVN_1_4;
 
     private SVNRevision _branchPointRevision;
     private SVNRevision _lastMergeRevision;
@@ -83,6 +84,7 @@ public class WorkingCopyInfo {
         SVNPropertyData branchPointRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, null, SVNRevision.WORKING, false);
         SVNPropertyData lastMergeRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, null, SVNRevision.WORKING, false);
         SVNPropertyData lastPromoteRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_PROMOTE_REVISION, null, SVNRevision.WORKING, false);
+        SVNPropertyData svnVersionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_SVN_VERSION, null, SVNRevision.WORKING, false);
 
         if (projectNameProps != null) {
             _projectName = _projectRoot = projectNameProps.getValue();
@@ -127,6 +129,10 @@ public class WorkingCopyInfo {
         if (lastPromoteRevisionProps != null) {
             _lastPromoteRevision = SVNRevision.create(Long.parseLong(lastPromoteRevisionProps.getValue()));
         }
+
+        if (svnVersionProps != null) {
+            _svnVersion = SVNVersion.valueOf(svnVersionProps.getValue());
+        }
     }
 
     public File getRootDir() {
@@ -159,6 +165,10 @@ public class WorkingCopyInfo {
 
     public String getUserBranchesPath() {
         return _userBranchesPath;
+    }
+
+    public SVNVersion getSVNVersion() {
+        return _svnVersion;
     }
 
     public String getBranchName() {

@@ -5,7 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.SVNVersion;
-import org.codehaus.savana.util.PropertiesLoader;
+import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
@@ -49,9 +49,6 @@ import java.util.*;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public abstract class SVNScript {
-    private static final String SAVANA_PROPS_FILE = "savana.properties";
-    private static final String PROP_SVN_VERSION = "svn.version";
-
     private static final String USERS_FILE = ".savana-userinfo";
 
     private static final Set<String> HELP_ARGUMENTS = new HashSet<String>(Arrays.asList(
@@ -87,18 +84,6 @@ public abstract class SVNScript {
         FSRepositoryFactory.setup();
         logEnd("Setup File-Based Repository Support");
 
-        //Load the properties file
-        logStart("Load Properties");
-        Properties savanaProps = PropertiesLoader.getInstance().getProperties(SAVANA_PROPS_FILE);
-        logEnd("Load Properties");
-
-        //Set the working copy format
-        logStart("Load SVN Version");
-        String svnVersionString = savanaProps.getProperty(PROP_SVN_VERSION, SVNVersion.SVN_1_4.name());
-        SVNVersion svnVersion = SVNVersion.valueOf(svnVersionString);
-        setWorkingCopyFormat(svnVersion);
-        logEnd("Load SVN Version");
-
         //Figure out the Repository's URL
         logStart("Getting Repository URL and User Info");
 
@@ -111,6 +96,17 @@ public abstract class SVNScript {
         logStart("Create Client Manager");
         _clientManager = SVNClientManager.newInstance(SVNWCUtil.createDefaultOptions(true), authManager);
         logEnd("Create Client Manager");
+
+        //Set the working copy format
+        logStart("Load SVN Version");
+        try {
+            SVNVersion svnVersion = new WorkingCopyInfo(_clientManager).getSVNVersion();
+            setWorkingCopyFormat(svnVersion);
+        } catch (SVNScriptException e) {
+            _sLog.warn("the current directory does not appear to be a savana working copy (yet) - assuming that" +
+                       "we are using SVN version 1.4");
+        }
+        logEnd("Load SVN Version");
 
         //Create the repository
         logStart("Create Repository");
