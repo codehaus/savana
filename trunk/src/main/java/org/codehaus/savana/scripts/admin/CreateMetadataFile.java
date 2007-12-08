@@ -2,6 +2,7 @@ package org.codehaus.savana.scripts.admin;
 
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
+import org.codehaus.savana.SVNVersion;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.SVNScript;
 import org.tmatesoft.svn.core.SVNException;
@@ -47,6 +48,7 @@ public class CreateMetadataFile extends SVNScript {
     private String _trunkPath = MetadataFile.DEFAULT_TRUNK_PATH;
     private String _branchesPath = MetadataFile.DEFAULT_BRANCHES_PATH;
     private String _userBranchesPath = MetadataFile.DEFAULT_USER_BRANCHES_PATH;
+    private SVNVersion _svnVersion = SVNVersion.SVN_1_4;
 
     public CreateMetadataFile()
             throws SVNException, SVNScriptException {}
@@ -86,6 +88,8 @@ public class CreateMetadataFile extends SVNScript {
                     settingUserBranchesPathOption = false;
                 } else if ("-u".equals(arg)) {
                     settingUserBranchesPathOption = true;
+                } else if ("-v1.3".equals(arg)) {
+                    _svnVersion = SVNVersion.SVN_1_3;
                 } else if (_projectName == null) {
                     _projectName = arg;
                 } else if (_branchPath == null) {
@@ -188,6 +192,7 @@ public class CreateMetadataFile extends SVNScript {
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, _trunkPath, false, false, null);
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCHES_PATH, _branchesPath, false, false, null);
             wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, _userBranchesPath, false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SVN_VERSION, _svnVersion.toString(), false, false, null);
 
             //If we aren't on the trunk
             if (!MetadataFile.BRANCH_TYPE_TRUNK.equals(_branchType)) {

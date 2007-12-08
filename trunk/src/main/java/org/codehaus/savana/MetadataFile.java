@@ -40,6 +40,8 @@ public class MetadataFile extends File {
     public static final String PROP_BRANCHES_PATH = "BRANCHES_PATH";
     public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
 
+    public static final String PROP_SVN_VERSION = "SVN_VERSION";
+
     public static final String DEFAULT_TRUNK_PATH = "trunk";
     public static final String DEFAULT_BRANCHES_PATH = "branches";
     public static final String DEFAULT_USER_BRANCHES_PATH = "branches/user";

@@ -9,7 +9,6 @@ import org.codehaus.savana.scripts.admin.CreateMetadataFile;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 
 import java.io.File;
 import java.text.MessageFormat;
