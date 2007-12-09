@@ -147,7 +147,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
                     </includes>
                     <systemProperties>
                         <property>
-                            <name>svnscripts.home</name>
+                            <name>savana.home</name>
                             <value>target</value>
                         </property>
                     </systemProperties>
