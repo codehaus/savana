@@ -2,6 +2,8 @@ package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaArgument;
 import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
@@ -38,19 +40,21 @@ import java.io.File;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public class RevertToSource extends SVNScript {
+    private static final SavanaArgument PATH = new SavanaArgument(
+            "path", "the path to be reverted");
+
     private File _path;
 
     public RevertToSource()
             throws SVNException, SVNScriptException {}
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        try {
-            _path = new File(args[0]);
-        }
-        catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.ArgumentHandler(PATH) {
+                    public void handle(String arg) {
+                        _path = new File(arg);
+                    }
+                });
     }
 
     public void run()
@@ -143,8 +147,6 @@ public class RevertToSource extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss revert <path>" +
-                "\n  path: path of file or directory to revert";
+        return _commandLineProcessor.usage("revert");
     }
 }

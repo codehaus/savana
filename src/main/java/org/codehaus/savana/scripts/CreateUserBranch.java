@@ -34,10 +34,6 @@ public class CreateUserBranch extends CreateBranch {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss createuserbranch <branch name> [options]" +
-                "\n  branch name:   name of the new branch" +
-                "\n  --force    :   force the branch creation even if there are uncommitted files" +
-                "\n                 this will cause uncommitted changes to be merged into the new branch";
+        return commandLineProcessor.usage("createuserbranch");
     }
 }

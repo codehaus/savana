@@ -4,6 +4,8 @@ import org.codehaus.savana.ChangeLogEntryHandler;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaArgument;
 import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNException;
@@ -36,23 +38,21 @@ import java.io.File;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public class Promote extends SVNScript {
+    private static final SavanaArgument MESSAGE = new SavanaArgument(
+            "message", "the SVN commit message for the check-in to trunk");
+
     private String _commitMessage;
 
     public Promote()
             throws SVNException, SVNScriptException {}
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        try {
-            if (args.length != 1) {
-                throw new IllegalArgumentException("Incorrect number of arguments: " + args.length);
-            }
-
-            _commitMessage = args[0];
-        }
-        catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.ArgumentHandler(MESSAGE) {
+                    public void handle(String arg) {
+                        _commitMessage = arg;
+                    }
+                });
     }
 
     public void run()
@@ -146,8 +146,6 @@ public class Promote extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss promote <commit message>" +
-                "\n  commit message: message for the commit in the trunk";
+        return _commandLineProcessor.usage("promote");
     }
 }

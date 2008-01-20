@@ -39,8 +39,6 @@ public class ListChangesFromSource extends SVNScript {
     public ListChangesFromSource()
             throws SVNException, SVNScriptException {}
 
-    public void initialize(String[] args) {}
-
     public void run()
             throws SVNException, SVNScriptException {
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
@@ -92,7 +90,6 @@ public class ListChangesFromSource extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss listchangesfromsource";
+        return _commandLineProcessor.usage("listchanegsfromsource");
     }
 }

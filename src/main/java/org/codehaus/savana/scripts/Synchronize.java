@@ -36,8 +36,6 @@ public class Synchronize extends SVNScript {
     public Synchronize()
             throws SVNException, SVNScriptException {}
 
-    public void initialize(String[] args) {}
-
     public void run()
             throws SVNException, SVNScriptException {
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
@@ -101,6 +99,6 @@ public class Synchronize extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return "Usage: ss sync";
+        return _commandLineProcessor.usage("synchronize");
     }
 }

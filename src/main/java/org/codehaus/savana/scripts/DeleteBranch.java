@@ -3,6 +3,9 @@ package org.codehaus.savana.scripts;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaOption;
+import org.codehaus.savana.util.cli.SavanaArgument;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -36,7 +39,12 @@ import java.util.Map;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public class DeleteBranch extends SVNScript {
-    private static final String FORCE_FLAG = "--force";
+    private static final SavanaArgument PROJECT = new SavanaArgument(
+            "project", "the project containing the branch to delete");
+    private static final SavanaArgument BRANCH = new SavanaArgument(
+            "branch", "the name of the branch to delete");
+    private static final SavanaOption FORCE = new SavanaOption(
+            "F", "force", false, false, "force the branch to be created");
 
     private boolean _force;
     private String _projectName;
@@ -53,32 +61,23 @@ public class DeleteBranch extends SVNScript {
         _userBranch = userBranch;
     }
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        for (String arg : args) {
-            if (FORCE_FLAG.equalsIgnoreCase(arg)) {
-                _force = true;
-                continue;
-            }
-
-            if (_projectName == null) {
-                _projectName = arg;
-                continue;
-            }
-
-            if (_branchName == null) {
-                _branchName = arg;
-                continue;
-            }
-
-            //If extra parameters were specified
-            throw new IllegalArgumentException();
-        }
-
-        //Make sure project and branch names aren't null
-        if (_projectName == null || _branchName == null) {
-            throw new IllegalArgumentException();
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.ArgumentHandler(PROJECT) {
+                    public void handle(String arg) {
+                        _projectName = arg;
+                    }
+                },
+                new CommandLineProcessor.ArgumentHandler(BRANCH) {
+                    public void handle(String arg) {
+                        _branchName = arg;
+                    }
+                },
+                new CommandLineProcessor.OptionHandler(FORCE) {
+                    public void ifSet() {
+                        _force = true;
+                    }
+                });
     }
 
     public void run()
@@ -134,11 +133,6 @@ public class DeleteBranch extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss deletebranch [options] <project name> <branch name>" +
-                "\n  project name:  name of the branch's project" +
-                "\n  branch name:   name of the branch to delete" +
-                "\n  --force:       delete the branch even if it has never" +
-                "\n                 been promoted";
+        return _commandLineProcessor.usage("deletebranch");
     }
 }

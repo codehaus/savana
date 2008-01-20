@@ -33,12 +33,6 @@ public class ListUserBranches extends ListBranches {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss listuserbranches (<project name>) (<name filter>)" +
-                "\n  project name:  name of the project" +
-                "\n  name filter:   name pattern of the branches to return" +
-                "\n                 Wildcard character '*' allowed" +
-                "\nif no project name is given, this script assumes that there is one project in" +
-                "\nthe repository, rooted at \"/\"";
+        return _commandLineProcessor.usage("listuserbranches");
     }
 }

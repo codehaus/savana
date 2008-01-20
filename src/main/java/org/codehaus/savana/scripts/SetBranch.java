@@ -4,6 +4,9 @@ import org.codehaus.savana.LocalChangeStatusHandler;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaOption;
+import org.codehaus.savana.util.cli.SavanaArgument;
 import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
@@ -40,43 +43,40 @@ import java.util.Map;
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */
-public class SetBranch extends SVNScript {
-    private static final String FORCE_FLAG = "--force";
-    private static final String CHANGE_ROOT = "--changeRoot";
+public class
+        SetBranch extends SVNScript {
+    private static final SavanaArgument BRANCH = new SavanaArgument(
+            "branch", "the name of the branch to set");
+    private static final SavanaOption FORCE = new SavanaOption(
+            "F", "force", false, false, "force the branch to be changed, even if there are changes.");
+    private static final SavanaOption CHANGE_ROOT = new SavanaOption(
+            "C", "changeRoot", false, false, "change the root of the current branch");
 
     private boolean _force;
     private boolean _changeRoot;
     private String _branchName;
 
     public SetBranch()
-            throws SVNException, SVNScriptException {}
+            throws SVNException, SVNScriptException {
+    }
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        for (String arg : args) {
-            if (FORCE_FLAG.equalsIgnoreCase(arg)) {
-                _force = true;
-                continue;
-            }
-
-            if (CHANGE_ROOT.equalsIgnoreCase(arg)) {
-                _changeRoot = true;
-                continue;
-            }
-
-            if (_branchName == null) {
-                _branchName = arg;
-                continue;
-            }
-
-            //If extra parameters were specified
-            throw new IllegalArgumentException();
-        }
-
-        //Make sure branch name isn't null
-        if (_branchName == null) {
-            throw new IllegalArgumentException();
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.OptionHandler(FORCE) {
+                    public void ifSet() {
+                        _force = true;
+                    }
+                },
+                new CommandLineProcessor.OptionHandler(CHANGE_ROOT) {
+                    public void ifSet() {
+                        _changeRoot = true;
+                    }
+                },
+                new CommandLineProcessor.ArgumentHandler(BRANCH) {
+                    public void handle(String arg) {
+                        _branchName = arg;
+                    }
+                });
     }
 
     public void run()
@@ -202,12 +202,6 @@ public class SetBranch extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss setbranch [options] <branch name>" +
-                "\n  branch name:  name of branch or 'trunk' for trunk" +
-                "\n  --force:      set the branch even if the working copy" +
-                "\n                has uncommitted changes" +
-                "\n  --changeRoot: set the branch even if the branch and" +
-                "\n                the working copy don't have the same source";
+        return _commandLineProcessor.usage("setbranch");
     }
 }
