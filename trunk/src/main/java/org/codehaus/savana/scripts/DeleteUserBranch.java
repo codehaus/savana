@@ -33,11 +33,6 @@ public class DeleteUserBranch extends DeleteBranch {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss deleteuserbranch [options] <project name> <branch name>" +
-                "\n  project name:  name of the branch's project" +
-                "\n  branch name:   name of the branch to delete" +
-                "\n  --force:       delete the branch even if it has never" +
-                "\n                 been promoted";
+        return _commandLineProcessor.usage("deleteuserbranch");
     }
 }

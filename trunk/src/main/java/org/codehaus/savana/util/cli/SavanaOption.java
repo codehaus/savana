@@ -1,8 +1,6 @@
-package org.codehaus.savana.scripts;
+package org.codehaus.savana.util.cli;
 
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.core.SVNException;
+import org.apache.commons.cli.Option;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -24,20 +22,16 @@ import org.tmatesoft.svn.core.SVNException;
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */
-public class ListWorkingCopyInfo extends SVNScript {
-    public ListWorkingCopyInfo()
-            throws SVNException, SVNScriptException {}
-
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
-        getOut().println(wcInfo);
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("listworkingcopyinfo");
+public class SavanaOption extends Option {
+    public SavanaOption(String longName,
+                        String shortName,
+                        boolean hasArg,
+                        boolean required,
+                        String description)
+            throws IllegalArgumentException {
+        super(longName, shortName, hasArg, description);
+        setRequired(required);
     }
 }

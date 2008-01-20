@@ -6,6 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.SVNVersion;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
@@ -57,6 +58,7 @@ public abstract class SVNScript {
     protected final Log _sLog = LogFactory.getLog(getClass());
     protected SVNRepository _repository;
     protected SVNClientManager _clientManager;
+    protected CommandLineProcessor _commandLineProcessor;
 
     private static PrintStream OUT = System.out;
 
@@ -70,6 +72,11 @@ public abstract class SVNScript {
 
     public SVNScript()
             throws SVNException, SVNScriptException {
+        //set up the command line processor
+        logStart("setting up the command line processor");
+        _commandLineProcessor = constructCommandLineProcessor();
+        logEnd("setting up the command line processor");
+
         //for DAV (over http and https)
         logStart("Setup DAV Repository");
         DAVRepositoryFactory.setup();
@@ -198,8 +205,14 @@ public abstract class SVNScript {
         }
     }
 
-    public abstract void initialize(String[] args)
-            throws IllegalArgumentException;
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return CommandLineProcessor.NO_ARGS_PROCESSOR;
+    }
+
+    public void initialize(String[] args)
+            throws IllegalArgumentException {
+        _commandLineProcessor.processCommandLine(args);
+    }
 
     public abstract void run()
             throws SVNException, SVNScriptException;

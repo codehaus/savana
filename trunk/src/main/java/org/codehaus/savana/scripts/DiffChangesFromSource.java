@@ -35,8 +35,6 @@ public class DiffChangesFromSource extends SVNScript {
     public DiffChangesFromSource()
             throws SVNException, SVNScriptException {}
 
-    public void initialize(String[] args) {}
-
     public void run()
             throws SVNException, SVNScriptException {
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
@@ -63,7 +61,6 @@ public class DiffChangesFromSource extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss diffchangesfromsource";
+        return _commandLineProcessor.usage("diff");
     }
 }

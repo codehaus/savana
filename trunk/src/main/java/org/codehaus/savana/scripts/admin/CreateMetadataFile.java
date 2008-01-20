@@ -6,6 +6,7 @@ import org.codehaus.savana.SVNVersion;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.SVNScript;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNInfo;
@@ -221,6 +222,15 @@ public class CreateMetadataFile extends SVNScript {
                 deleteFile(metadataFile);
             }
             throw (e);
+        }
+        catch (SVNAuthenticationException e) {
+            if (needsRevert) {
+                revertFile(metadataFile);
+            }
+            if (needsDelete) {
+                deleteFile(metadataFile);
+            }
+            throw e;
         }
         catch (Exception e) {
             if (needsRevert) {

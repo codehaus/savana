@@ -1,6 +1,9 @@
 package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.*;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaArgument;
+import org.codehaus.savana.util.cli.SavanaOption;
 import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
@@ -40,12 +43,16 @@ import java.util.List;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public class CreateBranch extends SVNScript {
-    private static final String FORCE_FLAG = "--force";
+    private static final SavanaArgument BRANCH = new SavanaArgument(
+            "branch", "the name of the branch to create");
+    private static final SavanaOption FORCE = new SavanaOption(
+            "F", "force", false, false, "force the branch to be created");
 
     private boolean _userBranch;
 
     private boolean _force;
     private String _branchName;
+    protected CommandLineProcessor commandLineProcessor;
 
     public CreateBranch()
             throws SVNException, SVNScriptException {
@@ -57,27 +64,18 @@ public class CreateBranch extends SVNScript {
         _userBranch = userBranch;
     }
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        for (String arg : args) {
-            if (FORCE_FLAG.equalsIgnoreCase(arg)) {
-                _force = true;
-                continue;
-            }
-
-            if (_branchName == null) {
-                _branchName = arg;
-                continue;
-            }
-
-            //If extra parameters were specified
-            throw new IllegalArgumentException();
-        }
-
-        //Make sure branch name isn't null
-        if (_branchName == null) {
-            throw new IllegalArgumentException();
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.ArgumentHandler(BRANCH) {
+                    public void handle(String arg) {
+                        _branchName = arg;
+                    }
+                },
+                new CommandLineProcessor.OptionHandler(FORCE) {
+                    public void ifSet() {
+                        _force = true;
+                    }
+                });
     }
 
     public void run()
@@ -229,10 +227,6 @@ public class CreateBranch extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss createbranch <branch name> [options]" +
-                "\n  branch name:   name of the new branch" +
-                "\n  --force:       create the branch even if there are" +
-                "\n                 uncommitted changes in the working copy";
+        return commandLineProcessor.usage("createbranch");
     }
 }

@@ -5,6 +5,8 @@ import org.codehaus.savana.ListDirEntryHandler;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.SavanaArgument;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -41,6 +43,10 @@ import java.util.regex.Pattern;
  * @author Bryon Jacob (bryon@jacob.net)
  */
 public class ListBranches extends SVNScript {
+    private static final SavanaArgument PROJECT = new SavanaArgument(
+            "project", "the project from which to list branches");
+    private static final SavanaArgument FILTER = new SavanaArgument(
+            "filter", "branch name filter, filters the set of branches to list", "*");
     private String _projectName;
     private String _branchNameFilter;
     private boolean _userBranch;
@@ -55,33 +61,18 @@ public class ListBranches extends SVNScript {
         _userBranch = userBranch;
     }
 
-    public void initialize(String[] args)
-            throws IllegalArgumentException {
-        for (String arg : args) {
-            if (_projectName == null) {
-                _projectName = arg;
-                continue;
-            }
-
-            if (_branchNameFilter == null) {
-                _branchNameFilter = arg;
-                continue;
-            }
-
-            //If extra parameters were specified
-            throw new IllegalArgumentException();
-        }
-
-        //Make sure project and branch names aren't null
-        if (_projectName == null) {
-            _projectName = "";
-            _sLog.warn("no project name given - assuming that repository contains one project at /");
-        }
-
-        //Find everything if no filter was provided
-        if (_branchNameFilter == null) {
-            _branchNameFilter = "*";
-        }
+    public CommandLineProcessor constructCommandLineProcessor() {
+        return new CommandLineProcessor(
+                new CommandLineProcessor.ArgumentHandler(PROJECT) {
+                    public void handle(String arg) {
+                        _projectName = arg;
+                    }
+                },
+                new CommandLineProcessor.ArgumentHandler(FILTER) {
+                    public void handle(String arg) {
+                        _branchNameFilter = arg;
+                    }
+                });
     }
 
     public void run()
@@ -211,10 +202,6 @@ public class ListBranches extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return
-                "Usage: ss listbranches (<project name>)" +
-                "\n  project name:  name of the project" +
-                "\nif no project name is given, this script assumes that there is one project in" +
-                "\nthe repository, rooted at \"/\"";
+        return _commandLineProcessor.usage("listbranches");
     }
 }
