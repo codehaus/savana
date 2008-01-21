@@ -43,8 +43,7 @@ import java.util.Map;
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */
-public class
-        SetBranch extends SVNScript {
+public class SetBranch extends SVNScript {
     private static final SavanaArgument BRANCH = new SavanaArgument(
             "branch", "the name of the branch to set");
     private static final SavanaOption FORCE = new SavanaOption(

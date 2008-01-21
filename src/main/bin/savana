@@ -64,39 +64,6 @@ fi
 
 COMMAND="$1" ; shift
 
-
-case "$COMMAND" in
-
-"createreleasebranch"|"crb") SCRIPT_CLASS=org.codehaus.savana.scripts.CreateBranch ;;
-"createuserbranch"|"cub"|"cb") SCRIPT_CLASS=org.codehaus.savana.scripts.CreateUserBranch ;;
-"deleteuserbranch"|"dub"|"db") SCRIPT_CLASS=org.codehaus.savana.scripts.DeleteUserBranch ;;
-"diffchangesfromsource"|"diff") SCRIPT_CLASS=org.codehaus.savana.scripts.DiffChangesFromSource ;;
-"listchangesfromsource"|"listchanges"|"lc") SCRIPT_CLASS=org.codehaus.savana.scripts.ListChangesFromSource ;;
-"listuserbranches"|"listbranches"|"lub"|"lb") SCRIPT_CLASS=org.codehaus.savana.scripts.ListUserBranches ;;
-"listworkingcopyinfo"|"lwci"|"workingcopyinfo"|"wci"|"info") SCRIPT_CLASS=org.codehaus.savana.scripts.ListWorkingCopyInfo ;;
-"promote") SCRIPT_CLASS=org.codehaus.savana.scripts.Promote ;;
-"sync"|"resync"|"synchronize") SCRIPT_CLASS=org.codehaus.savana.scripts.Synchronize ;;
-"reverttosource"|"rs"|"revert") SCRIPT_CLASS=org.codehaus.savana.scripts.RevertToSource ;;
-"setbranch"|"sb") SCRIPT_CLASS=org.codehaus.savana.scripts.SetBranch ;;
-"createmetadatafile"|"bootstrap") SCRIPT_CLASS=org.codehaus.savana.scripts.admin.CreateMetadataFile ;;
-
-*)
-  echo "Unknown command: $1" >&2
-  usage
-;;
-
-esac
-
-java -classpath "$CLASSPATH" -Dsavana.home=$SAVANA_HOME org.codehaus.savana.scripts.SVNScript "$SCRIPT_CLASS" "$@"
+java -classpath "$CLASSPATH" -Dsavana.home=$SAVANA_HOME org.codehaus.savana.scripts.SVNScript "$COMMAND" "$@"
 
 exit
-
-#__END__
-#
-#=pod
-#
-#=head1 SYNOPSIS
-#
-#TODO
-#
-#=cut
