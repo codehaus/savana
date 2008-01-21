@@ -20,6 +20,7 @@
             <item name="Home" href="index.html"/>
             <item name="Release Notes" href="releases.html"/>
             <item name="Downloads" href="downloads.html"/>
+            <item name="Getting Started" href="gettingstarted.html"/>
             <item name="Installation" href="install.html"/>
         </menu>
 

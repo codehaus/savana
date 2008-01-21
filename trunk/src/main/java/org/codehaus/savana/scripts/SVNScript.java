@@ -251,25 +251,25 @@ public abstract class SVNScript {
     }
 
     public static void main(String[] args) {
-        String scriptClass = args[0];
+        String scriptName = args[0];
         String[] scriptArgs = new String[args.length - 1];
         System.arraycopy(args, 1, scriptArgs, 0, scriptArgs.length);
 
         //Load the script class
         SVNScript script = null;
         try {
-            script = (SVNScript) Class.forName(scriptClass).newInstance();
+            script = (SVNScript) loadCommandClassByNameOrAlias(scriptName).newInstance();
         }
         catch (ClassNotFoundException e) {
-            System.err.println("ERROR: Could not find script: " + scriptClass);
+            System.err.println("ERROR: Could not find script: " + scriptName);
             System.exit(1);
         }
         catch (InstantiationException e) {
-            System.err.println("ERROR: Could not instantiate script: " + scriptClass);
+            System.err.println("ERROR: Could not instantiate script: " + scriptName);
             System.exit(1);
         }
         catch (IllegalAccessException e) {
-            System.err.println("ERROR: Could not access script: " + scriptClass);
+            System.err.println("ERROR: Could not access script: " + scriptName);
             System.exit(1);
         }
         catch (Exception e) {
@@ -321,5 +321,20 @@ public abstract class SVNScript {
         finally {
             script.logEnd("SCRIPT.run()");
         }
+    }
+
+    protected static Class loadCommandClassByNameOrAlias(String name) throws IOException, ClassNotFoundException {
+        Map<String, String> aliasMap = new HashMap<String, String>();
+        Properties props = new Properties();
+        props.load(SVNScript.class.getClassLoader().getResourceAsStream("commands.properties"));
+        for (Map.Entry entry : props.entrySet()) {
+            String className = String.valueOf(entry.getKey());
+            String[] aliases = String.valueOf(entry.getValue()).split(",");
+            for (String alias : aliases) {
+                aliasMap.put(alias, className);
+            }
+        }
+        String className = aliasMap.get(name);
+        return Class.forName(className == null ? name : className);
     }
 }
