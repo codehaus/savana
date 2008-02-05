@@ -23,6 +23,12 @@ import org.tmatesoft.svn.core.wc.*;
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
+ * Third party components of this software are provided or made available only subject
+ * to their respective licenses. The relevant components and corresponding
+ * licenses are listed in the "licenses" directory in this distribution. In any event,
+ * the disclaimer of warranty and limitation of liability provision in this Agreement
+ * will apply to all Software in this distribution.
+ *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */

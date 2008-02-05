@@ -17,6 +17,12 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+Third party components of this software are provided or made available only subject
+to their respective licenses. The relevant components and corresponding
+licenses are listed in the "licenses" directory in this distribution. In any event,
+the disclaimer of warranty and limitation of liability provision in this Agreement
+will apply to all Software in this distribution.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -57,14 +63,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
         <dependency>
             <groupId>org.tmatesoft</groupId>
             <artifactId>svnkit</artifactId>
-            <scope>compile</scope>
             <version>1.1.4</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.tmatesoft</groupId>
             <artifactId>svnkit-cli</artifactId>
-            <scope>compile</scope>
             <version>1.1.4</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -95,6 +101,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
             <version>20040117.000000</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ch.ethz.ganymed</groupId>

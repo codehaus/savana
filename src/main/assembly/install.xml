@@ -17,6 +17,18 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+Third party components of this software are provided or made available only subject
+to their respective licenses. The relevant components and corresponding
+licenses are listed in the "licenses" directory in this distribution. In any event,
+the disclaimer of warranty and limitation of liability provision in this Agreement
+will apply to all Software in this distribution.
+
+Third party components of this software are provided or made available only subject
+to their respective licenses. The relevant components and corresponding
+licenses are listed in the "licenses" directory in this distribution. In any event,
+the disclaimer of warranty and limitation of liability provision in this Agreement
+will apply to all Software in this distribution.
 -->
 <assembly>
     <id>install</id>
@@ -32,6 +44,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     </dependencySets>
 
     <fileSets>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>COPYING</include>
+                <include>COPYING.LESSER</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>licenses</directory>
+            <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
         <fileSet>
             <directory>src/main/bin</directory>
             <outputDirectory>/bin</outputDirectory>
