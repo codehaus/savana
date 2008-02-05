@@ -18,6 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# Third party components of this software are provided or made available only subject
+# to their respective licenses. The relevant components and corresponding
+# licenses are listed in the "licenses" directory in this distribution. In any event,
+# the disclaimer of warranty and limitation of liability provision in this Agreement
+# will apply to all Software in this distribution.
 
 # if the user hasn't set SAVANA_HOME, then we assume it to be the parent of the directory from
 # which the "sav" command is run

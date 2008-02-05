@@ -18,6 +18,12 @@ REM
 REM  You should have received a copy of the GNU Lesser General Public License
 REM  along with this program; if not, write to the Free Software
 REM  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+REM
+REM  Third party components of this software are provided or made available only subject
+REM  to their respective licenses. The relevant components and corresponding
+REM  licenses are listed in the "licenses" directory in this distribution. In any event,
+REM  the disclaimer of warranty and limitation of liability provision in this Agreement
+REM  will apply to all Software in this distribution.
 
 SETLOCAL
 
