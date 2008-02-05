@@ -126,5 +126,5 @@ Promotion Changeset:   [102]
   Again, with one command our changes were merged into the trunk, we were <<svn switch>>ed back to
   trunk, and the <<test>> user branch has been deleted!
 
-  The addition of <<ss sync>> and <<ss promote>> is 90% of what you'll use in Savana - so you're
+  The addition of <<sav sync>> and <<sav promote>> is 90% of what you'll use in Savana - so you're
   already ready to take advantage of most of what you can now do!
