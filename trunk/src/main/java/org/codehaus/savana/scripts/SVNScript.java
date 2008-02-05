@@ -7,6 +7,7 @@ import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.SVNVersion;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
+import org.codehaus.savana.util.cli.CommandAliases;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
@@ -54,6 +55,8 @@ public abstract class SVNScript {
 
     private static final Set<String> HELP_ARGUMENTS = new HashSet<String>(Arrays.asList(
             "help", "-help", "/help", "?", "-?", "/?"));
+
+    private static final CommandAliases ALIASES = new CommandAliases();
 
     protected final Log _sLog = LogFactory.getLog(getClass());
     protected SVNRepository _repository;
@@ -251,6 +254,9 @@ public abstract class SVNScript {
     }
 
     public static void main(String[] args) {
+        if (args.length < 1) {
+            usage();
+        }
         String scriptName = args[0];
         String[] scriptArgs = new String[args.length - 1];
         System.arraycopy(args, 1, scriptArgs, 0, scriptArgs.length);
@@ -258,28 +264,23 @@ public abstract class SVNScript {
         //Load the script class
         SVNScript script = null;
         try {
-            script = (SVNScript) loadCommandClassByNameOrAlias(scriptName).newInstance();
+            script = (SVNScript) ALIASES.loadCommandClassByNameOrAlias(scriptName).newInstance();
         }
         catch (ClassNotFoundException e) {
-            System.err.println("ERROR: Could not find script: " + scriptName);
-            System.exit(1);
+            System.err.println("ERROR: Unknown subcommand: " + scriptName);
+            usage();
         }
         catch (InstantiationException e) {
             System.err.println("ERROR: Could not instantiate script: " + scriptName);
-            System.exit(1);
+            usage();
         }
         catch (IllegalAccessException e) {
             System.err.println("ERROR: Could not access script: " + scriptName);
-            System.exit(1);
+            usage();
         }
         catch (Exception e) {
-            if (e instanceof SVNScriptException) {
-                System.err.println(e.getMessage());
-                System.exit(1);
-            } else {
-                e.printStackTrace();
-                System.exit(1);
-            }
+            e.printStackTrace(System.err);
+            usage();
         }
 
         //See if the user is asking for help
@@ -323,18 +324,13 @@ public abstract class SVNScript {
         }
     }
 
-    protected static Class loadCommandClassByNameOrAlias(String name) throws IOException, ClassNotFoundException {
-        Map<String, String> aliasMap = new HashMap<String, String>();
-        Properties props = new Properties();
-        props.load(SVNScript.class.getClassLoader().getResourceAsStream("commands.properties"));
-        for (Map.Entry entry : props.entrySet()) {
-            String className = String.valueOf(entry.getKey());
-            String[] aliases = String.valueOf(entry.getValue()).split(",");
-            for (String alias : aliases) {
-                aliasMap.put(alias, className);
-            }
+    private static void usage() {
+        System.err.println("usage:  sav <subcommand> <args>");
+        System.err.println();
+        System.err.println("Available subcommands:");
+        for (String command : ALIASES.getCommandList()) {
+            System.err.println("\t" + command);
         }
-        String className = aliasMap.get(name);
-        return Class.forName(className == null ? name : className);
+        System.exit(1);
     }
 }

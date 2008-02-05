@@ -102,7 +102,7 @@ public class Promote extends SVNScript {
         if (logEntryHandler.isChanged() && _repository.getLatestRevision() != wcInfo.getLastMergeRevision().getNumber()) {
             String errorMessage =
                     "ERROR: There are unmerged changes in the source." +
-                    "\nRun 'ss sync' to pull in unmerged changes";
+                    "\nRun 'sav sync' to pull in unmerged changes";
             throw new SVNScriptException(errorMessage);
         }
         logEnd("Check for changes");
