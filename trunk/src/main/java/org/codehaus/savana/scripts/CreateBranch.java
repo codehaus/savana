@@ -53,12 +53,14 @@ public class CreateBranch extends SVNScript {
             "branch", "the name of the branch to create");
     private static final SavanaOption FORCE = new SavanaOption(
             "F", "force", false, false, "force the branch to be created");
+    private static final SavanaOption MESSAGE = new SavanaOption(
+            "m", "message", true, false, "override the svn log message");
 
     private boolean _userBranch;
 
     private boolean _force;
     private String _branchName;
-    protected CommandLineProcessor commandLineProcessor;
+    private String _commitMessage;
 
     public CreateBranch()
             throws SVNException, SVNScriptException {
@@ -80,6 +82,11 @@ public class CreateBranch extends SVNScript {
                 new CommandLineProcessor.OptionHandler(FORCE) {
                     public void ifSet() {
                         _force = true;
+                    }
+                },
+                new CommandLineProcessor.OptionHandler(MESSAGE) {
+                    public void withArg(String arg) {
+                        _commitMessage = arg;
                     }
                 });
     }
@@ -137,7 +144,8 @@ public class CreateBranch extends SVNScript {
 
         //Figure out the paths to the parent dir of the branch and to the metadata file
         String branchParentPath = SVNPathUtil.removeTail(branchPath);
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
+        String branchMetadataFilePath =
+                SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
 
         //Figure out which subpaths to the branch are missing
         List<String> missingPaths = getMissingSubpaths(_repository, branchParentPath);
@@ -148,7 +156,9 @@ public class CreateBranch extends SVNScript {
 
             //Create an editor
             logStart("Get commit editor");
-            ISVNEditor editor = _repository.getCommitEditor("Creating branch: " + _branchName, null);
+            final String commitMessage =
+                    _commitMessage == null ? "Creating branch: " + _branchName : _commitMessage;
+            ISVNEditor editor = _repository.getCommitEditor(commitMessage, null);
             SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
             editor.openRoot(-1);
             logEnd("Get commit editor");
@@ -233,6 +243,6 @@ public class CreateBranch extends SVNScript {
     }
 
     public String getUsageMessage() {
-        return commandLineProcessor.usage("createbranch");
+        return _commandLineProcessor.usage("createbranch");
     }
 }

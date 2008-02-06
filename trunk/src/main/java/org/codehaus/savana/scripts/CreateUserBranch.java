@@ -40,6 +40,6 @@ public class CreateUserBranch extends CreateBranch {
     }
 
     public String getUsageMessage() {
-        return commandLineProcessor.usage("createuserbranch");
+        return _commandLineProcessor.usage("createuserbranch");
     }
 }

@@ -71,7 +71,7 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
         SVN.getCommitClient().doCommit(new File[]{wc}, false, "committing", false, true);
 
         savana(CreateBranch.class, "1.0");
-        savana(CreateUserBranch.class, "user-1.0");
+        savana(CreateUserBranch.class, "user-1.0", "-m", "custom commit message");
 
         final Set<String> paths = new HashSet<String>();
         SVN.getLogClient().doList(
