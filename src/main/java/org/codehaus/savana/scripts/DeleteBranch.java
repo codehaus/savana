@@ -51,11 +51,14 @@ public class DeleteBranch extends SVNScript {
             "branch", "the name of the branch to delete");
     private static final SavanaOption FORCE = new SavanaOption(
             "F", "force", false, false, "force the branch to be created");
+    private static final SavanaOption MESSAGE = new SavanaOption(
+            "m", "message", true, false, "override the svn log message");
 
     private boolean _force;
     private String _projectName;
     private String _branchName;
     private boolean _userBranch;
+    private String _commitMessage;
 
     public DeleteBranch()
             throws SVNException, SVNScriptException {
@@ -82,6 +85,11 @@ public class DeleteBranch extends SVNScript {
                 new CommandLineProcessor.OptionHandler(FORCE) {
                     public void ifSet() {
                         _force = true;
+                    }
+                },
+                new CommandLineProcessor.OptionHandler(MESSAGE) {
+                    public void withArg(String arg) {
+                        _commitMessage = arg;
                     }
                 });
     }
@@ -132,7 +140,9 @@ public class DeleteBranch extends SVNScript {
         logEnd("Get Commit Client");
 
         logStart("Perform Delete");
-        commitClient.doDelete(new SVNURL[]{branchURL}, "Deleting branch: " + branchURL);
+        String commitMessage =
+                _commitMessage == null ? "Deleting branch: " + branchURL : _commitMessage;        
+        commitClient.doDelete(new SVNURL[]{branchURL}, commitMessage);
         logEnd("Perform Delete");
 
         getOut().println("Deleted Branch: " + branchPath);

@@ -156,7 +156,7 @@ public class CreateBranch extends SVNScript {
 
             //Create an editor
             logStart("Get commit editor");
-            final String commitMessage =
+            String commitMessage =
                     _commitMessage == null ? "Creating branch: " + _branchName : _commitMessage;
             ISVNEditor editor = _repository.getCommitEditor(commitMessage, null);
             SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
