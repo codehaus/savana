@@ -162,7 +162,8 @@ public class WorkingCopyInfo {
     }
 
     public String getTrunkPath() {
-        return _trunkPath;
+//        return _trunkPath;
+        return SVNPathUtil.append(getProjectRoot(), _trunkPath);        
     }
 
     public String getBranchesPath() {
