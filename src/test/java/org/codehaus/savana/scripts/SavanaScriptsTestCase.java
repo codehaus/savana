@@ -12,7 +12,9 @@ import java.io.PrintStream;
 import java.io.IOException;
 
 /**
- * bryon has not yet bothered to enter a useful javadoc comment.
+ * Base test case for Savana unit tests - defines useful methods for testing savana components.
+ *
+ * @author Bryon Jacob (bryon@jacob.net)
  */
 public class SavanaScriptsTestCase  extends TestCase {
 

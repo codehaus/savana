@@ -104,10 +104,9 @@ public class SetBranch extends SVNScript {
             logEnd("Check for local changes");
         }
 
-        //Get the project name from the working copy
-        String projectName = wcInfo.getProjectName();
-
-        String branchPath = wcInfo.getUserBranchPath(_branchName);
+        String branchPath = MetadataFile.BRANCH_TYPE_TRUNK.equalsIgnoreCase(_branchName) ?
+                            wcInfo.getTrunkPath() :
+                            wcInfo.getUserBranchPath(_branchName);
 
         //If the path doesn't exist
         logStart("Check for the path");
