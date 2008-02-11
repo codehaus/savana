@@ -161,11 +161,6 @@ public class WorkingCopyInfo {
         return _projectRoot;
     }
 
-    public String getTrunkPath() {
-//        return _trunkPath;
-        return SVNPathUtil.append(getProjectRoot(), _trunkPath);        
-    }
-
     public String getBranchesPath() {
         return _branchesPath;
     }
@@ -226,6 +221,10 @@ public class WorkingCopyInfo {
                 "\nLast Merge Revision:   " + ((_lastMergeRevision != null) ? _lastMergeRevision : "none");
     }
 
+    public String getTrunkPath() {
+        return SVNPathUtil.append(getProjectRoot(), _trunkPath);
+    }
+    
     public String getReleaseBranchPath(String branchName) {
         return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), getBranchesPath()), branchName);
     }
