@@ -314,10 +314,13 @@ public abstract class SVNScript {
             script.logStart("SCRIPT.run()");
             try {
                 script.run();
+
             } catch (SVNAuthenticationException e) {
-                // reconfigure and run again.
-                script.setupScriptWithUsersFile();
-                script.run();
+                rerunScriptWithUsersFile( script );
+            } catch (SVNScriptException e) {
+                if ( e.getCause() instanceof SVNAuthenticationException ) {
+                    rerunScriptWithUsersFile( script );
+                }
             }
         }
         catch (Exception e) {
@@ -329,6 +332,12 @@ public abstract class SVNScript {
             script.logEnd("SCRIPT.run()");
         }
     }
+
+    private static void rerunScriptWithUsersFile( SVNScript script ) throws Exception {
+        // reconfigure and run again.
+        script.setupScriptWithUsersFile();
+        script.run();
+    }    
 
     private static void usage() {
         System.err.println("usage:  sav <subcommand> <args>");
