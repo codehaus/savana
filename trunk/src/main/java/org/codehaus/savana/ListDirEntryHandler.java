@@ -2,6 +2,7 @@ package org.codehaus.savana;
 
 import org.tmatesoft.svn.core.ISVNDirEntryHandler;
 import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNURL;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -37,8 +38,10 @@ import java.util.TreeSet;
  */
 public class ListDirEntryHandler implements ISVNDirEntryHandler {
     private SortedSet<String> _nameList;
+    private SVNURL self;
 
-    public ListDirEntryHandler() {
+    public ListDirEntryHandler(SVNURL self) {
+        this.self = self;
         _nameList = new TreeSet<String>();
     }
 
@@ -47,6 +50,8 @@ public class ListDirEntryHandler implements ISVNDirEntryHandler {
     }
 
     public void handleDirEntry(SVNDirEntry dirEntry) {
-        _nameList.add(dirEntry.getName());
+        if (!self.equals(dirEntry.getURL())) {
+            _nameList.add(dirEntry.getName());
+        }
     }
 }

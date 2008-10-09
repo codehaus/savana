@@ -74,7 +74,7 @@ public class CommandLineProcessor {
      */
     public String[] processCommandLine(String[] args) {
         // first, parst the command line using apache CLI
-        CommandLine line = null;
+        CommandLine line;
         try {
             line = new GnuParser().parse(options, args);
         } catch (ParseException e) {

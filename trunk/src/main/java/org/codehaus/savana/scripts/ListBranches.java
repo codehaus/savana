@@ -7,15 +7,11 @@ import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
 import org.codehaus.savana.util.cli.SavanaArgument;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.regex.Pattern;
 
@@ -104,11 +100,11 @@ public class ListBranches extends SVNScript {
         logStart("List branches");
         SVNURL repositoryURL = getRepositoryURL();
         SVNURL branchesRootURL = repositoryURL.appendPath(branchesRootPath, false);
-        ListDirEntryHandler listDirEntryHandler = new ListDirEntryHandler();
-        _clientManager.getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false, listDirEntryHandler);
+        ListDirEntryHandler listDirEntryHandler = new ListDirEntryHandler(branchesRootURL);
+        _clientManager.getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
+                                             SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
         logEnd("List branches");
-
-
+        
         logStart("Get branch names");
         SortedSet<String> branchNames = listDirEntryHandler.getNames();
         logEnd("Get branch names");
@@ -147,16 +143,16 @@ public class ListBranches extends SVNScript {
                 //Get the metadata file
                 String branchPath = SVNPathUtil.append(branchesRootPath, branchName);
                 String metadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-                Map metadataFileProperties = new HashMap();
+                SVNProperties metadataFileProperties = new SVNProperties();
                 _repository.getFile(metadataFilePath, -1, metadataFileProperties, null);
                 logEnd("Get branch metadata info");
 
                 //Print the branch information
                 logStart("Print branch metadata info");
-                String sourcePath = (String) metadataFileProperties.get(MetadataFile.PROP_SOURCE_PATH);
-                String branchPointRevision = (String) metadataFileProperties.get(MetadataFile.PROP_BRANCH_POINT_REVISION);
-                String lastMergeRevision = (String) metadataFileProperties.get(MetadataFile.PROP_LAST_MERGE_REVISION);
-                String lastPromoteRevision = (String) metadataFileProperties.get(MetadataFile.PROP_LAST_PROMOTE_REVISION);
+                String sourcePath = metadataFileProperties.getStringValue(MetadataFile.PROP_SOURCE_PATH);
+                String branchPointRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_BRANCH_POINT_REVISION);
+                String lastMergeRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_MERGE_REVISION);
+                String lastPromoteRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_PROMOTE_REVISION);
 
                 getOut().println(
                         pad(branchName, 20) +

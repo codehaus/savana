@@ -2,6 +2,7 @@ package org.codehaus.savana;
 
 import org.tmatesoft.svn.core.SVNCancelException;
 import org.tmatesoft.svn.core.wc.*;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.*;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -22,7 +23,7 @@ import org.tmatesoft.svn.core.wc.*;
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
+ * <p/>
  * Third party components of this software are provided or made available only subject
  * to their respective licenses. The relevant components and corresponding
  * licenses are listed in the "licenses" directory in this distribution. In any event,
@@ -47,23 +48,24 @@ public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHan
 
         //Check the status of the file
         SVNStatusType contentsStatus = status.getContentsStatus();
-        if (contentsStatus == SVNStatusType.STATUS_MODIFIED ||
-            contentsStatus == SVNStatusType.STATUS_CONFLICTED ||
-            contentsStatus == SVNStatusType.STATUS_MERGED ||
-            contentsStatus == SVNStatusType.STATUS_DELETED ||
-            contentsStatus == SVNStatusType.STATUS_ADDED ||
-            contentsStatus == SVNStatusType.STATUS_MISSING ||
-            contentsStatus == SVNStatusType.STATUS_INCOMPLETE ||
-            contentsStatus == SVNStatusType.STATUS_OBSTRUCTED ||
-            contentsStatus == SVNStatusType.STATUS_REPLACED) {
+        // TODO: make sure we are covering all possible stati
+        if (STATUS_MODIFIED.equals(contentsStatus) ||
+            STATUS_CONFLICTED.equals(contentsStatus) ||
+            MERGED.equals(contentsStatus) ||
+            STATUS_DELETED.equals(contentsStatus) ||
+            STATUS_ADDED.equals(contentsStatus) ||
+            STATUS_MISSING.equals(contentsStatus) ||
+            STATUS_INCOMPLETE.equals(contentsStatus) ||
+            STATUS_OBSTRUCTED.equals(contentsStatus) ||
+            STATUS_REPLACED.equals(contentsStatus)) {
 
             _changed = true;
         }
 
         //Check the status of the file's properties
         SVNStatusType propertiesStatus = status.getPropertiesStatus();
-        if (propertiesStatus == SVNStatusType.STATUS_MODIFIED ||
-            propertiesStatus == SVNStatusType.STATUS_CONFLICTED) {
+        if (STATUS_MODIFIED.equals(propertiesStatus) ||
+            STATUS_CONFLICTED.equals(propertiesStatus)) {
 
             _changed = true;
         }

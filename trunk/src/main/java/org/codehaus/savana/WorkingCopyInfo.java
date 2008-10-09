@@ -1,11 +1,15 @@
 package org.codehaus.savana;
 
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNPropertyData;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
+import static org.tmatesoft.svn.core.wc.SVNRevision.UNDEFINED;
+import static org.tmatesoft.svn.core.wc.SVNRevision.WORKING;
+import static org.codehaus.savana.MetadataFile.*;
 
 import java.io.File;
 
@@ -79,65 +83,66 @@ public class WorkingCopyInfo {
 
         //Find the branch path from the metadata file
         SVNWCClient wcClient = clientManager.getWCClient();
-        SVNPropertyData projectNameProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_PROJECT_NAME, null, SVNRevision.WORKING, false);
-        SVNPropertyData branchPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_PATH, null, SVNRevision.WORKING, false);
-        SVNPropertyData sourcePathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_SOURCE_PATH, null, SVNRevision.WORKING, false);
-        SVNPropertyData branchTypeProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_TYPE, null, SVNRevision.WORKING, false);
-        SVNPropertyData projectRootProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_PROJECT_ROOT, null, SVNRevision.WORKING, false);
-        SVNPropertyData trunkPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_TRUNK_PATH, null, SVNRevision.WORKING, false);
-        SVNPropertyData branchesPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCHES_PATH, null, SVNRevision.WORKING, false);
-        SVNPropertyData userBranchesPathProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, null, SVNRevision.WORKING, false);
-        SVNPropertyData branchPointRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, null, SVNRevision.WORKING, false);
-        SVNPropertyData lastMergeRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, null, SVNRevision.WORKING, false);
-        SVNPropertyData lastPromoteRevisionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_LAST_PROMOTE_REVISION, null, SVNRevision.WORKING, false);
-        SVNPropertyData svnVersionProps = wcClient.doGetProperty(_metadataFile, MetadataFile.PROP_SVN_VERSION, null, SVNRevision.WORKING, false);
+
+        SVNPropertyData projectNameProps = wcClient.doGetProperty(_metadataFile, PROP_PROJECT_NAME, UNDEFINED, WORKING);
+        SVNPropertyData branchPathProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_PATH, UNDEFINED, WORKING);
+        SVNPropertyData sourcePathProps = wcClient.doGetProperty(_metadataFile, PROP_SOURCE_PATH, UNDEFINED, WORKING);
+        SVNPropertyData branchTypeProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_TYPE, UNDEFINED, WORKING);
+        SVNPropertyData projectRootProps = wcClient.doGetProperty(_metadataFile, PROP_PROJECT_ROOT, UNDEFINED, WORKING);
+        SVNPropertyData trunkPathProps = wcClient.doGetProperty(_metadataFile, PROP_TRUNK_PATH, UNDEFINED, WORKING);
+        SVNPropertyData branchesPathProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCHES_PATH, UNDEFINED, WORKING);
+        SVNPropertyData userBranchesPathProps = wcClient.doGetProperty(_metadataFile, PROP_USER_BRANCHES_PATH, UNDEFINED, WORKING);
+        SVNPropertyData branchPointRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_POINT_REVISION, UNDEFINED, WORKING);
+        SVNPropertyData lastMergeRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_LAST_MERGE_REVISION, UNDEFINED, WORKING);
+        SVNPropertyData lastPromoteRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_LAST_PROMOTE_REVISION, UNDEFINED, WORKING);
+        SVNPropertyData svnVersionProps = wcClient.doGetProperty(_metadataFile, PROP_SVN_VERSION, UNDEFINED, WORKING);
 
         if (projectNameProps != null) {
-            _projectName = _projectRoot = projectNameProps.getValue();
+            _projectName = _projectRoot = SVNPropertyValue.getPropertyAsString(projectNameProps.getValue());
         }
 
         if (branchPathProps != null) {
-            _branchPath = branchPathProps.getValue();
+            _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps.getValue());
         }
 
         if (sourcePathProps != null) {
-            _sourcePath = sourcePathProps.getValue();
+            _sourcePath = SVNPropertyValue.getPropertyAsString(sourcePathProps.getValue());
         }
 
         if (branchTypeProps != null) {
-            _branchType = branchTypeProps.getValue();
+            _branchType = SVNPropertyValue.getPropertyAsString(branchTypeProps.getValue());
         }
 
         if (projectRootProps != null) {
-            _projectRoot = projectRootProps.getValue();
+            _projectRoot = SVNPropertyValue.getPropertyAsString(projectRootProps.getValue());
         }
 
         if (trunkPathProps != null) {
-            _trunkPath = trunkPathProps.getValue();
+            _trunkPath = SVNPropertyValue.getPropertyAsString(trunkPathProps.getValue());
         }
 
         if (branchesPathProps != null) {
-            _branchesPath = branchesPathProps.getValue();
+            _branchesPath = SVNPropertyValue.getPropertyAsString(branchesPathProps.getValue());
         }
 
         if (userBranchesPathProps != null) {
-            _userBranchesPath = userBranchesPathProps.getValue();
+            _userBranchesPath = SVNPropertyValue.getPropertyAsString(userBranchesPathProps.getValue());
         }
 
         if (branchPointRevisionProps != null) {
-            _branchPointRevision = SVNRevision.create(Long.parseLong(branchPointRevisionProps.getValue()));
+            _branchPointRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(branchPointRevisionProps.getValue())));
         }
 
         if (lastMergeRevisionProps != null) {
-            _lastMergeRevision = SVNRevision.create(Long.parseLong(lastMergeRevisionProps.getValue()));
+            _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps.getValue())));
         }
 
         if (lastPromoteRevisionProps != null) {
-            _lastPromoteRevision = SVNRevision.create(Long.parseLong(lastPromoteRevisionProps.getValue()));
+            _lastPromoteRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastPromoteRevisionProps.getValue())));
         }
 
         if (svnVersionProps != null) {
-            _svnVersion = SVNVersion.valueOf(svnVersionProps.getValue());
+            _svnVersion = SVNVersion.valueOf(SVNPropertyValue.getPropertyAsString(svnVersionProps.getValue()));
         }
     }
 

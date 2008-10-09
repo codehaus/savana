@@ -47,13 +47,21 @@ will apply to all Software in this distribution.
             </includes>
         </fileSet>
         <fileSet>
+            <directory>src/main/resources</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0666</fileMode>
+            <includes>
+                <include>savana.log</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>licenses</directory>
             <outputDirectory>/licenses</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>src/main/bin</directory>
             <outputDirectory>/bin</outputDirectory>
-            <fileMode>0774</fileMode>
+            <fileMode>0777</fileMode>
         </fileSet>
         <fileSet>
             <directory>target</directory>
