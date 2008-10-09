@@ -145,6 +145,8 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
 
         // promote the workspace
         savana(Synchronize.class);
+
+        SVN.getUpdateClient().doUpdate(wc, SVNRevision.HEAD, false);
         savana(Promote.class, "promoting my changes");
 
         // check that we're back to 1.0, and that the changes are available to us

@@ -7,6 +7,9 @@ import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.SVNScript;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNDepth;
+import static org.tmatesoft.svn.core.SVNDepth.EMPTY;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNInfo;
@@ -165,7 +168,7 @@ public class CreateMetadataFile extends SVNScript {
 
             //Add the file to source control
             SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doAdd(metadataFile, false, false, false, false);
+            wcClient.doAdd(metadataFile, false, false, false, SVNDepth.fromRecurse(false), false, false);
 
             //At this point, the script did the add, so it should revert on a failure
             needsRevert = true;
@@ -191,28 +194,31 @@ public class CreateMetadataFile extends SVNScript {
             }
 
             //Set the properties on the file
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_NAME, _projectName, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_PATH, _branchPath, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_TYPE, _branchType, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, _sourcePath, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_ROOT, _projectRoot, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, _trunkPath, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCHES_PATH, _branchesPath, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, _userBranchesPath, false, false, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SVN_VERSION, _svnVersion.toString(), false, false, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(_projectName), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(_branchPath), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(_branchType), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(_sourcePath), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_ROOT, SVNPropertyValue.create(_projectRoot), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, SVNPropertyValue.create(_trunkPath), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCHES_PATH, SVNPropertyValue.create(_branchesPath), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, SVNPropertyValue.create(_userBranchesPath), false, EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SVN_VERSION, SVNPropertyValue.create(_svnVersion.toString()), false, EMPTY, null, null);
 
             //If we aren't on the trunk
             if (!MetadataFile.BRANCH_TYPE_TRUNK.equals(_branchType)) {
                 //Set the branch point
-                wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, Long.toString(_repository.getLatestRevision()), false, false, null);
+                wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION,
+                                       SVNPropertyValue.create(Long.toString(_repository.getLatestRevision())), false, EMPTY, null, null);
 
                 //Set the last merge revision
-                wcClient.doSetProperty(metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, Long.toString(_repository.getLatestRevision()), false, false, null);
+                wcClient.doSetProperty(metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION,
+                                       SVNPropertyValue.create(Long.toString(_repository.getLatestRevision())), false, EMPTY, null, null);
             }
 
             //Commit the changes
             SVNCommitClient commitClient = _clientManager.getCommitClient();
-            commitClient.doCommit(new File[]{metadataFile}, false, _commitMessage, false, false);
+            commitClient.doCommit(new File[]{metadataFile}, false, _commitMessage, null, null, false, false, SVNDepth.fromRecurse(false));
+
             getOut().println("-------------------------------------------------");
             getOut().println("SUCCESS: Commited metadata file.");
             getOut().println("-------------------------------------------------");
@@ -257,15 +263,19 @@ public class CreateMetadataFile extends SVNScript {
         try {
             file.delete();
         }
-        catch (Exception e) {}
+        catch (Exception e) {
+            // do nothing...
+        }
     }
 
     private void revertFile(File file) {
         try {
             SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doRevert(file, false);
+            wcClient.doRevert(new File[] {file}, SVNDepth.fromRecurse(false), null);
         }
-        catch (SVNException e) {}
+        catch (SVNException e) {
+            // do nothing...
+        }
     }
 
     public String getUsageMessage() {

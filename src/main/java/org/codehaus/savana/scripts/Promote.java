@@ -6,10 +6,12 @@ import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
 import org.codehaus.savana.util.cli.SavanaArgument;
-import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.wc.*;
 
 import java.io.File;
@@ -85,7 +87,8 @@ public class Promote extends SVNScript {
         //TODO: Make sure that we are still really in the user branch.  If a previous promote failed, we might be in the trunk but with all of the files from the branch.
         logStart("Do commit");
         SVNCommitClient commitClient = _clientManager.getCommitClient();
-        commitClient.doCommit(new File[]{wcInfo.getRootDir()}, false, _commitMessage, false, true);
+        commitClient.doCommit(new File[]{wcInfo.getRootDir()}, false, _commitMessage,
+                              null, null, false, false, SVNDepth.fromRecurse(true));
         logEnd("Do commit");
 
         //Find the last version that was changed in the branch
@@ -116,26 +119,31 @@ public class Promote extends SVNScript {
         //Switch the working copy to the source
         logStart("Do switch to source");
         SVNUpdateClient updateClient = _clientManager.getUpdateClient();
-        updateClient.doSwitch(wcInfo.getRootDir(), sourceURL, lastMergeRevision, true);
+        updateClient.doSwitch(wcInfo.getRootDir(), sourceURL, SVNRevision.UNDEFINED, lastMergeRevision,
+                              SVNDepth.fromRecurse(true), false, false);
         logEnd("Do switch to source");
 
         //Merge in differences from [source:LAST_MERGE, branch:LAST_BRANCH_COMMIT] into the working copy
         logStart("Do merge");
         SVNDiffClient diffClient = _clientManager.getDiffClient();
         diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-        diffClient.setEventHandler(new SVNCommandEventProcessor(getOut(), System.err, false));
-        diffClient.doMerge(sourceURL, lastMergeRevision, branchURL, lastBranchCommitRevision, wcInfo.getRootDir(), true, true, false, false);
+        diffClient.setEventHandler(new SVNNotifyPrinter(
+                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
+        diffClient.doMerge(sourceURL, lastMergeRevision, branchURL, lastBranchCommitRevision,
+                           wcInfo.getRootDir(), SVNDepth.fromRecurse(true), true, false, false, false);
         logEnd("Do merge");
 
         logStart("Revert metadata file");
         //Revert the changes to the metadata file
         SVNWCClient wcClient = _clientManager.getWCClient();
-        wcClient.doRevert(wcInfo.getMetadataFile(), false);
+        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.fromRecurse(false), null);
         logEnd("Revert metadata file");
 
         //Commit the changes to the source
         logStart("Commit changes");
-        SVNCommitInfo commitInfo = commitClient.doCommit(new File[]{wcInfo.getRootDir()}, false, _commitMessage, false, true);
+        SVNCommitInfo commitInfo = commitClient.doCommit(
+                new File[]{wcInfo.getRootDir()}, false, _commitMessage, null, null, false, false,
+                SVNDepth.fromRecurse(true));
         logEnd("Commit changes");
 
         //Delete the user branch

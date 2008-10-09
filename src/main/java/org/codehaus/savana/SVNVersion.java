@@ -32,4 +32,5 @@ package org.codehaus.savana;
 public enum SVNVersion {
     SVN_1_3,
     SVN_1_4,
+    SVN_1_5
 }

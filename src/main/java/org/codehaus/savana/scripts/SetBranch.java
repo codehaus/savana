@@ -5,20 +5,18 @@ import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaOption;
 import org.codehaus.savana.util.cli.SavanaArgument;
-import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNURL;
+import org.codehaus.savana.util.cli.SavanaOption;
+import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatusClient;
 import org.tmatesoft.svn.core.wc.SVNUpdateClient;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -93,7 +91,9 @@ public class SetBranch extends SVNScript {
             logStart("Check for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
             SVNStatusClient statusClient = _clientManager.getStatusClient();
-            statusClient.doStatus(wcInfo.getRootDir(), true, false, true, false, statusHandler);
+            statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
+                                  SVNDepth.fromRecurse(true), false, true, false, false,
+                                  statusHandler, null);
             if (statusHandler.isChanged()) {
                 //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
@@ -129,7 +129,7 @@ public class SetBranch extends SVNScript {
         //Get the metadata properties for the branch
         logStart("Get metadata properties");
         String branchMetadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-        Map<String, String> branchProperties = new HashMap<String, String>();
+        SVNProperties branchProperties = new SVNProperties();
         _repository.getFile(branchMetadataFilePath, -1, branchProperties, null);
         logEnd("Get metadata properties");
 
@@ -137,9 +137,9 @@ public class SetBranch extends SVNScript {
         logStart("Get branch tree root paths");
         String wcRootPath = getBranchTreeRootPath(wcInfo.getBranchType(), wcInfo.getSourcePath(), wcInfo.getBranchPath());
         String branchRootPath = getBranchTreeRootPath(
-                branchProperties.get(MetadataFile.PROP_BRANCH_TYPE),
-                branchProperties.get(MetadataFile.PROP_SOURCE_PATH),
-                branchProperties.get(MetadataFile.PROP_BRANCH_PATH));
+                branchProperties.getStringValue(MetadataFile.PROP_BRANCH_TYPE),
+                branchProperties.getStringValue(MetadataFile.PROP_SOURCE_PATH),
+                branchProperties.getStringValue(MetadataFile.PROP_BRANCH_PATH));
         logEnd("Get branch tree root paths");
 
         //Make sure that we are switching to a branch that has the same root as the working copy
@@ -168,10 +168,12 @@ public class SetBranch extends SVNScript {
         //Switch the working copy to the new branch
         logStart("Get update client");
         SVNUpdateClient updateClient = _clientManager.getUpdateClient();
-        updateClient.setEventHandler(new SVNCommandEventProcessor(getOut(), System.err, false));
+        updateClient.setEventHandler(new SVNNotifyPrinter(
+                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
         logEnd("Get update client");
         logStart("Do switch");
-        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.HEAD, true);
+        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
+                              SVNDepth.fromRecurse(true), false, false);
         logEnd("Do switch");
 
         //Even if we are forcing the setbranch while there are uncommitted changes
@@ -180,7 +182,8 @@ public class SetBranch extends SVNScript {
             //Revert any changes to the metadata file'
             logStart("Revert metadata file");
             SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doRevert(wcInfo.getMetadataFile(), false);
+            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
+                              SVNDepth.fromRecurse(false), null);
             logEnd("Revert metadata file");
         }
 

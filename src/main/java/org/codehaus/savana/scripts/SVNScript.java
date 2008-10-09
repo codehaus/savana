@@ -134,8 +134,8 @@ public abstract class SVNScript {
 
     private void setupScriptWithUsersFile() throws SVNScriptException, SVNException {
         SVNURL repositoryURL = getRepositoryURL();
-        String username = null;
-        String password = null;
+        String username;
+        String password;
         try {
             File usersFile = new File(System.getProperty("savana.home"), USERS_FILE);
             // if the file doesn't exist, touch it.
@@ -314,12 +314,13 @@ public abstract class SVNScript {
             script.logStart("SCRIPT.run()");
             try {
                 script.run();
-
             } catch (SVNAuthenticationException e) {
                 rerunScriptWithUsersFile( script );
             } catch (SVNScriptException e) {
                 if ( e.getCause() instanceof SVNAuthenticationException ) {
                     rerunScriptWithUsersFile( script );
+                } else {
+                    throw e;
                 }
             }
         }

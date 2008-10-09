@@ -6,7 +6,6 @@ import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 import java.io.File;
 import java.io.OutputStream;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,7 +60,7 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
         return _deletedFilePaths;
     }
 
-    public void displayPropDiff(String path, Map baseProps, Map diff, OutputStream result)
+    public void displayPropDiff(String path)
             throws SVNException {
         if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);

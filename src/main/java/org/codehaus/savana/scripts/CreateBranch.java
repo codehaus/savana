@@ -4,10 +4,9 @@ import org.codehaus.savana.*;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
 import org.codehaus.savana.util.cli.SavanaArgument;
 import org.codehaus.savana.util.cli.SavanaOption;
-import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -18,6 +17,7 @@ import org.tmatesoft.svn.core.wc.SVNWCClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.File;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -102,7 +102,9 @@ public class CreateBranch extends SVNScript {
             logStart("Looking for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
             SVNStatusClient statusClient = _clientManager.getStatusClient();
-            statusClient.doStatus(wcInfo.getRootDir(), true, false, true, false, statusHandler);
+            statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
+                                  SVNDepth.fromRecurse(true), false, true, false, false,
+                                  statusHandler, null);
             logEnd("Looking for local changes");
             if (statusHandler.isChanged()) {
                 //TODO: Just list the changes here rather than making the user run 'svn status'
@@ -184,12 +186,12 @@ public class CreateBranch extends SVNScript {
             //Update all of the properties on the metadata file
             logStart("Create metadata file");
             editorHelper.openFile(branchMetadataFilePath);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_PROJECT_NAME, projectName);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, sourcePath);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_PATH, branchPath);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, branchType);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, Long.toString(sourceRevision));
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, Long.toString(sourceRevision));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             logEnd("Create metadata file");
 
             //Close and commit all of the edits
@@ -210,14 +212,17 @@ public class CreateBranch extends SVNScript {
         SVNURL repositoryURL = getRepositoryURL();
         SVNURL branchURL = repositoryURL.appendPath(branchPath, false);
         SVNUpdateClient updateClient = _clientManager.getUpdateClient();
-        updateClient.setEventHandler(new SVNCommandEventProcessor(getOut(), System.err, false));
-        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.HEAD, true);
+        updateClient.setEventHandler(new SVNNotifyPrinter(
+                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
+        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
+                              SVNDepth.fromRecurse(true), false, false);
         logEnd("Switch to new branch");
 
         //Revert the changes to the metadata file
         logStart("Revert metadata file");
         SVNWCClient wcClient = _clientManager.getWCClient();
-        wcClient.doRevert(wcInfo.getMetadataFile(), false);
+        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
+                          SVNDepth.fromRecurse(false), null);
         logEnd("Revert metadata file");
 
         wcInfo = new WorkingCopyInfo(_clientManager);

@@ -6,9 +6,10 @@ import org.apache.commons.logging.LogFactory;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
-import org.tmatesoft.svn.core.SVNURL;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -38,12 +39,12 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
             File importDir = new File(
                     BasicSavanaScriptsTest.class.getClassLoader().getResource(TEST_PROJECT_NAME).toURI());
             log.info("importing project");
-            SVN.getCommitClient().doImport(importDir, projectUrl, "initial import", true);
+            SVN.getCommitClient().doImport(importDir, projectUrl, "initial import", null, true, false, SVNDepth.fromRecurse(true));
 
             // check out the two repositories
             log.info("checking out repo into two working copies");
-            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC1, SVNRevision.UNDEFINED, SVNRevision.HEAD, true);
-            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC2, SVNRevision.UNDEFINED, SVNRevision.HEAD, true);
+            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC1, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.fromRecurse(true), false);
+            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC2, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.fromRecurse(true), false);
 
             // cd into the wc dir, and create the .savana metadata file
             cd(WC1);
@@ -104,6 +105,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "changed monkey to mongoose", false, true);
 
+
         assertEquals(
                 MessageFormat.format(
                         "Index: {0}\n" +
@@ -120,18 +122,18 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                         "\n" +
                         "Property changes on: {2}/.savana\n" +
                         "___________________________________________________________________\n" +
-                        "Name: BRANCH_PATH\n" +
+                        "Added: LAST_MERGE_REVISION\n" +
+                        "   + {3}\n" +
+                        "Added: BRANCH_POINT_REVISION\n" +
+                        "   + {3}\n" +
+                        "Modified: BRANCH_PATH\n" +
                         "   - test-project/trunk\n" +
                         "   + test-project/branches/user/workspace\n" +
-                        "Name: BRANCH_POINT_REVISION\n" +
-                        "   + {3}\n" +
-                        "Name: BRANCH_TYPE\n" +
+                        "Added: SOURCE_PATH\n" +
+                        "   + test-project/trunk\n" +
+                        "Modified: BRANCH_TYPE\n" +
                         "   - TRUNK\n" +
-                        "   + USER BRANCH\n" +
-                        "Name: LAST_MERGE_REVISION\n" +
-                        "   + {3}\n" +
-                        "Name: SOURCE_PATH\n" +
-                        "   + test-project/trunk",
+                        "   + USER BRANCH",
                         animalsFile.getAbsolutePath(),
                         TRUNK_URL.toString(),
                         WC1.getAbsolutePath(),
@@ -143,13 +145,28 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals("Modified Files:\n" +
-                     "-------------------------------------------------\n" +
-                     "src/text/animals.txt\n" +
-                     "src/text\n" +
-                     "src\n" +
-                     ".savana",
-                     savana(ListChangesFromSource.class));
+        assertEquals(
+                MessageFormat.format(
+                        "Property changes on: /Users/bjacob/working/savana/target/testdata/savana-test-wc1/.savana\n" +
+                        "___________________________________________________________________\n" +
+                        "Added: LAST_MERGE_REVISION\n" +
+                        "   + {0}\n" +
+                        "Added: BRANCH_POINT_REVISION\n" +
+                        "   + {0}\n" +
+                        "Modified: BRANCH_PATH\n" +
+                        "   - test-project/trunk\n" +
+                        "   + test-project/branches/user/workspace\n" +
+                        "Added: SOURCE_PATH\n" +
+                        "   + test-project/trunk\n" +
+                        "Modified: BRANCH_TYPE\n" +
+                        "   - TRUNK\n" +
+                        "   + USER BRANCH\n" +
+                        "\n" +
+                        "Modified Files:\n" +
+                        "-------------------------------------------------\n" +
+                        "src/text/animals.txt",
+                        branchPointRev),
+                savana(ListChangesFromSource.class));
 
         // move the file "autos.txt" to "cars.txt"
         File autosFile = new File(WC1, "src/text/autos.txt");
@@ -167,20 +184,34 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals("Added Files:\n" +
-                     "-------------------------------------------------\n" +
-                     "src/text/cars.txt\n" +
-                     "\n" +
-                     "Modified Files:\n" +
-                     "-------------------------------------------------\n" +
-                     "src/text/animals.txt\n" +
-                     "src/text\n" +
-                     "src\n" +
-                     ".savana\n" +
-                     "\n" +
-                     "Deleted Files:\n" +
-                     "-------------------------------------------------\n" +
-                     "src/text/autos.txt",
+        assertEquals(MessageFormat.format(
+                "Property changes on: /Users/bjacob/working/savana/target/testdata/savana-test-wc1/.savana\n" +
+                "___________________________________________________________________\n" +
+                "Added: LAST_MERGE_REVISION\n" +
+                "   + {0}\n" +
+                "Added: BRANCH_POINT_REVISION\n" +
+                "   + {0}\n" +
+                "Modified: BRANCH_PATH\n" +
+                "   - test-project/trunk\n" +
+                "   + test-project/branches/user/workspace\n" +
+                "Added: SOURCE_PATH\n" +
+                "   + test-project/trunk\n" +
+                "Modified: BRANCH_TYPE\n" +
+                "   - TRUNK\n" +
+                "   + USER BRANCH\n" +
+                "\n" +
+                "Added Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/cars.txt\n" +
+                "\n" +
+                "Modified Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/animals.txt\n" +
+                "\n" +
+                "Deleted Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/autos.txt",
+                branchPointRev),
                      savana(ListChangesFromSource.class));
 
         // sync from trunk
@@ -192,15 +223,16 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         assertEquals(rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
 
         // list the working copy info and check it
-        assertEquals("---------------------------------------------\n" +
-                     "Branch Name:           workspace\n" +
-                     "---------------------------------------------\n" +
-                     "Project Name:          test-project\n" +
-                     "Branch Type:           user branch\n" +
-                     "Source:                trunk\n" +
-                     "Branch Point Revision: " + branchPointRev + "\n" +
-                     "Last Merge Revision:   " + rev,
-                     savana(ListWorkingCopyInfo.class));
+        assertEquals(
+                "---------------------------------------------\n" +
+                "Branch Name:           workspace\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          test-project\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev + "\n" +
+                "Last Merge Revision:   " + rev,
+                savana(ListWorkingCopyInfo.class));
 
         // promote the change to trunk
         log.info("promoting change to trunk");

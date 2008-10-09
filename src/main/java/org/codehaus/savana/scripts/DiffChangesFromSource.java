@@ -4,6 +4,7 @@ import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -62,7 +63,8 @@ public class DiffChangesFromSource extends SVNScript {
         logEnd("Get Diff Client");
 
         logStart("Do Diff");
-        diffClient.doDiff(sourceURL, wcInfo.getLastMergeRevision(), wcInfo.getRootDir(), SVNRevision.WORKING, true, false, getOut());
+        diffClient.doDiff(sourceURL, wcInfo.getLastMergeRevision(), wcInfo.getRootDir(),
+                          SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, getOut(), null);
         logEnd("Do Diff");
     }
 

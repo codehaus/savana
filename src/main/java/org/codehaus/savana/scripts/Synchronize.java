@@ -4,10 +4,15 @@ import org.codehaus.savana.ChangeLogEntryHandler;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.cli.command.SVNCommandEventProcessor;
+import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.wc.*;
+
+import java.io.File;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -76,7 +81,8 @@ public class Synchronize extends SVNScript {
         logStart("Do log");
         SVNLogClient logClient = _clientManager.getLogClient();
         ChangeLogEntryHandler logEntryHandler = new ChangeLogEntryHandler();
-        logClient.doLog(sourceURL, new String[]{""}, wcInfo.getLastMergeRevision(), wcInfo.getLastMergeRevision(), latestRevision, false, false, 1, logEntryHandler);
+        logClient.doLog(sourceURL, new String[]{""}, wcInfo.getLastMergeRevision(),
+                        wcInfo.getLastMergeRevision(), latestRevision, false, false, 1, logEntryHandler);
         logEnd("Do log");
 
         if (logEntryHandler.isChanged()) {
@@ -85,19 +91,24 @@ public class Synchronize extends SVNScript {
             logStart("Do merge");
             SVNDiffClient diffClient = _clientManager.getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-            diffClient.setEventHandler(new SVNCommandEventProcessor(getOut(), System.err, false));
-            diffClient.doMerge(sourceURL, wcInfo.getLastMergeRevision(), sourceURL, latestRevision, wcInfo.getRootDir(), true, true, false, false);
+            diffClient.setEventHandler(new SVNNotifyPrinter(
+                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
+            diffClient.doMerge(sourceURL, wcInfo.getLastMergeRevision(), sourceURL, latestRevision,
+                               wcInfo.getRootDir(), SVNDepth.fromRecurse(true), true, false, false, false);
             logEnd("Do merge");
 
             //Revert the changes to the metadata file
             logStart("Revert metadata file");
             SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doRevert(wcInfo.getMetadataFile(), false);
+            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
+                              SVNDepth.fromRecurse(false), null);
             logEnd("Revert metadata file");
 
             //Update the last merge revision in the metadata file
             logStart("Update last merge revision");
-            wcClient.doSetProperty(wcInfo.getMetadataFile(), MetadataFile.PROP_LAST_MERGE_REVISION, Long.toString(latestRevision.getNumber()), false, false, null);
+            wcClient.doSetProperty(wcInfo.getMetadataFile(), MetadataFile.PROP_LAST_MERGE_REVISION,
+                                   SVNPropertyValue.create(Long.toString(latestRevision.getNumber())),
+                                   false, SVNDepth.fromRecurse(false), null, null);
             logEnd("Update last merge revision");
         } else {
             getOut().println("Branch is up to date.");

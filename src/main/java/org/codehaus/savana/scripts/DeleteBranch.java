@@ -4,16 +4,14 @@ import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.SVNScriptException;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaOption;
 import org.codehaus.savana.util.cli.SavanaArgument;
+import org.codehaus.savana.util.cli.SavanaOption;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Savana - Transactional Workspaces for Subversion
@@ -118,11 +116,11 @@ public class DeleteBranch extends SVNScript {
             logStart("Check if promoted");
             //Get the properties of the metadata file
             String metadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-            Map metadataFileProperties = new HashMap();
-            _repository.getFile(metadataFilePath, -1, metadataFileProperties, null);
+            SVNProperties metadataFileProperties = new SVNProperties();
+            _repository.getFile(metadataFilePath, -1L, metadataFileProperties, null);
 
             //Make sure the branch was promoted
-            if (metadataFileProperties.get(MetadataFile.PROP_LAST_PROMOTE_REVISION) == null) {
+            if (metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_PROMOTE_REVISION) == null) {
                 String errorMessage =
                         "ERROR: Branch has not been promoted." +
                         "\nEither promote the branch or use the --force flag to delete" +
