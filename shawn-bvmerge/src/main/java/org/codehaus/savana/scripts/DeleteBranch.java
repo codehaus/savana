@@ -1,21 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaArgument;
-import org.codehaus.savana.util.cli.SavanaOption;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -41,112 +26,101 @@ import org.tmatesoft.svn.core.wc.SVNCommitClient;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class DeleteBranch extends SVNScript {
-    private static final SavanaArgument PROJECT = new SavanaArgument(
-            "project", "the project containing the branch to delete");
-    private static final SavanaArgument BRANCH = new SavanaArgument(
-            "branch", "the name of the branch to delete");
-    private static final SavanaOption FORCE = new SavanaOption(
-            "F", "force", false, false, "force the branch to be created");
-    private static final SavanaOption MESSAGE = new SavanaOption(
-            "m", "message", true, false, "override the svn log message");
+package org.codehaus.savana.scripts;
 
-    private boolean _force;
-    private String _projectName;
-    private String _branchName;
-    private boolean _userBranch;
-    private String _commitMessage;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNOption;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.SVNCommitClient;
+import org.tmatesoft.svn.util.SVNLogType;
 
-    public DeleteBranch()
-            throws SVNException, SVNScriptException {
-        this(false);
-    }
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-    public DeleteBranch(boolean userBranch)
-            throws SVNException, SVNScriptException {
+public class DeleteBranch extends SAVCommand {
+
+    private final boolean _userBranch;
+
+    public DeleteBranch(String name, String[] aliases, boolean userBranch) {
+        super(name, aliases);
         _userBranch = userBranch;
     }
 
-    public CommandLineProcessor constructCommandLineProcessor() {
-        return new CommandLineProcessor(
-                new CommandLineProcessor.ArgumentHandler(PROJECT) {
-                    public void handle(String arg) {
-                        _projectName = arg;
-                    }
-                },
-                new CommandLineProcessor.ArgumentHandler(BRANCH) {
-                    public void handle(String arg) {
-                        _branchName = arg;
-                    }
-                },
-                new CommandLineProcessor.OptionHandler(FORCE) {
-                    public void ifSet() {
-                        _force = true;
-                    }
-                },
-                new CommandLineProcessor.OptionHandler(MESSAGE) {
-                    public void withArg(String arg) {
-                        _commitMessage = arg;
-                    }
-                });
+    public boolean isCommitter() {
+        return true;
     }
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+    protected Collection createSupportedOptions() {
+        Collection options = new ArrayList();
+        options = SVNOption.addLogMessageOptions(options);
+        return options;
+    }
+
+    public void run() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.isEmpty()) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
+        }
+        if (targets.size() > 1) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+        String branchName = targets.get(0);
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Find the source of the branch
-        String branchPath = (_userBranch) ?
-                            wcInfo.getUserBranchPath(_branchName) :
-                            wcInfo.getReleaseBranchPath(_branchName);
+        String branchPath = _userBranch ?
+                            wcProps.getUserBranchPath(branchName) :
+                            wcProps.getReleaseBranchPath(branchName);
 
         //Make sure the branch exists
         logStart("Check if branch exists");
-        if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        if (repository.checkPath(repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
             String errorMessage =
                     "ERROR: Could not find branch." +
                     "\nBranch Path: " + branchPath;
-            throw new SVNScriptException(errorMessage);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check if branch exists");
 
-        //If we aren't forcing the delete, make sure the branch has been promoted at least once
-        if (!_force) {
-            logStart("Check if promoted");
-            //Get the properties of the metadata file
-            String metadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-            SVNProperties metadataFileProperties = new SVNProperties();
-            _repository.getFile(metadataFilePath, -1L, metadataFileProperties, null);
-
-            //Make sure the branch was promoted
-            if (metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_PROMOTE_REVISION) == null) {
-                String errorMessage =
-                        "ERROR: Branch has not been promoted." +
-                        "\nEither promote the branch or use the --force flag to delete" +
-                        "\nBranch Path: " + branchPath;
-                throw new SVNScriptException(errorMessage);
-            }
-            logEnd("Check if promoted");
-        }
-
         //Perform delete
         logStart("Get Commit Client");
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL branchURL = repositoryURL.appendPath(branchPath, false);
-        SVNCommitClient commitClient = _clientManager.getCommitClient();
+        SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
+        SVNCommitClient commitClient = env.getClientManager().getCommitClient();
         logEnd("Get Commit Client");
 
         logStart("Perform Delete");
-        String commitMessage =
-                _commitMessage == null ? "Deleting branch: " + branchURL : _commitMessage;        
+        String commitMessage = getCommitMessage(branchName);
         commitClient.doDelete(new SVNURL[]{branchURL}, commitMessage);
         logEnd("Perform Delete");
 
-        getOut().println("Deleted Branch: " + branchPath);
+        env.getOut().println("Deleted Branch: " + branchPath);
     }
 
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("deletebranch");
+    private String getCommitMessage(String branchName) throws SVNException {
+        // get the commit message from the command line.  if it's not specified, default
+        // to a reasonable value instead of starting an interactive editor.
+        String message = getSVNEnvironment().getCommitMessage(null, null);
+        if (StringUtils.isEmpty(message)) {
+            message = branchName + " - deleting branch";
+        }
+        return message;
     }
 }

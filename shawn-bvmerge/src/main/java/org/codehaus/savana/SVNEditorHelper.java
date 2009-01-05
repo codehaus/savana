@@ -1,17 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.io.ISVNEditor;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -38,6 +27,17 @@ import java.util.Set;
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */
+package org.codehaus.savana;
+
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.io.ISVNEditor;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class SVNEditorHelper {
 
     private ISVNEditor _editor;

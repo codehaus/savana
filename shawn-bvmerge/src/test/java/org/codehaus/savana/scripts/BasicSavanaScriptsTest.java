@@ -1,9 +1,8 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.codehaus.savana.SVNScriptException;
+import org.apache.commons.io.filefilter.HiddenFileFilter;
+import org.codehaus.savana.BranchType;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -12,12 +11,13 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.text.MessageFormat;
+import java.util.logging.Logger;
 
 public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
-    private static final Log log = LogFactory.getLog(BasicSavanaScriptsTest.class);
-
+    private static final Logger log = Logger.getLogger(BasicSavanaScriptsTest.class.getName());
 
     protected static final File REPO_DIR = tempDir("savana-test-repo");
     protected static final File WC1 = tempDir("savana-test-wc1");
@@ -34,23 +34,44 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
             SVNURL projectUrl = repoUrl.appendPath(TEST_PROJECT_NAME, true);
             TRUNK_URL = projectUrl.appendPath("trunk", true);
 
+            // install savana preferred subversion hooks into the test repository
+            File svnHookDir = new File(System.getProperty("savana.svn-hooks"));
+            for (File svnHookFile :  svnHookDir.listFiles((FileFilter) HiddenFileFilter.VISIBLE)) {
+                File repoHookFile = new File(new File(REPO_DIR, "hooks"), svnHookFile.getName());
+                FileUtils.copyFile(svnHookFile, repoHookFile, false);
+                repoHookFile.setExecutable(true);
+            }
+
+            // setup initial branching structure
+            log.info("creating initial branch directories");
+            SVN.getCommitClient().doMkDir(new SVNURL[] {
+                    projectUrl.appendPath(BranchType.TRUNK.getDefaultPath(), false),
+                    projectUrl.appendPath(BranchType.RELEASE_BRANCH.getDefaultPath(), false),
+                    projectUrl.appendPath(BranchType.USER_BRANCH.getDefaultPath(), false),
+            }, "branch admin - setup initial branch directories", null, true);
+
             // get the directory from the classpath that contains the project to import, and import the project
             // into the repository
             File importDir = new File(
                     BasicSavanaScriptsTest.class.getClassLoader().getResource(TEST_PROJECT_NAME).toURI());
             log.info("importing project");
-            SVN.getCommitClient().doImport(importDir, projectUrl, "initial import", null, true, false, SVNDepth.fromRecurse(true));
+            SVN.getCommitClient().doImport(importDir, TRUNK_URL, "trunk - initial import", null, true, false, SVNDepth.INFINITY);
 
             // check out the two repositories
             log.info("checking out repo into two working copies");
-            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC1, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.fromRecurse(true), false);
-            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC2, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.fromRecurse(true), false);
+            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC1, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false);
+            SVN.getUpdateClient().doCheckout(TRUNK_URL, WC2, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false);
 
             // cd into the wc dir, and create the .savana metadata file
             cd(WC1);
             savana(CreateMetadataFile.class, TEST_PROJECT_NAME, TEST_PROJECT_NAME + "/trunk", "TRUNK");
+            SVN.getCommitClient().doCommit(
+                    new File[]{WC1}, false, "trunk - initial setup of savana", null, null, false, false, SVNDepth.INFINITY);
+
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
     }
 
@@ -73,26 +94,26 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
     public void testBasicWorkspaceSession() throws Exception {
         // update the wc and record the starting revision
         log.info("updating working copy");
-        long rev = SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false);
+        long rev = SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false);
         long branchPointRev = rev;
 
         // check that we are starting in the trunk
-        assertEquals("trunk", new WorkingCopyInfo(SVN).getBranchName());
+        assertEquals("trunk", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
 
         // create a workspace
         log.info("creating workspace");
         savana(CreateUserBranch.class, "workspace");
 
         // list the user branches - there should be just the one
-        assertEquals("-----------------------------------------------------------------------------\n" +
-                     "Branch Name         Source         Branch-Point   Last-Merge     Last-Promote\n" +
-                     "-----------------------------------------------------------------------------\n" +
+        assertEquals("--------------------------------------------------------------\n" +
+                     "Branch Name         Source         Branch-Point   Last-Merge\n" +
+                     "--------------------------------------------------------------\n" +
                      "workspace           trunk          " + branchPointRev + "              " + branchPointRev,
-                     savana(ListUserBranches.class, TEST_PROJECT_NAME));
+                     savana(ListUserBranches.class));
 
         // check that we've changed into the "workspace" branch, and that the revision has updated
-        assertEquals("workspace", new WorkingCopyInfo(SVN).getBranchName());
-        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
+        assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
+        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // open a file in the wc, edit it, and write it back
         log.info("editing src/text/animals.txt");
@@ -103,7 +124,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // check in the change
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "changed monkey to mongoose", false, true);
+                new File[]{WC1}, false, "user branch commit - changed monkey to mongoose", null, null, false, false, SVNDepth.INFINITY);
 
 
         assertEquals(
@@ -118,22 +139,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                         " dog\n" +
                         " rat\n" +
                         " dragon\n" +
-                        "\\ No newline at end of file\n" +
-                        "\n" +
-                        "Property changes on: {2}/.savana\n" +
-                        "___________________________________________________________________\n" +
-                        "Added: LAST_MERGE_REVISION\n" +
-                        "   + {3}\n" +
-                        "Added: BRANCH_POINT_REVISION\n" +
-                        "   + {3}\n" +
-                        "Modified: BRANCH_PATH\n" +
-                        "   - test-project/trunk\n" +
-                        "   + test-project/branches/user/workspace\n" +
-                        "Added: SOURCE_PATH\n" +
-                        "   + test-project/trunk\n" +
-                        "Modified: BRANCH_TYPE\n" +
-                        "   - TRUNK\n" +
-                        "   + USER BRANCH",
+                        "\\ No newline at end of file",
                         animalsFile.getAbsolutePath(),
                         TRUNK_URL.toString(),
                         WC1.getAbsolutePath(),
@@ -141,27 +147,12 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                 savana(DiffChangesFromSource.class));
 
         // check that we're still in the "workspace" branch, and that the revision has updated
-        assertEquals("workspace", new WorkingCopyInfo(SVN).getBranchName());
-        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
+        assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
+        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
         assertEquals(
                 MessageFormat.format(
-                        "Property changes on: /Users/bjacob/working/savana/target/testdata/savana-test-wc1/.savana\n" +
-                        "___________________________________________________________________\n" +
-                        "Added: LAST_MERGE_REVISION\n" +
-                        "   + {0}\n" +
-                        "Added: BRANCH_POINT_REVISION\n" +
-                        "   + {0}\n" +
-                        "Modified: BRANCH_PATH\n" +
-                        "   - test-project/trunk\n" +
-                        "   + test-project/branches/user/workspace\n" +
-                        "Added: SOURCE_PATH\n" +
-                        "   + test-project/trunk\n" +
-                        "Modified: BRANCH_TYPE\n" +
-                        "   - TRUNK\n" +
-                        "   + USER BRANCH\n" +
-                        "\n" +
                         "Modified Files:\n" +
                         "-------------------------------------------------\n" +
                         "src/text/animals.txt",
@@ -177,29 +168,14 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // check in the change
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "renamed autos.txt to cars.txt", false, true);
+                new File[]{WC1}, false, "user branch commit - renamed autos.txt to cars.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // check that we're still in the "workspace" branch, and that the revision has updated
-        assertEquals("workspace", new WorkingCopyInfo(SVN).getBranchName());
-        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
+        assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
+        assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
         assertEquals(MessageFormat.format(
-                "Property changes on: /Users/bjacob/working/savana/target/testdata/savana-test-wc1/.savana\n" +
-                "___________________________________________________________________\n" +
-                "Added: LAST_MERGE_REVISION\n" +
-                "   + {0}\n" +
-                "Added: BRANCH_POINT_REVISION\n" +
-                "   + {0}\n" +
-                "Modified: BRANCH_PATH\n" +
-                "   - test-project/trunk\n" +
-                "   + test-project/branches/user/workspace\n" +
-                "Added: SOURCE_PATH\n" +
-                "   + test-project/trunk\n" +
-                "Modified: BRANCH_TYPE\n" +
-                "   - TRUNK\n" +
-                "   + USER BRANCH\n" +
-                "\n" +
                 "Added Files:\n" +
                 "-------------------------------------------------\n" +
                 "src/text/cars.txt\n" +
@@ -214,13 +190,13 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                 branchPointRev),
                      savana(ListChangesFromSource.class));
 
-        // sync from trunk
+        // sync from trunk (should be a no-op since there aren't any changes to sync)
         log.info("syncing from trunk");
         savana(Synchronize.class);
 
         // check that we're still in the "workspace" branch, and that the revision has NOT updated
-        assertEquals("workspace", new WorkingCopyInfo(SVN).getBranchName());
-        assertEquals(rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
+        assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
+        assertEquals(rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the working copy info and check it
         assertEquals(
@@ -231,22 +207,22 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                 "Branch Type:           user branch\n" +
                 "Source:                trunk\n" +
                 "Branch Point Revision: " + branchPointRev + "\n" +
-                "Last Merge Revision:   " + rev,
+                "Last Merge Revision:   " + branchPointRev,
                 savana(ListWorkingCopyInfo.class));
 
         // promote the change to trunk
         log.info("promoting change to trunk");
-        savana(Promote.class, "promoting monkey -> mongoose change");
+        savana(Promote.class, "-m", "trunk - promoting monkey -> mongoose change");
 
         // list user branches - there shouldn't be any
         assertEquals("No branches were found.",
-                     savana(ListUserBranches.class, TEST_PROJECT_NAME));
+                     savana(ListUserBranches.class));
 
         // check that we're back in the "trunk" branch, and that the revision has updated three times
         // (once to update the metadata, once to check changes into trunk, and once to delete the
         // workspace)
-        assertEquals("trunk", new WorkingCopyInfo(SVN).getBranchName());
-        assertEquals(rev += 3, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false));
+        assertEquals("trunk", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
+        assertEquals(rev += 2, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // read the file, and check that our change has been made
         assertTrue(FileUtils.readFileToString(animalsFile, "UTF-8").contains("mongoose"));
@@ -266,9 +242,9 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
             // ListChangesFromSource from trunk should never work
             savana(ListChangesFromSource.class);
             assertTrue("we expected an exception to be thrown", false);
-        } catch (SVNScriptException e) {
+        } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("Error: No source path found (you are probably in the TRUNK).", e.getMessage());
+            assertEquals("svn: Error: No source path found (you are probably in the TRUNK).\n", e.getErr());
         }
     }
 
@@ -288,14 +264,14 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // update working copy 1 and create a branch to edit the drinks list
         cd(WC1);
         log.info("updating working copy 1");
-        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, false);
+        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false);
         log.info("creating workspace bob.editDrinks");
         savana(CreateUserBranch.class, "bob.editDrinks");
 
         // update working copy 2 and create a branch to add the bands list
         cd(WC2);
         log.info("updating working copy 2");
-        SVN.getUpdateClient().doUpdate(WC2, SVNRevision.HEAD, false);
+        SVN.getUpdateClient().doUpdate(WC2, SVNRevision.HEAD, SVNDepth.FILES, false, false);
         log.info("creating workspace sam.addBands");
         savana(CreateUserBranch.class, "sam.addBands");
 
@@ -303,10 +279,10 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         log.info("adding new file src/text/bands.txt");
         File wc2_bandsFile = new File(WC2, "src/text/bands.txt");
         FileUtils.writeStringToFile(wc2_bandsFile, "Beatles\nPink Floyd\nWho", "UTF-8");
-        SVN.getWCClient().doAdd(wc2_bandsFile, false, false, true, true);
+        SVN.getWCClient().doAdd(wc2_bandsFile, false, false, true, SVNDepth.INFINITY, false, false);
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC2}, false, "added bands.txt", false, true);
+                new File[]{WC2}, false, "user branch commit - added bands.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // cd to working copy 1, open the drinks file, append "tequila" to it, and commit it
         log.info("changing to working copy 1");
@@ -317,11 +293,11 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         FileUtils.writeStringToFile(wc1_drinksFile, drinks + "\ntequila", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "added tequila to drinks.txt", false, true);
+                new File[]{WC1}, false, "user branch commit - added tequila to drinks.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // promote the changes to bob.editDrinks into trunk
         log.info("promoting workspace bob.editDrinks");
-        savana(Promote.class, "promoting changes to drinks.txt");
+        savana(Promote.class, "-m", "trunk - promoting changes to drinks.txt");
 
         // now, working copy 1 is pointed directly at trunk - append "leopard" to the animals list, and commit it
         log.info("editing src/text/animals.txt in trunk");
@@ -330,13 +306,13 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         FileUtils.writeStringToFile(wc1_animalsFile, animals + "\nleopard", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "added leopard to animals.txt", false, true);
+                new File[]{WC1}, false, "trunk - added leopard to animals.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // cd to working copy 2 and do an update
         log.info("changing to working copy 2");
         cd(WC2);
         log.info("updating changes");
-        SVN.getUpdateClient().doUpdate(WC2, SVNRevision.HEAD, true);
+        SVN.getUpdateClient().doUpdate(WC2, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 
         // the drinks file and animals file should not contain any of the above changes at this point
         File wc2_drinksFile = new File(WC2, "src/text/drinks.txt");
@@ -353,12 +329,11 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // commit our sync from trunk into this branch
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC2}, false, "synced changes from trunk", false, true);
+                new File[]{WC2}, false, "user branch sync - synced changes from trunk", null, null, false, false, SVNDepth.INFINITY);
 
-        // promote our new file to trunk (savana requires a sync first)
+        // promote our new file to trunk
         log.info("promoting workspace sam.addBands");
-        savana(Synchronize.class);
-        savana(Promote.class, "promoting addition of bands.txt");
+        savana(Promote.class, "-m", "trunk - promoting addition of bands.txt");
 
         // cd back to working copy 1 (which is pointed at trunk) - bands.txt shouldn't exist yet
         log.info("changing to working copy 1");
@@ -368,7 +343,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
         // do an update, and then it should
         log.info("updating working copy 1");
-        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, true);
+        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
         assertTrue(wc1_bandsFile.exists());
 
         // create another user branch, replace "gin" with "scotch", and commit it
@@ -379,7 +354,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         FileUtils.writeStringToFile(wc1_drinksFile, drinks.replaceAll("gin", "scotch"), "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "changed gin to bourbon", false, true);
+                new File[]{WC1}, false, "user branch commit - changed gin to bourbon", null, null, false, false, SVNDepth.INFINITY);
 
         // check that the change happened
         assertFalse(FileUtils.readFileToString(wc1_drinksFile, "UTF-8").contains("gin"));
@@ -394,6 +369,6 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // commit the reverted change
         log.info("committing the reverted change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "reverted change", false, true);
+                new File[]{WC1}, false, "user branch commit - reverted change", null, null, false, false, SVNDepth.INFINITY);
     }
 }
