@@ -1,0 +1,130 @@
+  ---------------
+  Getting Started
+  ---------------
+
+Getting Started with Savana
+
+  * First, {{{install.html}install}} Savana.
+
+  * Next, you need to set up your project as a Savana-enabled project.  You do that with the
+    <<bootstrap>> command.  This is the one-time setup (for each project) that enables you to
+    use the other Savana commands against that project
+
+  []
+
+* Bootstrapping a project
+
+  Savana stores all of the metadata about your project that it needs as SVN properties on a
+  special file called <<.savana>>.  For this example, we will assume that you are using the
+  standard SVN repository layout, and that your project is a directory at the root of your
+  repository (if that's not the case -- don't worry, Savana can support non-standard layouts,
+  too).  Let's assume that the root of your repository is <<http://mysvnserver/>> and that your
+  project's root url is <<http://mysvnserver/myproj>>.  Further, we assume that you have the
+  standard layout of a directory named <<trunk>> where the trunk of your development happens,
+  and a directory named <<branches>> where any code branches go.
+
+  To start with, you will need a working copy of your trunk:
+
++--
+%> svn co http://mysvnserver/myproj/trunk myproj
++--
+
+  And then, you will need to create the Savana metadata file.  The bootstrap command requires
+  three arguments:
+
+  * the project name (this will be <<myproj>>)
+
+  * the path from the repository root to the branch we are creating the file (in this case, trunk
+    is the branch, so this is <<myproj/trunk>>
+
+  * the "type" of branch that we are bootstrapping (<<TRUNK>>)
+
+  []
+
++--
+%> cd myproj
+%> sav bootstrap myproj myproj/trunk TRUNK
++--
+
+  This command will create a file named <<.savana>> in the current working copy, and will check
+  it in to SVN automatically (possibly prompting you for your SVN username/password in the
+  process).  Now, you can test out the power of Savana by creating a user branch:
+
++--
+%> sav cub test
+ U   .savana
+Updated to revision 100.
+---------------------------------------------
+Branch Name:           test
+---------------------------------------------
+Project Name:          myproj
+Branch Type:           user branch
+Source:                trunk
+Branch Point Revision: 99
+Last Merge Revision:   99
++--
+
+  We have created a user branch named <<test>> - with that one command, Savana has created the
+  branch for you, updated the <<.savana>> file to remember where this branch came from (trunk)
+  and when the last time we merged to/from trunk was, and has executed an <<svn switch>> to change
+  our working copy to point at the user branch.  Try this:
+
++--
+%> svn info
+Path: .
+URL: http://mysvnserver/myproj/branches/user/test
+Repository Root: http://mysvnserver
+Repository UUID: XXXX
+Revision: 100
+Node Kind: directory
+Schedule: normal
+Last Changed Author: bjacob
+Last Changed Rev: 100
+Last Changed Date: 2008-01-20 18:01:21 -0600 (Sun, 20 Jan 2008)
++--
+
+  Notice that we are not in <<trunk>> any more.  Now, let's make some changes.  Let's just add a
+  dummy file that we can delete later:
+
++--
+%> echo "i am a test file" > dummy.txt
+%> svn add dummy.txt
+A         dummy.txt
+%> svn ci -m "added a dummy file"
+Adding         dummy.txt
+Transmitting file data .
+Committed revision 101.
++--
+
+  Okay, so far so good -- we've committed the file to our branch.  Now, we need to get it into the
+  trunk.  First, let's make sure that there haven't been any changes to trunk since we started:
+
++--
+%> sav sync
+Branch is up to date.
++--
+
+  And finally, let's push our changes up to the trunk:
+
++--
+%> sav promote "added dummy file"
+ U   .savana
+A    dummy.txt
+
+---------------------------------------------
+Branch Name:           trunk
+---------------------------------------------
+Project Name:          myproj
+Branch Type:           trunk
+Source:                none
+Branch Point Revision: none
+Last Merge Revision:   none
+
+Promotion Changeset:   [102]
++--
+
+  Again, with one command our changes were merged into the trunk, we were <<svn switch>>ed back to
+  trunk, and the <<test>> user branch has been deleted!
+
+  The addition of <<sav sync>> and <<sav promote>> is 90% of what you'll use in Savana - so you're
+  already ready to take advantage of most of what you can now do!
