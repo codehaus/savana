@@ -1,15 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.ISVNDirEntryHandler;
-import org.tmatesoft.svn.core.SVNDirEntry;
-import org.tmatesoft.svn.core.SVNURL;
-
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -35,13 +26,23 @@ import java.util.TreeSet;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
+package org.codehaus.savana;
+
+import org.tmatesoft.svn.core.ISVNDirEntryHandler;
+import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNURL;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 public class ListDirEntryHandler implements ISVNDirEntryHandler {
     private SortedSet<String> _nameList;
-    private SVNURL self;
+    private SVNURL _self;
 
     public ListDirEntryHandler(SVNURL self) {
-        this.self = self;
+        _self = self;
         _nameList = new TreeSet<String>();
     }
 
@@ -50,7 +51,8 @@ public class ListDirEntryHandler implements ISVNDirEntryHandler {
     }
 
     public void handleDirEntry(SVNDirEntry dirEntry) {
-        if (!self.equals(dirEntry.getURL())) {
+        // ignore the top-level directory entry (path=""), just add its children
+        if (!_self.equals(dirEntry.getURL())) {
             _nameList.add(dirEntry.getName());
         }
     }

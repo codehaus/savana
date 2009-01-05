@@ -1,12 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.SVNCancelException;
-import org.tmatesoft.svn.core.wc.*;
-import static org.tmatesoft.svn.core.wc.SVNStatusType.*;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -23,7 +17,7 @@ import static org.tmatesoft.svn.core.wc.SVNStatusType.*;
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- * <p/>
+ *
  * Third party components of this software are provided or made available only subject
  * to their respective licenses. The relevant components and corresponding
  * licenses are listed in the "licenses" directory in this distribution. In any event,
@@ -32,7 +26,26 @@ import static org.tmatesoft.svn.core.wc.SVNStatusType.*;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
+package org.codehaus.savana;
+
+import org.tmatesoft.svn.core.SVNCancelException;
+import org.tmatesoft.svn.core.wc.ISVNEventHandler;
+import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
+import org.tmatesoft.svn.core.wc.SVNEvent;
+import org.tmatesoft.svn.core.wc.SVNStatus;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.MERGED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_ADDED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_CONFLICTED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_DELETED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_INCOMPLETE;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_MISSING;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_MODIFIED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_OBSTRUCTED;
+import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_REPLACED;
+
 public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHandler {
     private boolean _changed;
 
@@ -48,7 +61,7 @@ public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHan
 
         //Check the status of the file
         SVNStatusType contentsStatus = status.getContentsStatus();
-        // TODO: make sure we are covering all possible stati
+        // TODO: make sure we are covering all possible status values
         if (STATUS_MODIFIED.equals(contentsStatus) ||
             STATUS_CONFLICTED.equals(contentsStatus) ||
             MERGED.equals(contentsStatus) ||

@@ -2,14 +2,16 @@ package org.codehaus.savana.scripts;
 
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.tmatesoft.svn.cli.svn.SVNCommand;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * Base test case for Savana unit tests - defines useful methods for testing savana components.
@@ -35,13 +37,42 @@ public class SavanaScriptsTestCase  extends TestCase {
      * @return the script output
      * @throws Exception on error
      */
-    protected static String savana(Class scriptClass, String... args) throws Exception {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SVNScript script = ((SVNScript) scriptClass.newInstance());
-        SVNScript.setOut(new PrintStream(outputStream));
-        script.initialize(args);
-        script.run();
-        return outputStream.toString("UTF-8").trim();
+    protected static String savana(Class<? extends SVNCommand> scriptClass, String... args) throws Exception {
+        final boolean[] success = new boolean[1];
+        final ByteArrayOutputStream bufOut = new ByteArrayOutputStream();
+        final ByteArrayOutputStream bufErr = new ByteArrayOutputStream();
+
+        SAV savana = new SAV() {
+            @Override
+            public void success() {
+                // suppress System.exit(0)
+                success[0] = true;
+            }
+            @Override
+            public void failure() {
+                // suppress System.exit(1)
+                success[0] = false;
+            }
+        };
+
+        //Add the command name as the first argument
+        String scriptName = scriptClass.newInstance().getName();
+        args = (String[]) ArrayUtils.addAll(new String[]{scriptName}, args);
+
+        //Run the command 
+        savana.setOut(new PrintStream(bufOut, true));
+        savana.setErr(new PrintStream(bufErr, true));
+        savana.run(args);
+
+        //Throw an exception if the script failed or printed anything to stderr.
+        String out = bufOut.toString();
+        String err = bufErr.toString();
+        if (!success[0] || err.length() > 0) {
+            throw new SavanaScriptsTestException(out, err);
+        }
+
+        //Success.  Return whatever was printed to stdout.
+        return out.toString().trim();
     }
 
     /**

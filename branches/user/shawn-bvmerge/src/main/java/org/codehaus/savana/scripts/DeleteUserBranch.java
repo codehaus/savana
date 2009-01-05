@@ -1,11 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.SVNScriptException;
-import org.tmatesoft.svn.core.SVNException;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -31,14 +26,13 @@ import org.tmatesoft.svn.core.SVNException;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class DeleteUserBranch extends DeleteBranch {
-    public DeleteUserBranch()
-            throws SVNException, SVNScriptException {
-        super(true);
-    }
+package org.codehaus.savana.scripts;
 
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("deleteuserbranch");
+public class DeleteUserBranch extends DeleteBranch {
+
+    public DeleteUserBranch() {
+        super("deleteuserbranch", new String[]{"db", "dub"}, true);
     }
 }

@@ -1,13 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-
-import java.util.LinkedList;
-import java.util.List;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2008  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -33,7 +26,15 @@ import java.util.List;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
+package org.codehaus.savana;
+
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+
+import java.util.LinkedList;
+import java.util.List;
+
 public class PathUtil {
     public static List<String> getAllSubpaths(String path) {
         LinkedList<String> subPaths = new LinkedList<String>();
@@ -45,5 +46,18 @@ public class PathUtil {
         }
 
         return subPaths;
+    }
+
+    public static String getPathTail(String path, String prefixToRemove) {
+        if (!path.startsWith(prefixToRemove)) {
+            throw new IllegalArgumentException("ERROR: The path does not start with the expected prefix: " + path + " : " + prefixToRemove);
+        }
+
+        String tail = path.substring(prefixToRemove.length());
+        if (tail.startsWith("/") || tail.startsWith("\\")) {
+            tail = tail.substring(1);
+        }
+
+        return tail;
     }
 }

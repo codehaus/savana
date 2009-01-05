@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Savana - Transactional Workspaces for Subversion
-# Copyright (C) 2006  Bazaarvoice Inc.
+# Copyright (C) 2006-2008  Bazaarvoice Inc.
 # 
 # This file is part of Savana.
 #
@@ -25,23 +25,48 @@
 # the disclaimer of warranty and limitation of liability provision in this Agreement
 # will apply to all Software in this distribution.
 
-# if the user hasn't set SAVANA_HOME, then we assume it to be the parent of the directory from
-# which the "sav" command is run
-if [ "$SAVANA_HOME" = "" ]
-then
-  SAVANA_HOME="`dirname $0`/.."
-fi
+cygwin=false;
+case "`uname`" in
+  CYGWIN*) cygwin=true ;;
+esac
 
-# add everything in the /lib directory to the classpath
-CLASSPATH="$SAVANA_HOME"
-for I in $SAVANA_HOME/lib/*.jar
-do
-  CLASSPATH="$CLASSPATH:$I"
+old_wd=`pwd`
+
+progname=`basename "$0"`
+linkdir=`dirname "$0"`
+
+cd "$linkdir"
+prg="$progname"
+
+# traverse symbolic links to the actual install directory
+while [ -h "$prg" ] ; do
+  ls=`ls -ld "$prg"`
+  link=`expr "$ls" : '.*-> \(.*\)$'`
+  if expr "$link" : '.*/.*' > /dev/null; then
+    prg="$link"
+  else
+    prg="`dirname $prg`/$link"
+  fi
 done
 
-# the subcommand is the first argument, everything else is args to the subcommand
-SUBCOMMAND="$1" ; shift
-java -classpath "$CLASSPATH" -Dsavana.home=$SAVANA_HOME \
-    org.codehaus.savana.scripts.SVNScript "$SUBCOMMAND" "$@"
+SAVANA_HOME="`dirname $prg`/.."
+SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
 
-exit
+cd "$old_wd"
+
+# add everything in the /lib directory to the classpath
+SAVANA_CP=""
+for I in $SAVANA_HOME/lib/*.jar
+do
+  SAVANA_CP="$SAVANA_CP:$I"
+done
+
+if $cygwin ; then
+  SAVANA_CP=`cygpath --windows --path "$SAVANA_CP"`
+fi
+
+SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false -Djava.util.logging.config.file=$SAVANA_HOME/logging.properties -Dsavana.home=$SAVANA_HOME"
+
+SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
+java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" $SAVANA_MAINCLASS "$@"
+
