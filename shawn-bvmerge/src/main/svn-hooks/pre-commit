@@ -1,0 +1,158 @@
+#!/usr/bin/python
+"""
+Subversion pre-commit hook.
+
+Enforces several restrictions on changesets:
+
+1. A single changeset may not modify multiple workspaces.
+
+2. The commit comment on a changeset must start with the name of the workspace,
+   except that any user workspace can be modified if the commit comment starts
+   with the text 'user branch' such as 'user branch commit' and 'user branch sync'.
+
+All restrictions can be bypassed by using a commit comment that starts with
+the text 'branch admin'.
+"""
+
+# define constants for the types of workspaces
+WS_TRUNK = "trunk"
+WS_RELEASE = "release branch"
+WS_USER = "user branch"
+WS_FILE = "file"
+
+def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
+    " Execute svnlook and capture standard output. "
+    import subprocess
+    return subprocess.Popen(["svnlook"] + [subcmd] + svnlook_cmd_opts + subcmd_opts,
+                          stdout=subprocess.PIPE).communicate()[0]
+
+def commit_comment(svnlook_cmd_opts):
+    " Returns the commit comment associated with the svn transaction. "
+    return svnlook_output("log", svnlook_cmd_opts).strip()
+
+def files_changed(svnlook_cmd_opts):
+    """ List the files added or updated by the svn transaction.
+
+"svnlook changed" gives output like:
+  U   trunk/file1.java
+  UU  trunk/file2.java
+  A   trunk/file3.java
+  D   trunk/file4.java
+    """
+    def filename(line):
+        return line[4:]
+    return [
+        filename(line)
+        for line in svnlook_output("changed", svnlook_cmd_opts).split("\n")
+        if len(filename(line)) > 0]
+
+def workspaces_changed(svnlook_cmd_opts):
+    """ Returns a list of unique tuples that were modified by the svn transaction:
+  [(workspace-type, workspace-name, workspace-description), ...]
+
+Each file belongs to a workspace as determined by one of the following patterns:
+  <project>/trunk/...                      - workspace type is 'trunk', name is 'trunk'
+  <project>/branches/b3.3.x/...            - workspace type is 'release', name is 'b3.3.x'
+  <project>/branches/user/john-11234/...   - workspace type is 'user', name is 'john-11234'
+  <anything-else>                          - workspace type is 'file', name is the file name
+      """
+    import re
+    workspace_type_format_pattern = [
+        (WS_TRUNK,   re.compile(r"^[^/]+/(trunk)/"),                 "%s"),
+        (WS_RELEASE, re.compile(r"^[^/]+/branches/(b\d+\.\d+\.x)/"), "release branch: %s"),
+        (WS_USER,    re.compile(r"^[^/]+/branches/user/([^/]+)/"),   "user branch: %s")]
+
+    def extract_workspace(fname):
+        for (type, pattern, format) in workspace_type_format_pattern:
+            m = pattern.match(fname)
+            if m:
+               return (type, m.group(1), format % m.group(1))
+        # unknown workspace type, use the filename for the workspace name
+        return (WS_FILE, fname, "file: %s" % fname)
+        
+    unique_workspaces = {}
+    for fname in files_changed(svnlook_cmd_opts):
+        unique_workspaces[extract_workspace(fname)] = 1
+    workspaces = unique_workspaces.keys()
+    workspaces.sort()
+    return workspaces
+
+def check_changes_apply_to_expected_workspace(svnlook_cmd_opts):
+    """ Check that all files modified by the svn transaction belong to the expected workspace.
+
+The requirements depend on the first words of the commit comment:
+  'branch admin'   - there are no restrictions on the transaction.
+  'trunk'          - the transaction must modify only a single WS_TRUNK workspace
+  'b3.3.x'         - the transaction must modify only a single WS_RELEASE workspace named 'b3.3.x'
+  'user branch'    - the transaction must modify only a single WS_USER workspace (with any name)
+  'john-11234'     - the transaction must modify only a single WS_USER workspace named 'john-11234'  
+  """
+
+    # call subversion to get the commit comment associated with the svn transaction
+    comment = commit_comment(svnlook_cmd_opts)
+
+    # branch administration commits have no restrictions
+    if comment.startswith("branch admin"):
+        return 0
+
+    # call subversion to get the list of workspaces associated with the svn transaction
+    workspaces = workspaces_changed(svnlook_cmd_opts)
+
+    # normal commits may modify only one workspace
+    if len(workspaces) > 1:
+        sys.stderr.write("The changeset modifies multiple workspaces:\n  %s\n" %
+            "\n  ".join([ws_description for (ws_type, ws_name, ws_description) in workspaces]))
+        return 1  # commit failed
+
+    # is it possible to modify zero files?  in any case, it's not an error here...
+    if len(workspaces) == 0:
+        return 0
+
+    # we've validated that exactly one workspace was modified.  get its type, name and description.
+    (ws_type, ws_name, ws_description) = workspaces[0]
+
+    # if we couldn't determine the workspace type, fail.  must use 'branch admin' for these commits
+    if ws_type == WS_FILE:
+        sys.stderr.write("The changeset modifies a file outside the usual trunk, release and user branches:\n  file: %s\n" % ws_name)
+        return 1
+
+    # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
+    expected_name = comment.split(" ")[0]         # first word
+    if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
+        if ws_type == WS_USER:
+            sys.stderr.write("The subversion commit comment must start with \"user branch\" "
+                "or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        else:
+            sys.stderr.write("The subversion commit comment must start with the name of the "
+                "modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        return 1
+
+    return 0
+
+
+def main():
+    usage = """usage: %prog REPOS TXN
+
+Run pre-commit options on a repository transaction."""
+    from optparse import OptionParser
+    parser = OptionParser(usage=usage)
+    parser.add_option("-r", "--revision",
+                    help="Test mode. TXN actually refers to a revision.",
+                    action="store_true", default=False)
+    errors = 0
+    try:
+        (opts, (repos, txn_or_rvn)) = parser.parse_args()
+        look_opt = ("--transaction", "--revision")[opts.revision]
+        svnlook_cmd_opts = [repos, look_opt, txn_or_rvn]
+      
+        # call all pre-commit checks...
+        errors += check_changes_apply_to_expected_workspace(svnlook_cmd_opts)
+      
+    except:
+        parser.print_help()
+        errors += 1
+    return errors
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
