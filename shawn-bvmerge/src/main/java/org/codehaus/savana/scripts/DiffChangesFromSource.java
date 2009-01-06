@@ -32,6 +32,7 @@ package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -44,6 +45,7 @@ import org.tmatesoft.svn.core.wc.SVNDiffClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,7 +58,12 @@ public class DiffChangesFromSource extends SAVCommand {
     }
 
     protected Collection createSupportedOptions() {
-        return new ArrayList();
+        ArrayList options = new ArrayList();
+        options.add(SVNOption.DIFF_CMD);
+        options.add(SVNOption.EXTENSIONS);
+        options.add(SVNOption.NO_DIFF_DELETED);
+        options.add(SVNOption.FORCE);        
+        return options;
     }
 
     public void run() throws SVNException {
@@ -84,15 +91,27 @@ public class DiffChangesFromSource extends SAVCommand {
         logStart("Get Diff Client");
         SVNDiffClient diffClient = env.getClientManager().getDiffClient();
         final String metadataFile = wcInfo.getMetadataFile().getAbsolutePath();
-        diffClient.setDiffGenerator(new DefaultSVNDiffGenerator() {
+        DefaultSVNDiffGenerator diffGenerator = new DefaultSVNDiffGenerator() {
             @Override
             public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result) throws SVNException {
                 // ignore changes in the metadata file
-                if (!path.equals(metadataFile)) {
+                if (!new File(path).getAbsolutePath().equals(metadataFile)) {
                     super.displayPropDiff(path, baseProps, diff, result);
                 }
             }
-        });
+        };
+        if (env.getDiffCommand() != null) {
+            diffGenerator.setExternalDiffCommand(env.getDiffCommand());
+            diffGenerator.setRawDiffOptions(env.getExtensions());
+        } else {
+            diffGenerator.setDiffOptions(env.getDiffOptions());
+        }
+        diffGenerator.setDiffDeleted(!env.isNoDiffDeleted());
+        diffGenerator.setForcedBinaryDiff(env.isForce());
+        diffGenerator.setBasePath(new File("").getAbsoluteFile());
+        diffGenerator.setFallbackToAbsolutePath(true);
+        diffGenerator.setOptions(diffClient.getOptions());
+        diffClient.setDiffGenerator(diffGenerator);
         logEnd("Get Diff Client");
 
         logStart("Do Diff");

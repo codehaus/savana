@@ -45,6 +45,8 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public class MetadataProperties {
 
@@ -263,15 +265,17 @@ public class MetadataProperties {
     }
 
     public String toString() {
-        return
-                "---------------------------------------------" +
-                        "\nBranch Name:           " + getBranchName() +
-                        "\n---------------------------------------------" +
-                        "\nProject Name:          " + _projectName +
-                        "\nBranch Type:           " + _branchType.getKeyword().toLowerCase() +
-                        "\nSource:                " + ((getSourceName() != null) ? getSourceName() : "none") +
-                        "\nBranch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none") +
-                        "\nLast Merge Revision:   " + ((_lastMergeRevision != null) ? _lastMergeRevision : "none");
+        StringWriter buf = new StringWriter();
+        PrintWriter out = new PrintWriter(buf);
+        out.println("---------------------------------------------");
+        out.println("Branch Name:           " + getBranchName());
+        out.println("---------------------------------------------");
+        out.println("Project Name:          " + _projectName);
+        out.println("Branch Type:           " + _branchType.getKeyword().toLowerCase());
+        out.println("Source:                " + ((getSourceName() != null) ? getSourceName() : "none"));
+        out.println("Branch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none"));
+        out.println("Last Merge Revision:   " + ((_lastMergeRevision != null) ? _lastMergeRevision : "none"));
+        return buf.toString().trim();
     }
 
     private static class PropertyHandler implements ISVNPropertyHandler {

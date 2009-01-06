@@ -27,7 +27,7 @@ REM  will apply to all Software in this distribution.
 
 setlocal
 
-set DEFAULT_SAVANA_HOME=%~dp0\..
+set DEFAULT_SAVANA_HOME=%~dp0..
 
 if "%SAVANA_HOME%"=="" set SAVANA_HOME=%DEFAULT_SAVANA_HOME%
 
@@ -35,11 +35,11 @@ rem Add everything in the /lib directory to the classpath
 setlocal EnableDelayedExpansion
 set SAVANA_CLASSPATH=
 for %%J in ("%SAVANA_HOME%\lib\*.jar") do set SAVANA_CLASSPATH=!SAVANA_CLASSPATH!;%%J
-endlocal & set SAVANA_CLASSPATH=%SAVANA_CLASSPATH%
+endlocal & set SAVANA_CLASSPATH=%SAVANA_CLASSPATH:~1%
 
 set SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
 set SAVANA_OPTIONS=-Xms128M -Xmx1024M -Djava.util.logging.config.file="%SAVANA_HOME%/logging.properties" -Dsavana.home="%SAVANA_HOME%"
 
-java %SAVANA_OPTIONS% -cp %CLASSPATH% %SAVANA_MAINCLASS% %*
+java %SAVANA_OPTIONS% -cp "%SAVANA_CLASSPATH%" %SAVANA_MAINCLASS% %*
 
 endlocal

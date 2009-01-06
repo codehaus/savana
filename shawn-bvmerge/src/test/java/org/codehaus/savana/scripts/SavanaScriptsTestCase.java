@@ -23,6 +23,8 @@ public class SavanaScriptsTestCase  extends TestCase {
     protected static final SVNClientManager SVN =
             SVNClientManager.newInstance(new DefaultSVNOptions(), "savana-user", "");
 
+    protected static final File SUBVERSION_CONFIG_DIR = tempDir("subversion-config");
+
     protected static final String TEST_PROJECT_NAME = "test-project";
 
     static {
@@ -58,6 +60,8 @@ public class SavanaScriptsTestCase  extends TestCase {
         //Add the command name as the first argument
         String scriptName = scriptClass.newInstance().getName();
         args = (String[]) ArrayUtils.addAll(new String[]{scriptName}, args);
+        //Ignore the user's local subversion configuration files
+        args = (String[]) ArrayUtils.addAll(args, new String[]{"--config-dir", SUBVERSION_CONFIG_DIR.getPath()});
 
         //Run the command 
         savana.setOut(new PrintStream(bufOut, true));
@@ -91,7 +95,7 @@ public class SavanaScriptsTestCase  extends TestCase {
      * @return the directory
      */
     protected static File tempDir(String tempDirName) {
-        String tmpDir = new File("target/testdata").getAbsolutePath();
+        File tmpDir = new File("target/testdata").getAbsoluteFile();
         File dir = new File(tmpDir, tempDirName);
         if (dir.exists()) {
             try {

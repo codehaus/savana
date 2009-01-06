@@ -45,28 +45,31 @@ while [ -h "$prg" ] ; do
   if expr "$link" : '.*/.*' > /dev/null; then
     prg="$link"
   else
-    prg="`dirname $prg`/$link"
+    prg="`dirname \"$prg\"`/$link"
   fi
 done
 
-SAVANA_HOME="`dirname $prg`/.."
+SAVANA_HOME="`dirname \"$prg\"`/.."
 SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
 
 cd "$old_wd"
 
 # add everything in the /lib directory to the classpath
 SAVANA_CP=""
-for I in $SAVANA_HOME/lib/*.jar
+for I in "$SAVANA_HOME"/lib/*.jar
 do
   SAVANA_CP="$SAVANA_CP:$I"
 done
+SAVANA_CP="${SAVANA_CP:1}"  # strip off leading ':'
 
+# under cygwin, convert to Windows path after all bash path processing is complete
 if $cygwin ; then
+  SAVANA_HOME=`cygpath --windows "$SAVANA_HOME"`
   SAVANA_CP=`cygpath --windows --path "$SAVANA_CP"`
 fi
 
-SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false -Djava.util.logging.config.file=$SAVANA_HOME/logging.properties -Dsavana.home=$SAVANA_HOME"
+SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false"
 
 SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
-java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" $SAVANA_MAINCLASS "$@"
+java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" -Djava.util.logging.config.file="$SAVANA_HOME/logging.properties" -Dsavana.home="$SAVANA_HOME" $SAVANA_MAINCLASS "$@"
 
