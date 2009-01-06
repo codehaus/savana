@@ -66,7 +66,8 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
     @Override
     public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result)
             throws SVNException {
-        if (!path.equals(_metadataFile) && diff != null && !diff.isEmpty() && !_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
+        if (diff != null && !diff.isEmpty() && !new File(path).getAbsolutePath().equals(_metadataFile) &&
+                !_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);
         }
     }

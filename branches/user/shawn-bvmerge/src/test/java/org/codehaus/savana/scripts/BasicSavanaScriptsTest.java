@@ -16,8 +16,9 @@ import java.text.MessageFormat;
 import java.util.logging.Logger;
 
 public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
-
     private static final Logger log = Logger.getLogger(BasicSavanaScriptsTest.class.getName());
+
+    private static final String EOL = System.getProperty("line.separator");
 
     protected static final File REPO_DIR = tempDir("savana-test-repo");
     protected static final File WC1 = tempDir("savana-test-wc1");
@@ -105,9 +106,9 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         savana(CreateUserBranch.class, "workspace");
 
         // list the user branches - there should be just the one
-        assertEquals("--------------------------------------------------------------\n" +
-                     "Branch Name         Source         Branch-Point   Last-Merge\n" +
-                     "--------------------------------------------------------------\n" +
+        assertEquals("--------------------------------------------------------------" + EOL +
+                     "Branch Name         Source         Branch-Point   Last-Merge" + EOL +
+                     "--------------------------------------------------------------" + EOL +
                      "workspace           trunk          " + branchPointRev + "              " + branchPointRev,
                      savana(ListUserBranches.class));
 
@@ -129,10 +130,10 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
         assertEquals(
                 MessageFormat.format(
-                        "Index: {0}\n" +
+                        "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- {0}\t(.../{1})\t(revision {3})\n" +
-                        "+++ {0}\t(...{2})\t(working copy)\n" +
+                        "--- src/text/animals.txt\t(.../{0})\t(revision {2})\n" +
+                        "+++ src/text/animals.txt\t(...{1})\t(working copy)\n" +
                         "@@ -1,4 +1,4 @@\n" +
                         "-monkey\n" +
                         "+mongoose\n" +
@@ -140,11 +141,10 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
                         " rat\n" +
                         " dragon\n" +
                         "\\ No newline at end of file",
-                        animalsFile.getAbsolutePath(),
                         TRUNK_URL.toString(),
-                        WC1.getAbsolutePath(),
+                        toSvnkitAbsolutePath(WC1),
                         branchPointRev),
-                savana(DiffChangesFromSource.class));
+                savana(DiffChangesFromSource.class).replace("\r", ""));
 
         // check that we're still in the "workspace" branch, and that the revision has updated
         assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
@@ -153,8 +153,8 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // list the changes from the trunk, and check that the output is what we expect
         assertEquals(
                 MessageFormat.format(
-                        "Modified Files:\n" +
-                        "-------------------------------------------------\n" +
+                        "Modified Files:" + EOL +
+                        "-------------------------------------------------" + EOL +
                         "src/text/animals.txt",
                         branchPointRev),
                 savana(ListChangesFromSource.class));
@@ -176,16 +176,16 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
         // list the changes from the trunk, and check that the output is what we expect
         assertEquals(MessageFormat.format(
-                "Added Files:\n" +
-                "-------------------------------------------------\n" +
-                "src/text/cars.txt\n" +
-                "\n" +
-                "Modified Files:\n" +
-                "-------------------------------------------------\n" +
-                "src/text/animals.txt\n" +
-                "\n" +
-                "Deleted Files:\n" +
-                "-------------------------------------------------\n" +
+                "Added Files:" + EOL +
+                "-------------------------------------------------" + EOL +
+                "src/text/cars.txt" + EOL +
+                "" + EOL +
+                "Modified Files:" + EOL +
+                "-------------------------------------------------" + EOL +
+                "src/text/animals.txt" + EOL +
+                "" + EOL +
+                "Deleted Files:" + EOL +
+                "-------------------------------------------------" + EOL +
                 "src/text/autos.txt",
                 branchPointRev),
                      savana(ListChangesFromSource.class));
@@ -200,13 +200,13 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
-                "---------------------------------------------\n" +
-                "Branch Name:           workspace\n" +
-                "---------------------------------------------\n" +
-                "Project Name:          test-project\n" +
-                "Branch Type:           user branch\n" +
-                "Source:                trunk\n" +
-                "Branch Point Revision: " + branchPointRev + "\n" +
+                "---------------------------------------------" + EOL +
+                "Branch Name:           workspace" + EOL +
+                "---------------------------------------------" + EOL +
+                "Project Name:          test-project" + EOL +
+                "Branch Type:           user branch" + EOL +
+                "Source:                trunk" + EOL +
+                "Branch Point Revision: " + branchPointRev + "" + EOL +
                 "Last Merge Revision:   " + branchPointRev,
                 savana(ListWorkingCopyInfo.class));
 
@@ -244,7 +244,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Error: No source path found (you are probably in the TRUNK).\n", e.getErr());
+            assertEquals("svn: Error: No source path found (you are probably in the TRUNK)." + EOL, e.getErr());
         }
     }
 
@@ -278,7 +278,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         // create the bands list in working copy 2, add it, and commit it
         log.info("adding new file src/text/bands.txt");
         File wc2_bandsFile = new File(WC2, "src/text/bands.txt");
-        FileUtils.writeStringToFile(wc2_bandsFile, "Beatles\nPink Floyd\nWho", "UTF-8");
+        FileUtils.writeStringToFile(wc2_bandsFile, "Beatles" + EOL + "Pink Floyd" + EOL + "Who", "UTF-8");
         SVN.getWCClient().doAdd(wc2_bandsFile, false, false, true, SVNDepth.INFINITY, false, false);
         log.info("committing change");
         SVN.getCommitClient().doCommit(
@@ -290,7 +290,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         log.info("append 'tequila' to src/text/drinks.txt");
         File wc1_drinksFile = new File(WC1, "src/text/drinks.txt");
         String drinks = FileUtils.readFileToString(wc1_drinksFile, "UTF-8");
-        FileUtils.writeStringToFile(wc1_drinksFile, drinks + "\ntequila", "UTF-8");
+        FileUtils.writeStringToFile(wc1_drinksFile, drinks + "" + EOL + "tequila", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "user branch commit - added tequila to drinks.txt", null, null, false, false, SVNDepth.INFINITY);
@@ -303,7 +303,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         log.info("editing src/text/animals.txt in trunk");
         File wc1_animalsFile = new File(WC1, "src/text/animals.txt");
         String animals = FileUtils.readFileToString(wc1_animalsFile, "UTF-8");
-        FileUtils.writeStringToFile(wc1_animalsFile, animals + "\nleopard", "UTF-8");
+        FileUtils.writeStringToFile(wc1_animalsFile, animals + EOL + "leopard", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "trunk - added leopard to animals.txt", null, null, false, false, SVNDepth.INFINITY);
@@ -370,5 +370,14 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
         log.info("committing the reverted change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "user branch commit - reverted change", null, null, false, false, SVNDepth.INFINITY);
+    }
+
+    /** Returns the absolute path of a file in the way that matches svnkit. */
+    private String toSvnkitAbsolutePath(File file) {
+        String path = file.getAbsolutePath().replace(File.separatorChar, '/');
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return path;
     }
 }

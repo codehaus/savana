@@ -91,7 +91,10 @@ public class SAV extends AbstractSVNLauncher {
         SVNFileType.setSymlinkSupportEnabled(false);
 
         //Options shared with svn/jsvn
+        SVNCommandLine.registerOption(SVNOption.DIFF_CMD);
+        SVNCommandLine.registerOption(SVNOption.EXTENSIONS);
         SVNCommandLine.registerOption(SVNOption.FORCE);
+        SVNCommandLine.registerOption(SVNOption.NO_DIFF_DELETED);
         SVNCommandLine.registerOption(SVNOption.TARGETS);
 
         //Global options
