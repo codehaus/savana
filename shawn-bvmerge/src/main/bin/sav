@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Savana - Transactional Workspaces for Subversion
 # Copyright (C) 2006-2008  Bazaarvoice Inc.
