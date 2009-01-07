@@ -33,7 +33,7 @@ will apply to all Software in this distribution.
     <artifactId>savana</artifactId>
     <packaging>jar</packaging>
     <name>savana</name>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.9.2</version>
     <description>
         Savana augments the capabilities of the Subversion version control system by adding the notion of
         Transactional Workspaces. Transactional Workspaces are, in Subversion terms, branches that are
@@ -157,10 +157,6 @@ will apply to all Software in this distribution.
                         <include>**/*Test.java</include>
                     </includes>
                     <systemProperties>
-                        <property>
-                            <name>savana.home</name>
-                            <value>target</value>
-                        </property>
                         <property>
                             <name>savana.svn-hooks</name>
                             <value>src/main/svn-hooks</value>

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -30,6 +30,7 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.codehaus.savana.BranchType;
 import org.tmatesoft.svn.cli.AbstractSVNOption;
 import org.tmatesoft.svn.cli.SVNOptionValue;
@@ -46,7 +47,6 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
     private String _trunkPath = BranchType.TRUNK.getDefaultPath();
     private String _releaseBranchesPath = BranchType.RELEASE_BRANCH.getDefaultPath();
     private String _userBranchesPath = BranchType.USER_BRANCH.getDefaultPath();
-    private boolean _versionedSymlinksSupported;
 
     public SAVCommandEnvironment(String programName, PrintStream out, PrintStream err, InputStream in) {
         super(programName, out, err, in);
@@ -87,9 +87,5 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
     public String getUserBranchesPath() {
         return _userBranchesPath;
-    }
-
-    public boolean isVersionedSymlinksSupported() {
-        return _versionedSymlinksSupported;
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -30,7 +30,6 @@
  */
 package org.codehaus.savana.scripts;
 
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.FilteredStatusHandler;
 import org.codehaus.savana.LocalChangeStatusHandler;
@@ -49,6 +48,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
+import org.tmatesoft.svn.core.wc.SVNCommitItem;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
 import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -80,19 +80,13 @@ public class Promote extends SAVCommand {
         return options;
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
         List<String> targets = env.combineTargets(null, false);
         if (targets.size() > 0) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
-        }
-        String commitMessage = env.getCommitMessage(null, null);
-        if (StringUtils.isEmpty(commitMessage)) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS,
-                    "Commit log message argument is required");
-            SVNErrorManager.error(err, SVNLogType.CLIENT);
         }
 
         //Get information about the current workspace from the metadata file
@@ -113,11 +107,6 @@ public class Promote extends SAVCommand {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for user branch");
-
-        //Validate the commit comment against the branch name before we make any changes
-        logStart("Validate commit comment");
-        new PreCommitValidator().validate(wcProps.getSourceName(), wcProps.getSourceBranchType(), commitMessage);
-        logEnd("Validate commit comment");
 
         //Make sure all changes are committed first
         logStart("Check for local changes");
@@ -160,6 +149,19 @@ public class Promote extends SAVCommand {
         }
         logEnd("Check for changes");
 
+        //Get the commit message (may launch an external editor).  We don't want to diff branches yet, so pass a dummy string as the commit item.
+        logStart("Get commit comment");
+        String message = "promote branch " + wcProps.getBranchName() + " to " + wcProps.getSourceName() + " in project " + wcProps.getProjectName();
+        String commitMessage = env.getCommitMessage(null, new SVNCommitItem[]{createDummyCommitItem(message)});
+        logEnd("Get commit comment");
+
+        //Validate the commit comment against the branch name before we make any changes
+        logStart("Validate commit comment");
+        new PreCommitValidator().validate(wcProps.getSourceName(), wcProps.getSourceBranchType(), commitMessage);
+        logEnd("Validate commit comment");
+
+        ///////// All changes to the working copy and to the repository happen below ///////// 
+
         //Switch the working copy to the source
         logStart("Do switch to source");
         SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
@@ -200,7 +202,7 @@ public class Promote extends SAVCommand {
         logStart("Commit changes");
         SVNCommitClient commitClient = env.getClientManager().getCommitClient();
         SVNCommitInfo commitInfo = commitClient.doCommit(new File[] {wcInfo.getRootDir()}, false, commitMessage,
-                null, null, false, false, SVNDepth.INFINITY);
+                env.getRevisionProperties(), null, false, false, SVNDepth.INFINITY);
         logEnd("Commit changes");
 
         //Delete the user branch
@@ -214,5 +216,11 @@ public class Promote extends SAVCommand {
         env.getOut().println(wcInfo);
         env.getOut().println("");
         env.getOut().println("Promotion Changeset:   [" + commitInfo.getNewRevision() + "]");
+    }
+
+    private SVNCommitItem createDummyCommitItem(String message) {
+        SVNCommitItem commitItem = new SVNCommitItem(null, null, null, null, null, null, false, false, false, false, false, false);
+        commitItem.setPath(message);
+        return commitItem;
     }
 }

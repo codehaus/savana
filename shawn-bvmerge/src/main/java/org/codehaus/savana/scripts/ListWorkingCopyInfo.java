@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -44,14 +44,14 @@ import java.util.List;
 public class ListWorkingCopyInfo extends SAVCommand {
 
     public ListWorkingCopyInfo() {
-        super("listworkingcopyinfo", new String[]{"lwci", "workingcopyinfo", "wci", "info"});
+        super("listworkingcopyinfo", new String[]{"wci", "info"});
     }
 
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }
              
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments

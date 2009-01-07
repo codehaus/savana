@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -30,9 +30,9 @@
  */
 package org.codehaus.savana.scripts.admin;
 
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.MetadataFile;
+import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.SAVCommand;
 import org.codehaus.savana.scripts.SAVCommandEnvironment;
@@ -41,8 +41,11 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNLogEntry;
+import org.tmatesoft.svn.core.ISVNLogEntryHandler;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -70,25 +73,28 @@ public class CreateMetadataFile extends SAVCommand {
         options.add(SAVOption.TRUNK_PATH);
         options.add(SAVOption.RELEASE_BRANCHES_PATH);
         options.add(SAVOption.USER_BRANCHES_PATH);
-        options.add(SAVOption.VERSIONED_SYMLINKS_SUPPORTED);
         return options;
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
         List<String> targets = env.combineTargets(null, true);
-        if (targets.size() < 3) {
+        if (targets.size() < 2) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
         }
-        if (targets.size() > 4) {
+        if (targets.size() > 3) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
         }
         String projectRoot = targets.get(0);
-        String branchPath = targets.get(1);
-        BranchType branchType = BranchType.fromKeyword(targets.get(2));
-        String sourcePath = (targets.size() > 3) ? targets.get(3) : null;
+        BranchType branchType = null;
+        try {
+            branchType = BranchType.fromKeyword(targets.get(1));
+        } catch (IllegalArgumentException e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, e.getMessage()), SVNLogType.CLIENT);
+        }
+        String sourceBranchName = (targets.size() > 2) ? targets.get(2) : null;
 
         //Default the optional arguments if they weren't specified
         String projectName = env.getProjectName();
@@ -97,37 +103,71 @@ public class CreateMetadataFile extends SAVCommand {
         }
 
         //Source path is required for release and user branches, not allowed for trunk branch
-        if (branchType == BranchType.TRUNK && sourcePath != null) {
+        if (branchType == BranchType.TRUNK && sourceBranchName != null) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_MUTUALLY_EXCLUSIVE_ARGS,
-                    "ERROR: source path may not be specified for the trunk branch"), SVNLogType.CLIENT);
-        } else if (branchType != BranchType.TRUNK && sourcePath == null) {
+                    "ERROR: source branch may not be specified for the trunk branch"), SVNLogType.CLIENT);
+        } else if (branchType != BranchType.TRUNK && sourceBranchName == null) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_MUTUALLY_EXCLUSIVE_ARGS,
-                    "ERROR: source path must be specified for release and user branches"), SVNLogType.CLIENT);
+                    "ERROR: source branch must be specified for release and user branches"), SVNLogType.CLIENT);
+        }
+
+        //Make sure the branch paths are all different from each other
+        String trunkPath = env.getTrunkPath();
+        String releaseBranchesPath = env.getReleaseBranchesPath();
+        String userBranchesPath = env.getUserBranchesPath();
+        if (trunkPath.equals(releaseBranchesPath) || trunkPath.equals(userBranchesPath) || releaseBranchesPath.equals(userBranchesPath)) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+                    "ERROR: trunk, release and user branches paths must be different from each other"), SVNLogType.CLIENT);
         }
 
         //Create the metadata file in the current directory
         File workspaceDir = new File(System.getProperty("user.dir"));
         File metadataFile = new File(workspaceDir, MetadataFile.METADATA_FILE_NAME);
 
-        //Determine the file's path relative to the repository
+        //Determine the file's path relative to the repository and use it to compute the branch path
         SVNWCClient wcClient = env.getClientManager().getWCClient();
         SVNInfo workspaceDirInfo = wcClient.doInfo(workspaceDir, SVNRevision.WORKING);
         SVNURL repositoryUrl = workspaceDirInfo.getRepositoryRootURL();
         SVNURL workspaceDirUrl = workspaceDirInfo.getURL();
-        String workspaceDirPath = StringUtils.removeStart(workspaceDirUrl.getPath(), repositoryUrl.getPath());
-        workspaceDirPath = StringUtils.removeStart(workspaceDirPath.substring(1), "/");
+        String workspaceDirName = SVNPathUtil.tail(workspaceDirUrl.getPath());
+        String branchPath = getPathWithinRepo(branchType, workspaceDirName, projectRoot, trunkPath, releaseBranchesPath, userBranchesPath);
 
-        //Make sure the rootDirPath and the branch path are the same
+        //Make sure the workspaceDirUrl and the branch path match
+        String workspaceDirPath = PathUtil.getPathTail(workspaceDirUrl.getPath(), repositoryUrl.getPath());
         if (!workspaceDirPath.equalsIgnoreCase(branchPath)) {
             String errorMessage =
-                    "ERROR: Branch path argument does not match current repository location." +
-                    "\nBranch Path: " + branchPath +
+                    "ERROR: Branch type argument does not match current repository location." +
+                    "\nExpected Branch Path: " + branchPath +
                     "\nCurrent Repository Location: " + workspaceDirPath;
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_RELATIVE_PATH, errorMessage), SVNLogType.CLIENT);
         }
 
-        SVNRepository repository = env.getClientManager().createRepository(repositoryUrl, true);
-        long latestRevision = repository.getLatestRevision();
+        //Calculate values that are only relevant to release and user branches.
+        String branchPointRevision = null;
+        String sourcePath = null;
+        if (branchType != BranchType.TRUNK) {
+            //Calculate the source path from the source branch name
+            BranchType sourceBranchType = BranchType.TRUNK.getKeyword().equalsIgnoreCase(sourceBranchName) ?
+                    BranchType.TRUNK : BranchType.RELEASE_BRANCH;
+            sourcePath = getPathWithinRepo(sourceBranchType, sourceBranchName, projectRoot, trunkPath, releaseBranchesPath, userBranchesPath);
+
+            //Make sure the source path exists in the repository already
+            SVNRepository repository = env.getClientManager().createRepository(repositoryUrl, true);
+            if (repository.checkPath(repository.getRepositoryPath(sourcePath), -1) != SVNNodeKind.DIR) {
+                String errorMessage =
+                        "ERROR: Could not find source branch." +
+                        "\nSource Branch Path: " + sourcePath;
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+
+            //Assume the branch was created at the revision of the first log entry for this directory.
+            RevisionNumberLogEntryHandler logEntryHandler = new RevisionNumberLogEntryHandler();
+            if (repository.log(new String[]{branchPath}, 1, -1, false, true, 1, logEntryHandler) > 0) {
+                branchPointRevision = Long.toString(logEntryHandler.getRevision() - 1);
+            } else {
+                branchPointRevision = Long.toString(repository.getLatestRevision()); // should never happen happen
+            }
+        }
 
         try {
             //Try to create the file
@@ -159,30 +199,61 @@ public class CreateMetadataFile extends SAVCommand {
         wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_ROOT, SVNPropertyValue.create(projectRoot), false, SVNDepth.EMPTY, null, null);
         wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()), false, SVNDepth.EMPTY, null, null);
         wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, SVNPropertyValue.create(env.getTrunkPath()), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_RELEASE_BRANCHES_PATH, SVNPropertyValue.create(env.getReleaseBranchesPath()), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, SVNPropertyValue.create(env.getUserBranchesPath()), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_VERSIONED_SYMLINKS, SVNPropertyValue.create(Boolean.toString(env.isVersionedSymlinksSupported())), false, SVNDepth.EMPTY, null, null);
+        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, SVNPropertyValue.create(trunkPath), false, SVNDepth.EMPTY, null, null);
+        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_RELEASE_BRANCHES_PATH, SVNPropertyValue.create(releaseBranchesPath), false, SVNDepth.EMPTY, null, null);
+        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, SVNPropertyValue.create(userBranchesPath), false, SVNDepth.EMPTY, null, null);
 
-        //If we aren't on the trunk
+        //If we aren't on the trunk...
         if (branchType != BranchType.TRUNK) {
-            //Set the branch point
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION,
-                    SVNPropertyValue.create(Long.toString(latestRevision)), false, SVNDepth.EMPTY, null, null);
-
-            //Set the last merge revision
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION,
-                    SVNPropertyValue.create(Long.toString(latestRevision)), false, SVNDepth.EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath), false, SVNDepth.EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(branchPointRevision), false, SVNDepth.EMPTY, null, null);
+            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(branchPointRevision), false, SVNDepth.EMPTY, null, null);
         }
 
         env.getOut().println("-------------------------------------------------");
-        env.getOut().println("SUCCESS: Created metadata file: " + metadataFile);
+        env.getOut().println("SUCCESS: Created metadata file.");
         env.getOut().println("-------------------------------------------------");
         env.getOut().println();
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
         env.getOut().println(wcInfo);
         env.getOut().println();
-        env.getOut().println("Please use 'svn commit' to store the created file in the Subversion repository.");
+        env.getOut().println("Please 'svn commit' to save the metadata file to the Subversion repository:\n  " + metadataFile);
+    }
+
+    private String getPathWithinRepo(BranchType branchType, String branchName, String projectRoot,
+                                     String trunkPath, String releaseBranchesPath, String userBranchesPath) {
+        String branchTypePath;
+        switch (branchType) {
+            case TRUNK:
+                branchTypePath = trunkPath;
+                break;
+            case RELEASE_BRANCH:
+                branchTypePath = releaseBranchesPath;
+                break;
+            case USER_BRANCH:
+                branchTypePath = userBranchesPath;
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown branch type: " + branchType);
+        }
+        String path = SVNPathUtil.append(projectRoot, branchTypePath);
+
+        if (branchType != BranchType.TRUNK) {
+            path = SVNPathUtil.append(path, branchName);
+        }
+
+        return path;
+    }
+
+    private static class RevisionNumberLogEntryHandler implements ISVNLogEntryHandler {
+        private long _revision = -1;
+
+        public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+            _revision = logEntry.getRevision();
+        }
+
+        public long getRevision() {
+            return _revision;
+        }
     }
 }

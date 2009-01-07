@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -33,6 +33,6 @@ package org.codehaus.savana.scripts;
 public class ListUserBranches extends ListBranches {
 
     public ListUserBranches() {
-        super("listuserbranches", new String[]{"listbranches", "lub", "lb"}, true);
+        super("listuserbranches", new String[]{"lub", "lb"}, true);
     }
 }

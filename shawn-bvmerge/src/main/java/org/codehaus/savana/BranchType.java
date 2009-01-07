@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>

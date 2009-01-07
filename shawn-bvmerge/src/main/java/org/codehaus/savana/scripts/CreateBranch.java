@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -83,7 +83,7 @@ public class CreateBranch extends SAVCommand {
         return options;
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
@@ -166,7 +166,7 @@ public class CreateBranch extends SAVCommand {
             //Create an editor
             logStart("Get commit editor");
             String commitMessage = getCommitMessage(branchName);
-            ISVNEditor editor = repository.getCommitEditor(commitMessage, null);
+            ISVNEditor editor = repository.getCommitEditor(commitMessage, null, false, env.getRevisionProperties(), null);
             SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
             editor.openRoot(-1);
             logEnd("Get commit editor");
