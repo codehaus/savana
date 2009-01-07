@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -67,7 +67,7 @@ public class ListBranches extends SAVCommand {
         return new ArrayList();
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
@@ -122,7 +122,7 @@ public class ListBranches extends SAVCommand {
         }
         logEnd("Filter branch names");
 
-        //For each branch name
+        //For each branch name...
         logStart("Print branch info");
         if (branchNames.isEmpty()) {
             env.getOut().println("No branches were found.");
@@ -136,23 +136,28 @@ public class ListBranches extends SAVCommand {
 
             env.getOut().println("--------------------------------------------------------------");
 
+            String userBranchesPath = wcProps.getUserBranchPath(null);
+            String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
+
             for (String branchName : branchNames) {
-                logStart("Get branch metadata info");
-                //Get the metadata file
+                //Skip the release and user branches top-level directory, if they're here
                 String branchPath = SVNPathUtil.append(branchesRootPath, branchName);
+                if (branchPath.equals(releaseBranchesPath) || branchPath.equals(userBranchesPath)) {
+                    continue;
+                }
+
+                //Get the metadata file
                 String metadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
                 MetadataProperties metadataFileProperties;
                 try {
                     metadataFileProperties = new MetadataProperties(repository, metadataFilePath, -1);
                 } catch (SVNException e) {
-                    // branch doesn't have a .svnscripts file
+                    // branch doesn't have a .savana file
                     env.getOut().println(branchName);
                     continue;
                 }
-                logEnd("Get branch metadata info");
 
                 //Print the branch information
-                logStart("Print branch metadata info");
                 String sourcePath = metadataFileProperties.getSourcePath();
                 SVNRevision branchPointRevision = metadataFileProperties.getBranchPointRevision();
                 SVNRevision lastMergeRevision = metadataFileProperties.getLastMergeRevision();
@@ -162,7 +167,6 @@ public class ListBranches extends SAVCommand {
                         pad(SVNPathUtil.tail(sourcePath), 15) +
                         pad(branchPointRevision != null ? branchPointRevision.toString() : "", 15) +
                         pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 0));
-                logEnd("Print branch metadata info");
             }
         }
         logEnd("Print branch info");

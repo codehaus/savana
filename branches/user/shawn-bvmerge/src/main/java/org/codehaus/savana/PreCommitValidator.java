@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2008-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -31,6 +31,11 @@
 package org.codehaus.savana;
 
 import org.apache.commons.lang.StringUtils;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.util.SVNLogType;
 
 /**
  * Implements the same checks on the commit message that are implemented by
@@ -40,26 +45,26 @@ import org.apache.commons.lang.StringUtils;
  */
 public class PreCommitValidator {
 
-    public void validate(String branchName, BranchType branchType, String commitMessage) {
-        if (commitMessage != null && commitMessage.startsWith("branch admin")) {
+    public void validate(String branchName, BranchType branchType, String commitMessage) throws SVNException {
+        if (commitMessage.startsWith("branch admin")) {
             return;  // branch admin comment can do anything
         }
 
-        String expectedWorkspaceName = StringUtils.substringBefore(commitMessage, " ");
+        String expectedWorkspaceName = commitMessage.split("\\s", 2)[0]; // first word (delimited by whitespace)
         boolean userBranch = (BranchType.USER_BRANCH == branchType);
 
-        if (!StringUtils.equals(branchName, expectedWorkspaceName) &&
+        if (!branchName.equals(expectedWorkspaceName) &&
                 !(userBranch && expectedWorkspaceName.startsWith("user branch"))) {
             if (userBranch) {
-                throw new IllegalArgumentException("The commit comment must start " +
-                        "with \"user branch\" or the name of the modified workspace:\n" +
-                        "  workspace: " + branchName + "\n" +
-                        "  commit comment: " + commitMessage);
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_BAD_LOG_MESSAGE,
+                        "The commit comment must start with \"user branch\" or the name of the modified workspace:\n" +
+                                "  workspace: " + branchName + "\n" +
+                                "  commit comment: " + commitMessage), SVNLogType.CLIENT);
             } else {
-                throw new IllegalArgumentException("The commit comment must start " +
-                        "with the name of the modified workspace:\n" +
-                        "  workspace: " + branchName + "\n" +
-                        "  commit comment: " + commitMessage);
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_BAD_LOG_MESSAGE,
+                        "The commit comment must start with the name of the modified workspace:\n" +
+                                "  workspace: " + branchName + "\n" +
+                                "  commit comment: " + commitMessage), SVNLogType.CLIENT);
             }
         }
     }

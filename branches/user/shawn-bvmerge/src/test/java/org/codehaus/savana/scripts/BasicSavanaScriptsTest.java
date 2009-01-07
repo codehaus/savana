@@ -65,7 +65,7 @@ public class BasicSavanaScriptsTest extends SavanaScriptsTestCase {
 
             // cd into the wc dir, and create the .savana metadata file
             cd(WC1);
-            savana(CreateMetadataFile.class, TEST_PROJECT_NAME, TEST_PROJECT_NAME + "/trunk", "TRUNK");
+            savana(CreateMetadataFile.class, TEST_PROJECT_NAME, "TRUNK");
             SVN.getCommitClient().doCommit(
                     new File[]{WC1}, false, "trunk - initial setup of savana", null, null, false, false, SVNDepth.INFINITY);
 

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -79,14 +79,7 @@ public class WorkingCopyInfo {
         //Load all the metadata properties from the metadata file
         _metadataProperties = new MetadataProperties(clientManager, _metadataFile);
 
-        //Configure whether symbolic links can be stored inside subversion repositories.  Detecting
-        //symbolic links can be extremely slow on a non-Windows OS, although using jna.jar helps.
-        //It's turned off by default in SVN.java, so if any working copy needs it then enable it
-        if (!SVNFileType.isSymlinkSupportEnabled()) {
-            SVNFileType.setSymlinkSupportEnabled(_metadataProperties.isVersionedSymlinksSupported());
-        }
-        
-        //Make sure that the actual repository location of the working copy and the location of the .svnscripts file match
+        //Make sure that the actual repository location of the working copy and the location of the .savana file match
         //One way for these to not match is if a promotion script failed after the merge to the source but before the commit
         //In this case, the working copy will be pointed at the source in the repository, but the metadata file will still
         //be the copy from the branch.

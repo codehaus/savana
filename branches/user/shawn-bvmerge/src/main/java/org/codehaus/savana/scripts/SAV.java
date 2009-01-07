@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -65,12 +65,13 @@ public class SAV extends AbstractSVNLauncher {
     }
 
     protected void registerCommands() {
-        AbstractSVNCommand.registerCommand(new SVNHelpCommand());  // todo: fix
-        
         AbstractSVNCommand.registerCommand(new CreateReleaseBranch());
         AbstractSVNCommand.registerCommand(new CreateUserBranch());
+        // there's no DeleteReleaseBranch command--it's dangerous, almost never useful,
+        // and has an easy workaround: svn delete <release branch url>
         AbstractSVNCommand.registerCommand(new DeleteUserBranch());
         AbstractSVNCommand.registerCommand(new DiffChangesFromSource());
+        AbstractSVNCommand.registerCommand(new Help());
         AbstractSVNCommand.registerCommand(new ListChangesFromSource());
         AbstractSVNCommand.registerCommand(new ListReleaseBranches());
         AbstractSVNCommand.registerCommand(new ListUserBranches());
@@ -87,10 +88,10 @@ public class SAV extends AbstractSVNLauncher {
     protected void registerOptions() {
         //Never upgrade the working copy format from one version of svn to another.  Use other apps to do so (for example: 'svn update').
         SVNAdminAreaFactory.setUpgradeEnabled(false);
-        //By default, don't support symbolic links.  Each WorkingCopyInfo can override this to enable them.
-        SVNFileType.setSymlinkSupportEnabled(false);
 
         //Options shared with svn/jsvn
+        SVNCommandLine.registerOption(SVNOption.VERSION);
+        SVNCommandLine.registerOption(SVNOption.QUIET);
         SVNCommandLine.registerOption(SVNOption.DIFF_CMD);
         SVNCommandLine.registerOption(SVNOption.EXTENSIONS);
         SVNCommandLine.registerOption(SVNOption.FORCE);

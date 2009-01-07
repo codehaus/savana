@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -47,7 +47,6 @@ public class MetadataFile extends File {
     public static final String PROP_TRUNK_PATH = "TRUNK_PATH";
     public static final String PROP_RELEASE_BRANCHES_PATH = "BRANCHES_PATH";
     public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
-    public static final String PROP_VERSIONED_SYMLINKS = "VERSIONED_SYMLINKS";
 
     public MetadataFile(File parent, String child) {
         super(parent, child);

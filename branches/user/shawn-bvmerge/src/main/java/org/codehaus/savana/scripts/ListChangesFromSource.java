@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -52,14 +52,14 @@ import java.util.Set;
 public class ListChangesFromSource extends SAVCommand {
 
     public ListChangesFromSource() {
-        super("listchangesfromsource", new String[]{"listchanges", "lc"});
+        super("listchangesfromsource", new String[]{"lc"});
     }
 
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments

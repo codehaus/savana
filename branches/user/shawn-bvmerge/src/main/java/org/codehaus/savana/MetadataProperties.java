@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -104,15 +104,6 @@ public class MetadataProperties {
     private String _userBranchesPath = BranchType.USER_BRANCH.getDefaultPath();
 
     /**
-     * True if symbolic links might be stored in the repository.  This defaults to false since
-     * symbolic links are not well supported in Windows.  Turning off symbolic link support can
-     * make a big improvement in *nix performance since Java doesn't have any built-in way of
-     * detecting symbolic links, so svnkit must resort to slow workarounds on *every* file, not
-     * just symbolic links.  Note that jna.jar, if present, can also improve performance. 
-     */
-    private boolean _versionedSymlinksSupported;
-
-    /**
      * The revision when this branch was created.  Null for the 'trunk' branch.
      */
     private SVNRevision _branchPointRevision;
@@ -184,11 +175,6 @@ public class MetadataProperties {
             _userBranchesPath = SVNPropertyValue.getPropertyAsString(userBranchesPathProps);
         }
 
-        SVNPropertyValue versionedSymlinksSupportedProps = properties.getSVNPropertyValue(MetadataFile.PROP_VERSIONED_SYMLINKS);
-        if (versionedSymlinksSupportedProps != null) {
-            _versionedSymlinksSupported = BooleanUtils.toBoolean(SVNPropertyValue.getPropertyAsString(versionedSymlinksSupportedProps));
-        }
-
         SVNPropertyValue branchPointRevisionProps = properties.getSVNPropertyValue(MetadataFile.PROP_BRANCH_POINT_REVISION);
         if (branchPointRevisionProps != null) {
             _branchPointRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(branchPointRevisionProps)));
@@ -250,10 +236,6 @@ public class MetadataProperties {
 
     public String getUserBranchPath(String branchName) {
         return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), _userBranchesPath), branchName);
-    }
-
-    public boolean isVersionedSymlinksSupported() {
-        return _versionedSymlinksSupported;
     }
 
     public SVNRevision getBranchPointRevision() {

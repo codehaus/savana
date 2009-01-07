@@ -69,7 +69,6 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
         // bootstrap the project
         savana(CreateMetadataFile.class,
                projectDir,
-               branchPath,
                "TRUNK",
                "--projectName", projectName,
                "--releaseBranchesPath", branchesDir,
@@ -106,12 +105,12 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
                 "synced from release branch", null, null, false, false, SVNDepth.INFINITY);
 
         // set the wc to the trunk and back - just to show we can
-        savana(SetBranch.class, "-C", "trunk");
+        savana(SetBranch.class, "--changeRoot", "trunk");
         // TODO: I'm not 100% sure this is the exact behavior we want for TRUNK
         assertTrue(savana(ListWorkingCopyInfo.class)
                 .contains("Branch Name:           " +
                           trunkDir.substring(trunkDir.lastIndexOf("/") + 1)));
-        savana(SetBranch.class, "-C", "user-1.0");
+        savana(SetBranch.class, "--changeRoot", "user-1.0");
         assertTrue(savana(ListWorkingCopyInfo.class)
                 .contains("Branch Name:           user-1.0"));
 

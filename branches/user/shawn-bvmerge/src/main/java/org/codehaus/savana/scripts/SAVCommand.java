@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -31,6 +31,11 @@
 package org.codehaus.savana.scripts;
 
 import org.tmatesoft.svn.cli.svn.SVNCommand;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.util.SVNLogType;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +45,20 @@ public abstract class SAVCommand extends SVNCommand {
 
     protected SAVCommand(String name, String[] aliases) {
         super(name, aliases);
+    }
+
+    public abstract void doRun() throws SVNException;
+
+    public void run() throws SVNException {
+        try {
+            doRun();
+
+        // catch runtime exceptions and errors and rethrown them as SVNException
+        } catch (RuntimeException e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, e), SVNLogType.CLIENT);
+        } catch (Error e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, e), SVNLogType.CLIENT);
+        }
     }
 
     protected SAVCommandEnvironment getSVNEnvironment() {

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2008  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -67,7 +67,7 @@ public class RevertToSource extends SAVCommand {
         return options;
     }
 
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
