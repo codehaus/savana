@@ -34,7 +34,6 @@ import org.codehaus.savana.BranchType;
 import org.codehaus.savana.FilteredStatusHandler;
 import org.codehaus.savana.LocalChangeStatusHandler;
 import org.codehaus.savana.MetadataProperties;
-import org.codehaus.savana.PreCommitValidator;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
@@ -44,6 +43,7 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
@@ -104,8 +104,8 @@ public class Promote extends SAVCommand {
         if (wcProps.getBranchType() != BranchType.USER_BRANCH) {
             String errorMessage =
                     "ERROR: Promotes can only be performed from user branches." +
-                    "\nBranch: " + branchURL +
-                    "\nBranch Type: " + wcProps.getBranchType().getKeyword();
+                            "\nBranch: " + branchURL +
+                            "\nBranch Type: " + wcProps.getBranchType().getKeyword();
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for user branch");
@@ -146,21 +146,30 @@ public class Promote extends SAVCommand {
         if (sourceLastChange.getNumber() > wcProps.getLastMergeRevision().getNumber()) {
             String errorMessage =
                     "ERROR: There are unmerged changes in the source." +
-                    "\nRun 'sav sync' to pull in unmerged changes";
+                            "\nRun 'sav sync' to pull in unmerged changes";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CLIENT_NOT_READY_TO_MERGE, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for changes");
 
+        //Get metadata properties on the source so we can get its savana policies object
+        logStart("Get metadata for the source branch");
+        String sourceMetadataPath = SVNPathUtil.append(wcProps.getSourcePath(), wcInfo.getMetadataFile().getName());
+        MetadataProperties sourceProps = new MetadataProperties(repository, sourceMetadataPath, sourceInfo.getRevision().getNumber());
+        logEnd("Get metadata for the source branch");
+
         //Get the commit message (may launch an external editor).  We don't want to diff branches yet, so pass a dummy string as the commit item.
+        //Do this as late as we can so it's likely the promote will succeed after we launch the editor and the user enters the commit comment.
         logStart("Get commit comment");
         String message = "promote branch " + wcProps.getBranchName() + " to " + wcProps.getSourceName() + " in project " + wcProps.getProjectName();
         String commitMessage = env.getCommitMessage(null, new SVNCommitItem[]{createDummyCommitItem(message)});
         logEnd("Get commit comment");
 
         //Validate the commit comment against the branch name before we make any changes
-        logStart("Validate commit comment");
-        new PreCommitValidator().validate(wcProps.getSourceName(), wcProps.getSourceBranchType(), commitMessage);
-        logEnd("Validate commit comment");
+        if (sourceProps.getSavanaPolicies() != null) {
+            logStart("Validate commit comment");
+            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps);
+            logEnd("Validate commit comment");
+        }
 
         ///////// All changes to the working copy and to the repository happen below ///////// 
 
