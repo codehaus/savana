@@ -31,21 +31,27 @@
 package org.codehaus.savana;
 
 import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.ISVNPropertyHandler;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNPropertyData;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.Properties;
 
 public class MetadataProperties {
 
@@ -113,6 +119,8 @@ public class MetadataProperties {
      */
     private SVNRevision _lastMergeRevision;
 
+    private ISavanaPolicies _savanaPolicies;
+
     /**
      * Creates a MetadataProperties from a file in a remote repository.
      */
@@ -133,7 +141,7 @@ public class MetadataProperties {
         init(properties);
     }
 
-    private void init(SVNProperties properties) {
+    private void init(SVNProperties properties) throws SVNException {
         SVNPropertyValue projectNameProps = properties.getSVNPropertyValue(MetadataFile.PROP_PROJECT_NAME);
         if (projectNameProps != null) {
             _projectName = _projectRoot = SVNPropertyValue.getPropertyAsString(projectNameProps);
@@ -183,6 +191,34 @@ public class MetadataProperties {
         if (lastMergeRevisionProps != null) {
             _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps)));
         }
+
+        SVNPropertyValue savanaPoliciesProps = properties.getSVNPropertyValue(MetadataFile.PROP_SAVANA_POLICIES);
+        if (savanaPoliciesProps != null) {
+            _savanaPolicies = parsePolicies(SVNPropertyValue.getPropertyAsString(savanaPoliciesProps));
+        }
+    }
+
+    private ISavanaPolicies parsePolicies(String policiesString) throws SVNException {
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(policiesString));
+        } catch (Exception e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
+                    "Error parsing Savana policy properties: " + e), SVNLogType.CLIENT);
+        }
+        String className = properties.getProperty("class");
+        if (className == null) {
+            return null;
+        }
+        ISavanaPolicies savanaPolicies = null;
+        try {
+            savanaPolicies = (ISavanaPolicies) Class.forName(className).newInstance();
+        } catch(Exception e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
+                    "Error creating Savana policy class instance: " + className, e), SVNLogType.CLIENT);
+        }
+        savanaPolicies.initialize(properties);
+        return savanaPolicies;
     }
 
     public String getProjectName() {
@@ -243,6 +279,10 @@ public class MetadataProperties {
 
     public SVNRevision getLastMergeRevision() {
         return _lastMergeRevision;
+    }
+
+    public ISavanaPolicies getSavanaPolicies() {
+        return _savanaPolicies;
     }
 
     public String toString() {

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2008-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -24,32 +24,17 @@
  * the disclaimer of warranty and limitation of liability provision in this Agreement
  * will apply to all Software in this distribution.
  *
- * @author Brian Showers (brian@bazaarvoice.com)
- * @author Bryon Jacob (bryon@jacob.net)
  * @author Shawn Smith (shawn@bazaarvoice.com)
  */
 package org.codehaus.savana;
 
-import java.io.File;
+import org.tmatesoft.svn.core.SVNException;
 
-public class MetadataFile extends File {
-    public static final String METADATA_FILE_NAME = ".savana";
-    public static final String METADATA_FILE_NAME_BACKWARD_COMPATIBLE = ".svnscripts";
+import java.util.Properties;
 
-    public static final String PROP_PROJECT_ROOT = "PROJECT_ROOT";
-    public static final String PROP_PROJECT_NAME = "PROJECT_NAME";
-    public static final String PROP_SOURCE_PATH = "SOURCE_PATH";
-    public static final String PROP_BRANCH_PATH = "BRANCH_PATH";
-    public static final String PROP_BRANCH_TYPE = "BRANCH_TYPE";
-    public static final String PROP_BRANCH_POINT_REVISION = "BRANCH_POINT_REVISION";
-    public static final String PROP_LAST_MERGE_REVISION = "LAST_MERGE_REVISION";
+public interface ISavanaPolicies {
 
-    public static final String PROP_TRUNK_PATH = "TRUNK_PATH";
-    public static final String PROP_RELEASE_BRANCHES_PATH = "BRANCHES_PATH";
-    public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
-    public static final String PROP_SAVANA_POLICIES = "SAVANA_POLICIES";
+    void initialize(Properties properties) throws SVNException;
 
-    public MetadataFile(File parent, String child) {
-        super(parent, child);
-    }
+    void validateLogMessage(String commitMessage, MetadataProperties metadataProperties) throws SVNException;
 }
