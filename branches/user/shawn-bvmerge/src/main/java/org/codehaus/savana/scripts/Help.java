@@ -47,8 +47,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * @version 1.2.0
- * @author  TMate Software Ltd.
  */
 public class Help extends SAVCommand {
 
