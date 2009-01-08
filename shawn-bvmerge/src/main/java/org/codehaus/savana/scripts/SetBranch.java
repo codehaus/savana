@@ -62,6 +62,7 @@ public class SetBranch extends SAVCommand {
         super("setbranch", new String[]{"sb"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes

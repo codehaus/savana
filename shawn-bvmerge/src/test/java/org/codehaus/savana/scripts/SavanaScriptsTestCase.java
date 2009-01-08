@@ -3,7 +3,7 @@ package org.codehaus.savana.scripts;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.tmatesoft.svn.cli.svn.SVNCommand;
+import org.tmatesoft.svn.cli.AbstractSVNCommand;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
@@ -39,7 +39,7 @@ public class SavanaScriptsTestCase  extends TestCase {
      * @return the script output
      * @throws Exception on error
      */
-    protected static String savana(Class<? extends SVNCommand> scriptClass, String... args) throws Exception {
+    protected static String savana(Class<? extends AbstractSVNCommand> scriptClass, String... args) throws Exception {
         final boolean[] success = new boolean[1];
         final ByteArrayOutputStream bufOut = new ByteArrayOutputStream();
         final ByteArrayOutputStream bufErr = new ByteArrayOutputStream();

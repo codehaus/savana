@@ -57,6 +57,7 @@ public class DiffChangesFromSource extends SAVCommand {
         super("diffchangesfromsource", new String[]{"diff"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         ArrayList options = new ArrayList();
         options.add(SVNOption.DIFF_CMD);

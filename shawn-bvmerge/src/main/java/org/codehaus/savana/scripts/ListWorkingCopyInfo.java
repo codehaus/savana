@@ -47,6 +47,7 @@ public class ListWorkingCopyInfo extends SAVCommand {
         super("listworkingcopyinfo", new String[]{"wci", "info"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }

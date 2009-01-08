@@ -31,9 +31,9 @@
 package org.codehaus.savana.scripts;
 
 import org.tmatesoft.svn.cli.svn.SVNCommand;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -49,7 +49,8 @@ public abstract class SAVCommand extends SVNCommand {
 
     public abstract void doRun() throws SVNException;
 
-    public void run() throws SVNException {
+    @Override
+    public final void run() throws SVNException {
         try {
             doRun();
 
@@ -61,10 +62,12 @@ public abstract class SAVCommand extends SVNCommand {
         }
     }
 
+    @Override
     protected SAVCommandEnvironment getSVNEnvironment() {
         return (SAVCommandEnvironment) getEnvironment();
     }
 
+    @Override
     protected String getResourceBundleName() {
         return "org.codehaus.savana.scripts.commands";
     }

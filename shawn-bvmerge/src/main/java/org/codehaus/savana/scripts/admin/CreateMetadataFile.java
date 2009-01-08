@@ -37,15 +37,15 @@ import org.codehaus.savana.WorkingCopyInfo;
 import org.codehaus.savana.scripts.SAVCommand;
 import org.codehaus.savana.scripts.SAVCommandEnvironment;
 import org.codehaus.savana.scripts.SAVOption;
+import org.tmatesoft.svn.core.ISVNLogEntryHandler;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNLogEntry;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.SVNLogEntry;
-import org.tmatesoft.svn.core.ISVNLogEntryHandler;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -67,6 +67,7 @@ public class CreateMetadataFile extends SAVCommand {
         super("createmetadatafile", new String[]{"bootstrap"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options.add(SAVOption.PROJECT_NAME);

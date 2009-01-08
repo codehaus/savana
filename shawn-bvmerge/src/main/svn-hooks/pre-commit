@@ -40,6 +40,14 @@ All restrictions can be bypassed by using a commit comment that starts with
 the text 'branch admin'.
 """
 
+# always allow changes to files that start with one of these paths (directories should have a trailing '/')  
+IGNORE_PATH_PREFIXES = []
+
+# define regular expressions for each of the branch types, with a group with the branch name
+RE_TRUNK = r"^[^/]+/(trunk)/"
+RE_RELEASE = r"^[^/]+/branches/([^/]+)/"
+RE_USER = r"^[^/]+/branches/user/([^/]+)/"
+
 # define constants for the types of workspaces
 WS_TRUNK = "trunk"
 WS_RELEASE = "release branch"
@@ -47,6 +55,12 @@ WS_USER = "user branch"
 WS_FILE = "file"
 
 METADATA_FILES = ['.savana', '.svnscripts']
+
+def should_ignore_file(file):
+    for path in IGNORE_PATH_PREFIXES:
+        if file.startswith(path):
+            return True
+    return False
 
 def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
     " Execute svnlook and capture standard output. "
@@ -73,7 +87,7 @@ def files_changed(svnlook_cmd_opts):
         return line[4:]
     changed_files = {}
     for line in svnlook_output("changed", svnlook_cmd_opts).split("\n"):
-        if len(filename(line)) > 0:
+        if len(filename(line)) > 0 and not(should_ignore_file(filename(line))):
             changed_files[filename(line)] = flags(line)
     return changed_files
 
@@ -89,9 +103,9 @@ Each file belongs to a workspace as determined by one of the following patterns:
       """
     import re
     workspace_type_format_pattern = [
-        (WS_TRUNK,   re.compile(r"^[^/]+/(trunk)/"),               "%s"),
-        (WS_USER,    re.compile(r"^[^/]+/branches/user/([^/]+)/"), "user branch: %s"),
-        (WS_RELEASE, re.compile(r"^[^/]+/branches/([^/]+)/"),      "release branch: %s")]
+        (WS_TRUNK,   re.compile(RE_TRUNK),   "%s"),
+        (WS_USER,    re.compile(RE_USER),    "user branch: %s"),  # match user before release
+        (WS_RELEASE, re.compile(RE_RELEASE), "release branch: %s")]
 
     def extract_workspace(fname):
         for (type, pattern, format) in workspace_type_format_pattern:
@@ -138,7 +152,7 @@ The requirements depend on the first words of the commit comment:
             "\n  ".join([ws_description for (ws_type, ws_name, ws_description) in workspaces]))
         return 1  # commit failed
 
-    # is it possible to modify zero files?  in any case, it's not an error here...
+    # if all files were ignored by should_ignore_file() then there may be zero workspaces 
     if len(workspaces) == 0:
         return 0
 
@@ -148,18 +162,6 @@ The requirements depend on the first words of the commit comment:
     # if we couldn't determine the workspace type, fail.  must use 'branch admin' for these commits
     if ws_type == WS_FILE:
         sys.stderr.write("The changeset modifies a file outside the usual trunk, release and user branches:\n  file: %s\n" % ws_name)
-        return 1
-
-    # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
-    import re
-    expected_name = re.split("\s", comment)[0]         # first word
-    if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
-        if ws_type == WS_USER:
-            sys.stderr.write("The subversion commit comment must start with \"user branch\" "
-                "or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
-        else:
-            sys.stderr.write("The subversion commit comment must start with the name of the "
-                "modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
         return 1
 
     # verify that the Savana metadata file isn't modified accidentally in a trunk or release branch
@@ -172,6 +174,18 @@ The requirements depend on the first words of the commit comment:
                 sys.stderr.write("The changeset may not modify Savana metadata files in the trunk or "
                     "in a release branch:\n  workspace: %s\n  metadata file: %s\n" % (ws_name, file))
                 return 1
+
+    # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
+    import re
+    expected_name = re.split("\s", comment)[0]         # first word
+    if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
+        if ws_type == WS_USER:
+            sys.stderr.write("The subversion commit comment must start with \"user branch\" "
+                "or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        else:
+            sys.stderr.write("The subversion commit comment must start with the name of the "
+                "modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        return 1
 
     return 0
 

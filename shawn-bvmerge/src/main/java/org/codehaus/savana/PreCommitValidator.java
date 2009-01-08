@@ -30,7 +30,6 @@
  */
 package org.codehaus.savana;
 
-import org.apache.commons.lang.StringUtils;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;

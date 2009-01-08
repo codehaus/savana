@@ -55,6 +55,7 @@ public class ListChangesFromSource extends SAVCommand {
         super("listchangesfromsource", new String[]{"lc"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }

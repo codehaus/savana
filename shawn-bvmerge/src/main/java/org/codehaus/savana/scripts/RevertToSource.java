@@ -61,6 +61,7 @@ public class RevertToSource extends SAVCommand {
         super("reverttosource", new String[]{"rs", "revert"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new LinkedList();
         options.add(SVNOption.TARGETS);

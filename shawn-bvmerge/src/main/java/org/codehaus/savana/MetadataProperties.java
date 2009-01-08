@@ -30,7 +30,6 @@
  */
 package org.codehaus.savana;
 
-import org.apache.commons.lang.BooleanUtils;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
