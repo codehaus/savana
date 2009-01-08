@@ -39,11 +39,9 @@ package org.codehaus.savana.scripts;
 import org.codehaus.savana.Version;
 import org.tmatesoft.svn.cli.AbstractSVNCommand;
 import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.cli.svn.SVNCommand;
 import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.core.SVNException;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -52,7 +50,7 @@ import java.util.Iterator;
  * @version 1.2.0
  * @author  TMate Software Ltd.
  */
-public class Help extends SVNCommand {
+public class Help extends SAVCommand {
 
     private static final String GENERIC_HELP_HEADER =
         "usage: {0} <subcommand> [options] [args]\n" +
@@ -79,15 +77,12 @@ public class Help extends SVNCommand {
         super("help", new String[] {"?", "h"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }
 
-    public static void printBasicUsage(String programName) {
-        System.err.println(MessageFormat.format("Type ''{0} help'' for usage.", programName));
-    }
-
-    public void run() throws SVNException {
+    public void doRun() throws SVNException {
         SVNCommandEnvironment env = getSVNEnvironment();
         if (!env.getArguments().isEmpty()) {
             for (Iterator commands = env.getArguments().iterator(); commands.hasNext();) {

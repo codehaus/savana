@@ -30,7 +30,6 @@
  */
 package org.codehaus.savana.scripts;
 
-import org.apache.commons.lang.BooleanUtils;
 import org.codehaus.savana.BranchType;
 import org.tmatesoft.svn.cli.AbstractSVNOption;
 import org.tmatesoft.svn.cli.SVNOptionValue;
@@ -52,6 +51,7 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
         super(programName, out, err, in);
     }
 
+    @Override
     protected void initOption(SVNOptionValue optionValue) throws SVNException {
         AbstractSVNOption option = optionValue.getOption();
         if (option == SAVOption.CHANGE_ROOT) {

@@ -72,10 +72,12 @@ public class CreateBranch extends SAVCommand {
         _userBranch = userBranch;
     }
 
+    @Override
     public boolean isCommitter() {
         return true;
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes

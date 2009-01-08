@@ -26,7 +26,6 @@
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
- * @author Shawn Smith (shawn@bazaarvoice.com)
  */
 package org.codehaus.savana;
 

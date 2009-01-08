@@ -57,10 +57,12 @@ public class DeleteBranch extends SAVCommand {
         _userBranch = userBranch;
     }
 
+    @Override
     public boolean isCommitter() {
         return true;
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options = SVNOption.addLogMessageOptions(options);

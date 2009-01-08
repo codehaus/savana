@@ -70,10 +70,12 @@ public class Promote extends SAVCommand {
         super("promote", new String[]{});
     }
 
+    @Override
     public boolean isCommitter() {
         return true;
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options = SVNOption.addLogMessageOptions(options);

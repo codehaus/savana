@@ -59,6 +59,7 @@ public class SAVOption extends AbstractSVNOption {
         super(name, alias, unary);
     }
 
+    @Override
     protected String getResourceBundleName() {
         return "org.codehaus.savana.scripts.options";
     }

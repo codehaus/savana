@@ -63,6 +63,7 @@ public class ListBranches extends SAVCommand {
         _userBranch = userBranch;
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }

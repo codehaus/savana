@@ -50,7 +50,6 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,6 +60,7 @@ public class Synchronize extends SAVCommand {
         super("synchronize", new String[]{"sync"});
     }
 
+    @Override
     protected Collection createSupportedOptions() {
         return new ArrayList();
     }
@@ -118,11 +118,6 @@ public class Synchronize extends SAVCommand {
             diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
                     wcInfo.getRootDir(), SVNDepth.INFINITY, true, false, false, false);
             logEnd("Do merge");
-
-            //Revert the changes to the metadata file
-            logStart("Revert metadata file");
-            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
-            logEnd("Revert metadata file");
 
             //Update the last merge revision in the metadata file
             logStart("Update last merge revision");

@@ -35,9 +35,7 @@ import org.tmatesoft.svn.cli.AbstractSVNCommand;
 import org.tmatesoft.svn.cli.AbstractSVNCommandEnvironment;
 import org.tmatesoft.svn.cli.AbstractSVNLauncher;
 import org.tmatesoft.svn.cli.SVNCommandLine;
-import org.tmatesoft.svn.cli.svn.SVNHelpCommand;
 import org.tmatesoft.svn.cli.svn.SVNOption;
-import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 
 import java.io.PrintStream;
@@ -52,18 +50,23 @@ public class SAV extends AbstractSVNLauncher {
         new SAV().run(args);
     }
 
-    protected void run(String[] args) {
+    @Override
+    public void run(String[] args) {
+        // change the protection so run() can be called from test cases
         super.run(args);
     }
 
+    @Override
     protected String getProgramName() {
         return "sav";
     }
 
+    @Override
     protected AbstractSVNCommandEnvironment createCommandEnvironment() {
         return new SAVCommandEnvironment(getProgramName(), _out, _err, System.in);
     }
 
+    @Override
     protected void registerCommands() {
         AbstractSVNCommand.registerCommand(new CreateReleaseBranch());
         AbstractSVNCommand.registerCommand(new CreateUserBranch());
@@ -85,6 +88,7 @@ public class SAV extends AbstractSVNLauncher {
         AbstractSVNCommand.registerCommand(new CreateMetadataFile());
     }
 
+    @Override
     protected void registerOptions() {
         //Never upgrade the working copy format from one version of svn to another.  Use other apps to do so (for example: 'svn update').
         SVNAdminAreaFactory.setUpgradeEnabled(false);
@@ -120,10 +124,12 @@ public class SAV extends AbstractSVNLauncher {
         }
     }
 
+    @Override
     protected boolean needArgs() {
         return true;
     }
 
+    @Override
     protected boolean needCommand() {
         return true;
     }
