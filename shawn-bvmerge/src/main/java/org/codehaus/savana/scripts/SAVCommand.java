@@ -30,6 +30,7 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.codehaus.savana.Version;
 import org.tmatesoft.svn.cli.svn.SVNCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -37,11 +38,12 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class SAVCommand extends SVNCommand {
-    private static final Logger _sLog = Logger.getLogger(SAVCommand.class.getName());
+    private static final Logger _sLog = Logger.getLogger("savana-info");
 
     protected SAVCommand(String name, String[] aliases) {
         super(name, aliases);
@@ -52,13 +54,19 @@ public abstract class SAVCommand extends SVNCommand {
     @Override
     public final void run() throws SVNException {
         try {
+            log("Savana version: " + Version.VERSION + " (SVNKit version " + Version.SVNKIT_VERSION + ")");
+            log("COMMAND BEGIN: " + getSVNEnvironment().getCommandLineString());
+            log("Current directory: " + new File("").getAbsolutePath());
+
             doRun();
+
+            log("COMMAND FINISHED: " + getSVNEnvironment().getCommandLineString());
 
         // catch runtime exceptions and errors and rethrown them as SVNException
         } catch (RuntimeException e) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, e), SVNLogType.CLIENT);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, "Internal Savana exception: " + e, e), SVNLogType.CLIENT);
         } catch (Error e) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, e), SVNLogType.CLIENT);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, "Internal Savana error: " + e, e), SVNLogType.CLIENT);
         }
     }
 
@@ -73,10 +81,14 @@ public abstract class SAVCommand extends SVNCommand {
     }
 
     public void logStart(String message) {
-        _sLog.log(Level.FINE, "Start: " + message);
+        log("Start: " + message);
     }
 
     public void logEnd(String message) {
-        _sLog.log(Level.FINE, "End: " + message);
+        log("End:   " + message);
+    }
+
+    public void log(String message) {
+        _sLog.log(Level.FINE, getClass().getSimpleName() + " " + message);
     }
 }
