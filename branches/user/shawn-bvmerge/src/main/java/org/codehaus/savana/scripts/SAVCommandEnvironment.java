@@ -30,17 +30,22 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.codehaus.savana.BranchType;
 import org.tmatesoft.svn.cli.AbstractSVNOption;
+import org.tmatesoft.svn.cli.SVNCommandLine;
 import org.tmatesoft.svn.cli.SVNOptionValue;
 import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.core.SVNException;
 
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Iterator;
+import java.util.regex.Pattern;
 
 public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
+    private SVNCommandLine _commandLine;
     private boolean _changeRoot;
     private String _projectName;
     private String _trunkPath = BranchType.TRUNK.getDefaultPath();
@@ -49,6 +54,11 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
     public SAVCommandEnvironment(String programName, PrintStream out, PrintStream err, InputStream in) {
         super(programName, out, err, in);
+    }
+
+    protected void initOptions(SVNCommandLine commandLine) throws SVNException {
+        super.initOptions(commandLine);
+        _commandLine = commandLine;
     }
 
     @Override
@@ -67,6 +77,32 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
         } else {
             super.initOption(optionValue);
         }
+    }
+
+    /** Returns the SVNCommandLine object formatted as a plausible command-line string, for debugging. */
+    public String getCommandLineString() {
+        StringBuilder buf = new StringBuilder();
+        buf.append(getProgramName());
+        buf.append(" ").append(_commandLine.getCommandName());
+        for (Iterator<SVNOptionValue> options = _commandLine.optionValues(); options.hasNext();) {
+            SVNOptionValue optionValue = options.next();
+            buf.append(" ").append(optionValue.getName());
+            if (optionValue.getValue() != null) {
+                buf.append(" ").append(quoteString(optionValue.getValue()));
+            }
+        }
+        for (Object argument : _commandLine.getArguments()) {
+            buf.append(" ").append(quoteString((String) argument));
+        }
+        return buf.toString();
+    }
+
+    private String quoteString(String string) {
+        string = StringEscapeUtils.escapeJava(string);
+        if (Pattern.compile("[^-a-zA-Z0-9_/\\\\.:]").matcher(string).find()) {
+            string = "'" + string + "'";
+        }
+        return string;
     }
 
     public boolean isChangeRoot() {

@@ -55,6 +55,10 @@ will apply to all Software in this distribution.
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>src/main/config</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>target</directory>
             <outputDirectory>/lib</outputDirectory>
             <includes>
