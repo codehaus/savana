@@ -30,29 +30,32 @@ case "`uname`" in
   CYGWIN*) cygwin=true ;;
 esac
 
-old_wd=`pwd`
+if [ "$SAVANA_HOME" = "" ]
+then
+  old_wd=`pwd`
 
-progname=`basename "$0"`
-linkdir=`dirname "$0"`
+  progname=`basename "$0"`
+  linkdir=`dirname "$0"`
 
-cd "$linkdir"
-prg="$progname"
+  cd "$linkdir"
+  prg="$progname"
 
-# traverse symbolic links to the actual install directory
-while [ -h "$prg" ] ; do
-  ls=`ls -ld "$prg"`
-  link=`expr "$ls" : '.*-> \(.*\)$'`
-  if expr "$link" : '.*/.*' > /dev/null; then
-    prg="$link"
-  else
-    prg="`dirname \"$prg\"`/$link"
-  fi
-done
+  # traverse symbolic links to the actual install directory
+  while [ -h "$prg" ] ; do
+    ls=`ls -ld "$prg"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '.*/.*' > /dev/null; then
+      prg="$link"
+    else
+      prg="`dirname \"$prg\"`/$link"
+    fi
+  done
 
-SAVANA_HOME="`dirname \"$prg\"`/.."
-SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
+  SAVANA_HOME="`dirname \"$prg\"`/.."
+  SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
 
-cd "$old_wd"
+  cd "$old_wd"
+fi
 
 # add everything in the /lib directory to the classpath
 SAVANA_CP=""

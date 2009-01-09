@@ -74,6 +74,7 @@ public class CreateMetadataFile extends SAVCommand {
         options.add(SAVOption.TRUNK_PATH);
         options.add(SAVOption.RELEASE_BRANCHES_PATH);
         options.add(SAVOption.USER_BRANCHES_PATH);
+        options.add(SAVOption.SAVANA_POLICIES_FILE);
         return options;
     }
 
@@ -196,19 +197,20 @@ public class CreateMetadataFile extends SAVCommand {
         wcClient.doAdd(metadataFile, false, false, false, SVNDepth.EMPTY, false, false);
 
         //Set the properties on the file
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_PROJECT_ROOT, SVNPropertyValue.create(projectRoot), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_TRUNK_PATH, SVNPropertyValue.create(trunkPath), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_RELEASE_BRANCHES_PATH, SVNPropertyValue.create(releaseBranchesPath), false, SVNDepth.EMPTY, null, null);
-        wcClient.doSetProperty(metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, SVNPropertyValue.create(userBranchesPath), false, SVNDepth.EMPTY, null, null);
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_PROJECT_ROOT, SVNPropertyValue.create(projectRoot));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_TRUNK_PATH, SVNPropertyValue.create(trunkPath));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_RELEASE_BRANCHES_PATH, SVNPropertyValue.create(releaseBranchesPath));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_USER_BRANCHES_PATH, SVNPropertyValue.create(userBranchesPath));
+        doSetProperty(wcClient, metadataFile, MetadataFile.PROP_SAVANA_POLICIES, SVNPropertyValue.create(MetadataFile.PROP_SAVANA_POLICIES, env.getSavanaPoliciesFileData()));
 
         //If we aren't on the trunk...
         if (branchType != BranchType.TRUNK) {
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath), false, SVNDepth.EMPTY, null, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(branchPointRevision), false, SVNDepth.EMPTY, null, null);
-            wcClient.doSetProperty(metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(branchPointRevision), false, SVNDepth.EMPTY, null, null);
+            doSetProperty(wcClient, metadataFile, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
+            doSetProperty(wcClient, metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(branchPointRevision));
+            doSetProperty(wcClient, metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(branchPointRevision));
         }
 
         env.getOut().println("-------------------------------------------------");
@@ -219,6 +221,10 @@ public class CreateMetadataFile extends SAVCommand {
         env.getOut().println(wcInfo);
         env.getOut().println();
         env.getOut().println("Please 'svn commit' to save the metadata file to the Subversion repository:\n  " + metadataFile);
+    }
+
+    private void doSetProperty(SVNWCClient wcClient, File metadataFile, String name, SVNPropertyValue value) throws SVNException {
+        wcClient.doSetProperty(metadataFile, name, value, false, SVNDepth.EMPTY, null, null);
     }
 
     private String getPathWithinRepo(BranchType branchType, String branchName, String projectRoot,

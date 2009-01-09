@@ -38,6 +38,7 @@ import org.tmatesoft.svn.cli.SVNOptionValue;
 import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.core.SVNException;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -51,6 +52,7 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
     private String _trunkPath = BranchType.TRUNK.getDefaultPath();
     private String _releaseBranchesPath = BranchType.RELEASE_BRANCH.getDefaultPath();
     private String _userBranchesPath = BranchType.USER_BRANCH.getDefaultPath();
+    private byte[] _savanaPoliciesFileData;
 
     public SAVCommandEnvironment(String programName, PrintStream out, PrintStream err, InputStream in) {
         super(programName, out, err, in);
@@ -74,6 +76,8 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
             _releaseBranchesPath = optionValue.getValue();
         } else if (option == SAVOption.USER_BRANCHES_PATH) {
             _userBranchesPath = optionValue.getValue();
+        } else if (option == SAVOption.SAVANA_POLICIES_FILE) {
+            _savanaPoliciesFileData = readFromFile(new File(optionValue.getValue()));
         } else {
             super.initOption(optionValue);
         }
@@ -123,5 +127,9 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
     public String getUserBranchesPath() {
         return _userBranchesPath;
+    }
+
+    public byte[] getSavanaPoliciesFileData() {
+        return _savanaPoliciesFileData;
     }
 }

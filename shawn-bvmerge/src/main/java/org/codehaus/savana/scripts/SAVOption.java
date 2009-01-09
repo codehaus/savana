@@ -42,6 +42,7 @@ public class SAVOption extends AbstractSVNOption {
     public static final SAVOption TRUNK_PATH = new SAVOption("trunkPath", false);
     public static final SAVOption RELEASE_BRANCHES_PATH = new SAVOption("releaseBranchesPath", false);
     public static final SAVOption USER_BRANCHES_PATH = new SAVOption("userBranchesPath", false);
+    public static final SAVOption SAVANA_POLICIES_FILE = new SAVOption("savanaPoliciesFile", false);
 
     private SAVOption(String name) {
         this(name, null, true);

@@ -115,6 +115,7 @@ public class SAV extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SAVOption.TRUNK_PATH);
         SVNCommandLine.registerOption(SAVOption.RELEASE_BRANCHES_PATH);
         SVNCommandLine.registerOption(SAVOption.USER_BRANCHES_PATH);
+        SVNCommandLine.registerOption(SAVOption.SAVANA_POLICIES_FILE);
 
         //Options for specifying a commit message (shared with svn/jsvn)
         List<SVNOption> logMessageOptions = new ArrayList<SVNOption>();

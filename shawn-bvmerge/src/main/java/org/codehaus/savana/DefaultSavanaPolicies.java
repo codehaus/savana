@@ -28,6 +28,7 @@
  */
 package org.codehaus.savana;
 
+import org.codehaus.savana.scripts.SAVCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
@@ -40,8 +41,8 @@ import java.util.regex.Pattern;
 public class DefaultSavanaPolicies implements ISavanaPolicies {
 
     private static final String DEFAULT_LOG_MESSAGE_ERROR =
-            "Commit message does not match the required message pattern: $pattern" +
-                    "\n  workspace: $branchName\n  commit comment: $logMessage";
+            "Commit message does not match the required message pattern: @pattern" +
+                    "\n  workspace: @branchName\n  commit comment: @logMessage";
 
     private Properties _properties;
 
@@ -49,29 +50,50 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         _properties = properties;
     }
 
-    public void validateLogMessage(String commitMessage, MetadataProperties metadataProperties) throws SVNException {
-        String branchTypeName = metadataProperties.getBranchType().name().toLowerCase();
-        String pattern = _properties.getProperty(branchTypeName + ".pattern");
+    public void validateLogMessage(SAVCommand command, String logMessage, MetadataProperties metadataProperties) throws SVNException {
+        // each branch type has its own regular expression that messages must match
+        String prefix = metadataProperties.getBranchType().name().toLowerCase() + ".";
+
+        // get the regular expression to match against the log message (if any) and expand variables
+        String pattern = _properties.getProperty(prefix + "pattern");
         if (pattern == null) {
-            return;  // nothing to validate
+            return;  // nothing to validate, anything goes
         }
+        pattern = replaceBranchKeywords(metadataProperties, pattern);
 
-        // expand variables in the pattern template and apply the resulting regular expression
-        pattern = replace(pattern, "branchType", metadataProperties.getBranchType().getKeyword().toLowerCase());
-        pattern = replace(pattern, "branchName", metadataProperties.getBranchName());
+        command.log("Validating log message against pattern: " + pattern);
 
-        if (!Pattern.matches(pattern, commitMessage)) {
+        // check the log message against the required pattern
+        if (!Pattern.matches(pattern, logMessage)) {
             // get the error message template and expand variables
-            String error = _properties.getProperty(branchTypeName + "error", DEFAULT_LOG_MESSAGE_ERROR);
-            error = replace(error, "pattern", pattern);
-            error = replace(error, "branchType", metadataProperties.getBranchType().getKeyword().toLowerCase());
-            error = replace(error, "branchName", metadataProperties.getBranchName());
-            error = replace(error, "logMessage", commitMessage);
+            String error = _properties.getProperty(prefix + "error", DEFAULT_LOG_MESSAGE_ERROR);
+            error = replaceBranchKeywords(metadataProperties, error);
+            error = replace(error, "@pattern", pattern);
+            error = replace(error, "@logMessage", logMessage);
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_BAD_LOG_MESSAGE, error), SVNLogType.CLIENT);
         }
     }
 
+    private String replaceBranchKeywords(MetadataProperties metadataProperties, String template) {
+        template = replace(template, "@projectName", metadataProperties.getProjectName());
+        template = replace(template, "@branchName", metadataProperties.getBranchName());
+        template = replace(template, "@branchType", metadataProperties.getBranchType());
+        template = replace(template, "@sourceBranchName", metadataProperties.getSourceName());
+        template = replace(template, "@sourceBranchType", metadataProperties.getSourceBranchType());
+        return template;
+    }
+
+    private String replace(String template, String key, BranchType branchType) {
+        if (branchType != null) {
+            template = replace(template, key, branchType.getKeyword().toLowerCase());
+        }
+        return template;
+    }
+
     private String replace(String template, String key, String value) {
-        return template.replaceAll("$\\Q" + key + "\\E\\b", value);
+        if (value != null) {
+            template = template.replaceAll("\\Q" + key + "\\E\\b", value); // important part is \\b to enforce ends on a word boundary
+        }
+        return template;
     }
 }

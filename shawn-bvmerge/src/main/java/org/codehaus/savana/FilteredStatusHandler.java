@@ -39,8 +39,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class FilteredStatusHandler implements ISVNStatusHandler, ISVNEventHandler {
-    private Collection<String> _entries;
-    private SVNStatusType _status;
+    private final Collection<String> _entries;
+    private final SVNStatusType _status;
 
     public FilteredStatusHandler(SVNStatusType status) {
         _status = status;

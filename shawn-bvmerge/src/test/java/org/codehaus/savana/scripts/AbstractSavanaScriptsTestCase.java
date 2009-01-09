@@ -18,17 +18,27 @@ import java.io.PrintStream;
  *
  * @author Bryon Jacob (bryon@jacob.net)
  */
-public class SavanaScriptsTestCase  extends TestCase {
+public abstract class AbstractSavanaScriptsTestCase extends TestCase {
 
     protected static final SVNClientManager SVN =
             SVNClientManager.newInstance(new DefaultSVNOptions(), "savana-user", "");
 
-    protected static final File SUBVERSION_CONFIG_DIR = tempDir("subversion-config");
+    protected static final String EOL = System.getProperty("line.separator");
+    
+    protected static final File INITIAL_DIRECTORY = new File("").getAbsoluteFile();
 
-    protected static final String TEST_PROJECT_NAME = "test-project";
+    protected File SUBVERSION_CONFIG_DIR;
 
     static {
         FSRepositoryFactory.setup();        
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        cd(INITIAL_DIRECTORY);
+
+        SUBVERSION_CONFIG_DIR = createTempDir("subversion-config");
     }
 
     /**
@@ -39,7 +49,7 @@ public class SavanaScriptsTestCase  extends TestCase {
      * @return the script output
      * @throws Exception on error
      */
-    protected static String savana(Class<? extends AbstractSVNCommand> scriptClass, String... args) throws Exception {
+    protected String savana(Class<? extends AbstractSVNCommand> scriptClass, String... args) throws Exception {
         final boolean[] success = new boolean[1];
         final ByteArrayOutputStream bufOut = new ByteArrayOutputStream();
         final ByteArrayOutputStream bufErr = new ByteArrayOutputStream();
@@ -84,7 +94,7 @@ public class SavanaScriptsTestCase  extends TestCase {
      *
      * @param dir the directory to which we want to change
      */
-    protected static void cd(File dir) {
+    protected void cd(File dir) {
         System.setProperty("user.dir", dir.getAbsolutePath());
     }
 
@@ -94,7 +104,7 @@ public class SavanaScriptsTestCase  extends TestCase {
      * @param tempDirName the name of the temporary directory to create
      * @return the directory
      */
-    protected static File tempDir(String tempDirName) {
+    protected File createTempDir(String tempDirName) {
         File tmpDir = new File("target/testdata").getAbsoluteFile();
         File dir = new File(tmpDir, tempDirName);
         if (dir.exists()) {
