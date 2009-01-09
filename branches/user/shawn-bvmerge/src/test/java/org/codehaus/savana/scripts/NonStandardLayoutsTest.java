@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
-public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
+public class NonStandardLayoutsTest extends AbstractSavanaScriptsTestCase {
 
     private static final Logger log = Logger.getLogger(NonStandardLayoutsTest.class.getName());
 
@@ -50,7 +50,7 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
         // create a new test repository
         log.info("creating test repository");
         SVNAdminClient adminClient = SVN.getAdminClient();
-        File repoDir = tempDir("non-standard-repo");
+        File repoDir = createTempDir("non-standard-repo");
         SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true);
 
         // create directories along the path to trunk
@@ -62,7 +62,7 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
         }
 
         // check out a working copy of the repo
-        File wc = tempDir("wc");
+        File wc = createTempDir("wc");
         SVN.getUpdateClient().doCheckout(trunkPath, wc, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false);
         cd(wc);
 
@@ -120,9 +120,7 @@ public class NonStandardLayoutsTest extends SavanaScriptsTestCase {
                 repoUrl, SVNRevision.UNDEFINED, SVNRevision.HEAD, false, true,
                 new ISVNDirEntryHandler() {
                     public void handleDirEntry(SVNDirEntry svnDirEntry) throws SVNException {
-                        String path = svnDirEntry.getRelativePath();
-                        log.info("path: " + path);
-                        paths.add(path);
+                        paths.add(svnDirEntry.getRelativePath());
                     }
                 });
         // assert that the correct directory for trunk, 1.0, and user-1.0 exist, and that each

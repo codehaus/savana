@@ -250,7 +250,15 @@ public class MetadataProperties {
     }
 
     public BranchType getSourceBranchType() {
-        return _trunkPath.equals(_sourcePath) ? BranchType.TRUNK : BranchType.RELEASE_BRANCH;
+        if (_sourcePath == null) {
+            return null;
+        } else if (_sourcePath.equals(_trunkPath)) {
+            return BranchType.TRUNK;
+        } else if (SVNPathUtil.removeTail(_sourcePath).equals(_releaseBranchesPath)) {
+            return BranchType.RELEASE_BRANCH;
+        } else {
+            return BranchType.USER_BRANCH;
+        }
     }
 
     public String getBranchTreeRootPath() {

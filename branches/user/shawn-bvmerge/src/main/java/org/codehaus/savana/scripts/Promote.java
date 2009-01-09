@@ -167,7 +167,7 @@ public class Promote extends SAVCommand {
         //Validate the commit comment against the branch name before we make any changes
         if (sourceProps.getSavanaPolicies() != null) {
             logStart("Validate commit comment");
-            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps);
+            sourceProps.getSavanaPolicies().validateLogMessage(this, commitMessage, sourceProps);
             logEnd("Validate commit comment");
         }
 
