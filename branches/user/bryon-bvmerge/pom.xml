@@ -182,6 +182,45 @@ will apply to all Software in this distribution.
 
             </plugin>
 
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <id>build-versions-file</id>
+                        <phase>compile</phase>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <tasks>
+                                <property name="version.dir" value="${project.build.directory}/classes/org/codehaus/savana"/>
+                                <mkdir dir="${version.dir}" />
+                                <exec executable="svn" output="${version.dir}/version.properties">
+                                    <arg value="info" />
+                                    <arg value="." />
+                                    <redirector>
+                                        <outputfilterchain>
+                                            <linecontains>
+                                                <contains value="Revision" />
+                                            </linecontains>
+                                            <tokenfilter>
+                                                <replacestring from="Revision: " to="savana.revision=" />
+                                            </tokenfilter>
+                                        </outputfilterchain>
+                                    </redirector>
+                                </exec>
+                                <echo file="${version.dir}/version.properties" append="true">
+                                    savana.version=${project.version}
+                                </echo>
+                                <fixcrlf srcdir="${version.dir}" eol="lf" includes="version.properties" />
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
 
         <extensions>
