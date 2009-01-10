@@ -10,6 +10,8 @@ import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.admin.ISVNAdminAreaFactorySelector;
+import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -17,8 +19,10 @@ import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 public abstract class TestRepoUtil {
@@ -42,9 +46,24 @@ public abstract class TestRepoUtil {
 
         FSRepositoryFactory.setup();
 
+        // configure SVNKit to use file formats that match the installed version of subversion   
+        SVNAdminAreaFactory.setSelector(new ISVNAdminAreaFactorySelector() {
+            public Collection getEnabledFactories(File path, Collection factories, boolean writeAccess) {
+                Collection<SVNAdminAreaFactory> enabledFactories = new TreeSet<SVNAdminAreaFactory>();
+                for (SVNAdminAreaFactory factory : (Collection<SVNAdminAreaFactory>) factories) {
+                    if (factory.getSupportedVersion() == TestSvnUtil.WC_FORMAT) {
+                        enabledFactories.add(factory);
+                    }
+                }
+                return enabledFactories;
+            }
+        });
+
+        // create the repository
         File repoDir = TestDirUtil.createTempDir(nextRepositoryName());
         SVNAdminClient adminClient = SVN.getAdminClient();
-        SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true);
+        SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true,
+                TestSvnUtil.REPO_PRE14, TestSvnUtil.REPO_PRE15);
 
         // install savana preferred subversion hooks into the test repository
         if (installHooks) {

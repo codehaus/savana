@@ -8,7 +8,6 @@ import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
 import java.util.Arrays;
@@ -49,9 +48,7 @@ public class NonStandardLayoutsTest extends AbstractSavanaScriptsTestCase {
                                               String projectDir) throws Exception {
         // create a new test repository
         log.info("creating test repository");
-        SVNAdminClient adminClient = SVN.getAdminClient();
-        File repoDir = createTempDir("non-standard-repo");
-        SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true);
+        SVNURL repoUrl = TestRepoUtil.newRepository(false);
 
         // create directories along the path to trunk
         SVNURL trunkPath = repoUrl;
