@@ -1,23 +1,21 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.HiddenFileFilter;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,10 +49,12 @@ public abstract class TestRepoUtil {
 
         // install savana preferred subversion hooks into the test repository
         if (installHooks) {
-            for (File svnHookFile : TestDirUtil.SVN_HOOKS_DIR.listFiles((FileFilter) HiddenFileFilter.VISIBLE)) {
-                File repoHookFile = new File(new File(repoDir, "hooks"), svnHookFile.getName());
-                FileUtils.copyFile(svnHookFile, repoHookFile, false);
-                repoHookFile.setExecutable(true);
+            for (File svnHookFile : TestDirUtil.SVN_HOOKS_DIR.listFiles()) {
+                if (!svnHookFile.isHidden() && !svnHookFile.getName().endsWith(".properties")) {
+                    File repoHookFile = new File(new File(repoDir, "hooks"), svnHookFile.getName());
+                    FileUtils.copyFile(svnHookFile, repoHookFile, false);
+                    repoHookFile.setExecutable(true);
+                }
             }
         }
 
@@ -136,7 +136,7 @@ public abstract class TestRepoUtil {
     }
 
     private static int _sRepositoryCounter;
-    private static Map<String, MutableInt> _sWorkingDirCounters = new HashMap<String, MutableInt>();
+    private static final Map<String, MutableInt> _sWorkingDirCounters = new HashMap<String, MutableInt>();
 
     private static synchronized String nextRepositoryName() {
         return "savana-test-repo-" + toAlphaString(_sRepositoryCounter++);

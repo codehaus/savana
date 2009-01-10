@@ -40,7 +40,7 @@ All restrictions can be bypassed by using a commit comment that starts with
 the text 'branch admin'.
 """
 
-# always allow changes to files that start with one of these paths (directories should have a trailing '/')  
+# always allow changes to files that start with one of these paths (directories should have a trailing '/')
 IGNORE_PATH_PREFIXES = []
 
 # define regular expressions for each of the branch types, with a group with the branch name
@@ -118,7 +118,7 @@ Each file belongs to a workspace as determined by one of the following patterns:
                return (type, m.group(1), format % m.group(1))
         # unknown workspace type, use the filename for the workspace name
         return (WS_FILE, fname, "file: %s" % fname)
-        
+
     unique_workspaces = {}
     for fname in changed_files:
         unique_workspaces[extract_workspace(fname)] = 1
@@ -134,7 +134,7 @@ The requirements depend on the first words of the commit comment:
   'trunk'          - the transaction must modify only a single WS_TRUNK workspace
   'b3.3.x'         - the transaction must modify only a single WS_RELEASE workspace named 'b3.3.x'
   'user branch'    - the transaction must modify only a single WS_USER workspace (with any name)
-  'john-11234'     - the transaction must modify only a single WS_USER workspace named 'john-11234'  
+  'john-11234'     - the transaction must modify only a single WS_USER workspace named 'john-11234'
   """
 
     # call subversion to get the commit comment associated with the svn transaction
@@ -156,7 +156,7 @@ The requirements depend on the first words of the commit comment:
             "\n  ".join([ws_description for (ws_type, ws_name, ws_description) in workspaces]))
         return 1  # commit failed
 
-    # if all files were ignored by should_ignore_file() then there may be zero workspaces 
+    # if all files were ignored by should_ignore_file() then there may be zero workspaces
     if len(workspaces) == 0:
         return 0
 
@@ -208,12 +208,12 @@ Run pre-commit options on a repository transaction."""
         (opts, (repos, txn_or_rvn)) = parser.parse_args()
         look_opt = ("--transaction", "--revision")[opts.revision]
         svnlook_cmd_opts = [repos, look_opt, txn_or_rvn]
-      
+
         # call all pre-commit checks...
         errors += check_permissible_file_changes(svnlook_cmd_opts)
 
     except:
-        sys.stderr.write("Unexpected error: X " + str(sys.exc_info()[1]).strip() + "\n\n")
+        sys.stderr.write("Unexpected error: " + str(sys.exc_info()[1]).strip() + "\n\n")
         parser.print_help()
         errors += 1
     return errors

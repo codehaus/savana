@@ -30,7 +30,6 @@
  */
 package org.codehaus.savana.scripts;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.codehaus.savana.BranchType;
 import org.tmatesoft.svn.cli.AbstractSVNOption;
 import org.tmatesoft.svn.cli.SVNCommandLine;
@@ -102,9 +101,8 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
     }
 
     private String quoteString(String string) {
-        string = StringEscapeUtils.escapeJava(string);
         if (Pattern.compile("[^-a-zA-Z0-9_/\\\\.:]").matcher(string).find()) {
-            string = "'" + string + "'";
+            string = "\"" + string + "\"";
         }
         return string;
     }

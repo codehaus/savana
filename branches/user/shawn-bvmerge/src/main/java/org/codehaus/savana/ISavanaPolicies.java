@@ -28,14 +28,14 @@
  */
 package org.codehaus.savana;
 
-import org.codehaus.savana.scripts.SAVCommand;
 import org.tmatesoft.svn.core.SVNException;
 
 import java.util.Properties;
+import java.util.logging.Logger;
 
 public interface ISavanaPolicies {
 
     void initialize(Properties properties) throws SVNException;
 
-    void validateLogMessage(SAVCommand command, String logMessage, MetadataProperties metadataProperties) throws SVNException;
+    void validateLogMessage(String logMessage, MetadataProperties metadataProperties, Logger logger) throws SVNException;
 }

@@ -1,18 +1,14 @@
 package org.codehaus.savana.scripts;
 
-import org.codehaus.savana.BranchType;
 import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.SVNEditorHelper;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.io.ISVNEditor;
-import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNURL;
 
-import java.util.logging.Logger;
 import java.io.File;
+import java.util.logging.Logger;
 
 /**
  */
@@ -67,14 +63,13 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertReleaseBranchPromoteSucceeds("b3.3.x - #14211 - fixed a bug");
         assertReleaseBranchPromoteSucceeds("b3.3.x");
 
-        // don't delete the user branch since we'll use it as the parent for the next sequence...
+        // don't delete the user branch since we'll use it for the next sequence...
 
 
         //
         // Promote to USER BRANCH 
         //
         log.info("testing savana policies promote to user branch");
-        createChainedUserBranch(REPO_URL, PROJECT_NAME, "user1", "user2");
 
         // test invalid promotion commit messages
         assertUserBranchPromoteFails("done");
@@ -88,7 +83,6 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertUserBranchPromoteSucceeds("user branch");
         assertUserBranchPromoteSucceeds("user1 - fix");
 
-        savana(DeleteUserBranch.class, "user2");
         savana(DeleteUserBranch.class, "user1");
 
 
@@ -126,7 +120,18 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         // ok, savana policies have been removed.  we should be able to promote with a random log message.
         savana(SetBranch.class, "user1");
         savana(Synchronize.class);
-        assertTrunkPromoteSucceeds("blah blah blah");
+        SVN.getCommitClient().doCommit(new File[]{WC}, false, "user branch commit", null, null, false, false, SVNDepth.INFINITY);
+        try {
+            savana(Promote.class, "-m", "blah blah blah");
+            assertTrue("we expected an exception to be thrown", false);
+
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: Commit failed (details follow):\n" +
+                    "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
+                    "The subversion commit comment must start with the name of the modified workspace:\n" +
+                    "  workspace: trunk\n  commit comment: blah blah blah", e.getErr().trim());
+        }
     }
 
     public void testSavanaPoliciesMissing() throws Exception {
@@ -140,10 +145,10 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
             savana(Promote.class, "-m", "done");
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
-            assertTrue(e.getErr(), e.getErr().endsWith("svn: Commit failed (details follow):\n" +
+            assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The subversion commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: trunk\n  commit comment: done" + EOL));
+                    "  workspace: trunk\n  commit comment: done", e.getErr().trim());
         }
     }
 
@@ -188,58 +193,20 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
     }
 
     private void assertUserBranchPromoteFails(String logMessage) throws Exception {
+        MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
         try {
-            savana(Promote.class, "-m", logMessage);
+            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
             assertTrue("we expected an exception to be thrown", false);
 
-        } catch (SavanaScriptsTestException e) {
+        } catch (SVNException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: The commit comment must start with \"user branch\" or the name of the modified workspace:\n" +
-                    "  workspace: user1\n  commit comment: " + logMessage + EOL, e.getErr());
+                    "  workspace: user1\n  commit comment: " + logMessage, e.getMessage());
         }
     }
 
     private void assertUserBranchPromoteSucceeds(String logMessage) throws Exception {
-        // test the promote.  if it works then it won't throw an exception
-        savana(Promote.class, "-m", logMessage);
-
-        // restore the workspace we just promoted (always user2 in this test)
-        createChainedUserBranch(REPO_URL, PROJECT_NAME, "user1", "user2");
-    }
-
-
-    /** Create a user branch that is a child of another user branch--not currently natively supported in Savana. */
-    private void createChainedUserBranch(SVNURL repoUrl, String projectName, String sourceBranch, String targetBranch) throws Exception {
-        SVNRepository repository = SVN.createRepository(repoUrl, true);
-        repository.setLocation(repoUrl, false);
-        long sourceRevision = repository.getLatestRevision();
-
-        String commitMessage = targetBranch + " - creating child user branch from " + sourceBranch;
-        String userBranchesParent = SVNPathUtil.append(projectName, BranchType.USER_BRANCH.getDefaultPath());
-        String sourceBranchPath = SVNPathUtil.append(userBranchesParent, sourceBranch);
-        String userBranchPath = SVNPathUtil.append(userBranchesParent, targetBranch);
-        String metadataFilePath = SVNPathUtil.append(userBranchPath, MetadataFile.METADATA_FILE_NAME);
-
-        //Create an editor
-        ISVNEditor editor = repository.getCommitEditor(commitMessage, null, false, null, null);
-        SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
-        editor.openRoot(-1);
-
-        //Open the target directory and copy the source branch to the target
-        editorHelper.openDir(userBranchesParent);
-        editor.addDir(userBranchPath, sourceBranchPath, sourceRevision);
-        editorHelper.addOpenedDir(userBranchPath);
-
-        //Update all of the properties on the metadata file
-        editorHelper.openFile(metadataFilePath);
-        editor.changeFileProperty(metadataFilePath, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(userBranchPath));
-        editor.changeFileProperty(metadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourceBranchPath));
-        editor.changeFileProperty(metadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
-        editor.changeFileProperty(metadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
-
-        //Close and commit all of the edits
-        editorHelper.closeAll();
-
-        savana(SetBranch.class, targetBranch, "--changeRoot");
+        MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
+        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
     }
 }

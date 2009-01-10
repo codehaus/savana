@@ -36,6 +36,7 @@
  */
 package org.codehaus.savana;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.text.DateFormat;
@@ -66,6 +67,10 @@ public class DefaultLogFormatter extends Formatter {
             sb.append(DATE_FORMAT.format(date));
         }
         sb.append("] ");
+        if (record.getSourceClassName() != null) {
+            sb.append(getSimpleClassName(record.getSourceClassName()));
+            sb.append(" ");
+        }
         sb.append(message);
         sb.append(System.getProperty("line.separator"));
 
@@ -78,5 +83,16 @@ public class DefaultLogFormatter extends Formatter {
         }
 
         return sb.toString();
+    }
+
+    private String getSimpleClassName(String className) {
+        // strip off any inner class name
+        className = StringUtils.substringBefore(className, "$");
+        // strip off the package package
+        int idx = className.lastIndexOf('.');
+        if (idx != -1) {
+            className = className.substring(idx + 1);
+        }
+        return className;
     }
 }
