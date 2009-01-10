@@ -17,7 +17,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
     private static final String EOL = System.getProperty("line.separator");
 
-    private static final String PROJECT_NAME = "savanapoliciespresent";
+    private static final String PROJECT_NAME = "savanapoliciestest";
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -111,8 +111,8 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SVNException e) {
             assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:\n" +
-                    "  workspace: trunk\n  metadata file: savanapoliciespresent/trunk/.savana" + EOL, e.getMessage());
+                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:" + EOL +
+                    "  workspace: trunk" + EOL + "  metadata file: savanapoliciespresent/trunk/.savana" + EOL, e.getMessage());
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
@@ -120,6 +120,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         // ok, savana policies have been removed.  we should be able to promote with a random log message.
         savana(SetBranch.class, "user1");
         savana(Synchronize.class);
+        TestRepoUtil.touchCounterFile(WC);
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "user branch commit", null, null, false, false, SVNDepth.INFINITY);
         try {
             savana(Promote.class, "-m", "blah blah blah");
@@ -127,28 +128,10 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Commit failed (details follow):\n" +
+            assertEquals("svn: Commit failed (details follow):" + EOL +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The subversion commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: trunk\n  commit comment: blah blah blah", e.getErr().trim());
-        }
-    }
-
-    public void testSavanaPoliciesMissing() throws Exception {
-        // setup a test project with a working directory and import the 'test-project' files
-        String projectName = "savanapoliciesmissing";
-        TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, false, "test-project");
-
-        // invalid commit messages should be passed by Savana but rejected by the commit hook
-        savana(CreateUserBranch.class, "user3");
-        try {
-            savana(Promote.class, "-m", "done");
-            assertTrue("we expected an exception to be thrown", false);
-        } catch (SavanaScriptsTestException e) {
-            assertEquals("svn: Commit failed (details follow):\n" +
-                    "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The subversion commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: trunk\n  commit comment: done", e.getErr().trim());
+                    "The subversion commit comment must start with the name of the modified workspace:" + EOL +
+                    "  workspace: trunk" + EOL + "  commit comment: blah blah blah", e.getErr().trim());
         }
     }
 
