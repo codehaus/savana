@@ -28,11 +28,13 @@ will apply to all Software in this distribution.
     <id>install</id>
     <formats>
         <format>tar.gz</format>
+        <format>zip</format>
     </formats>
 
     <dependencySets>
         <dependencySet>
             <outputDirectory>/lib</outputDirectory>
+            <outputFileNameMapping>${artifactId}.${extension}</outputFileNameMapping>
             <fileMode>0774</fileMode>
         </dependencySet>
     </dependencySets>
