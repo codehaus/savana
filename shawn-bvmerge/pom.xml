@@ -158,6 +158,10 @@ will apply to all Software in this distribution.
                     </includes>
                     <systemProperties>
                         <property>
+                            <name>java.util.logging.config.file</name>
+                            <value>src/main/config/logging.properties</value>
+                        </property>
+                        <property>
                             <name>savana.svn-hooks</name>
                             <value>src/main/svn-hooks</value>
                         </property>

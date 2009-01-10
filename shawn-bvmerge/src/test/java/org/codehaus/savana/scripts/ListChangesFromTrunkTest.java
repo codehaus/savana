@@ -1,7 +1,5 @@
 package org.codehaus.savana.scripts;
 
-import java.io.File;
-
 public class ListChangesFromTrunkTest extends AbstractSavanaScriptsTestCase {
     private static final String EOL = System.getProperty("line.separator");
 
