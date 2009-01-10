@@ -112,7 +112,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
             assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The changeset may not modify Savana metadata files in the trunk or in a release branch:" + EOL +
-                    "  workspace: trunk" + EOL + "  metadata file: savanapoliciespresent/trunk/.savana" + EOL, e.getMessage());
+                    "  workspace: trunk" + EOL + "  metadata file: " + PROJECT_NAME + "/trunk/.savana" + EOL, e.getMessage());
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
