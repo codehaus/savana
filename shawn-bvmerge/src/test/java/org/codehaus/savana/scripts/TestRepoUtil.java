@@ -34,15 +34,14 @@ public abstract class TestRepoUtil {
      */
     public static final SVNURL DEFAULT_REPO = newRepositoryNoCheckedExceptions(true);
 
-    static {
-        FSRepositoryFactory.setup();
-    }
-
     /**
      * Create a new test subversion repository.
      */
     public static SVNURL newRepository(boolean installHooks) throws SVNException, IOException {
         _sLog.info("creating test repository");
+
+        FSRepositoryFactory.setup();
+
         File repoDir = TestDirUtil.createTempDir(nextRepositoryName());
         SVNAdminClient adminClient = SVN.getAdminClient();
         SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true);
@@ -161,5 +160,13 @@ public abstract class TestRepoUtil {
         } while (value != 0);
         buf.reverse();
         return buf.toString();
+    }
+
+
+    public static File touchCounterFile(File dir) throws IOException {
+        File counterFile = new File(dir, "counter.txt");
+        int value = Integer.parseInt(FileUtils.readFileToString(counterFile).trim());
+        FileUtils.writeStringToFile(counterFile, Integer.toString(value + 1));
+        return counterFile;
     }
 }

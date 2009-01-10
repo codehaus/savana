@@ -40,6 +40,10 @@ All restrictions can be bypassed by using a commit comment that starts with
 the text 'branch admin'.
 """
 
+import os
+import re
+import subprocess
+
 # always allow changes to files that start with one of these paths (directories should have a trailing '/')
 IGNORE_PATH_PREFIXES = []
 
@@ -64,7 +68,6 @@ def should_ignore_file(file):
 
 def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
     " Execute svnlook and capture standard output. "
-    import subprocess
     process = subprocess.Popen(["svnlook"] + [subcmd] + svnlook_cmd_opts + subcmd_opts,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = process.communicate()
@@ -90,7 +93,7 @@ def files_changed(svnlook_cmd_opts):
     def filename(line):
         return line[4:]
     changed_files = {}
-    for line in svnlook_output("changed", svnlook_cmd_opts).split("\n"):
+    for line in re.split("\r?\n", svnlook_output("changed", svnlook_cmd_opts)):
         if len(filename(line)) > 0 and not(should_ignore_file(filename(line))):
             changed_files[filename(line)] = flags(line)
     return changed_files
@@ -105,7 +108,6 @@ Each file belongs to a workspace as determined by one of the following patterns:
   <project>/branches/user/john-11234/...   - workspace type is 'user', name is 'john-11234'
   <anything-else>                          - workspace type is 'file', name is the file name
       """
-    import re
     workspace_type_format_pattern = [
         (WS_TRUNK,   re.compile(RE_TRUNK),   "%s"),
         (WS_USER,    re.compile(RE_USER),    "user branch: %s"),  # match user before release
@@ -170,7 +172,6 @@ The requirements depend on the first words of the commit comment:
 
     # verify that the Savana metadata file isn't modified accidentally in a trunk or release branch
     if ws_type != WS_USER:
-        import os
         for (file, flags) in changed_files.items():
             # only allow adding metadata files (branch create is reported as a directory add and metadata file update)
             (directory, filename) = os.path.split(file)
@@ -180,7 +181,6 @@ The requirements depend on the first words of the commit comment:
                 return 1
 
     # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
-    import re
     expected_name = re.split("\s", comment)[0]         # first word
     if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
         if ws_type == WS_USER:
