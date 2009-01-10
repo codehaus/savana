@@ -98,6 +98,12 @@ public class CreateBranch extends SAVCommand {
         }
         String branchName = targets.get(0);
 
+        //Validate the branch name doesn't have illegal characters
+        if (StringUtils.containsAny(branchName, "/\\")) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+                    "ERROR: Branch name may not contain slash characters: " + branchName), SVNLogType.CLIENT);
+        }
+
         //Get information about the current workspace from the metadata file
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
