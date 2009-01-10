@@ -28,7 +28,6 @@
  */
 package org.codehaus.savana;
 
-import org.codehaus.savana.scripts.SAVCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
@@ -36,6 +35,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.util.Properties;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class DefaultSavanaPolicies implements ISavanaPolicies {
@@ -50,7 +50,7 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         _properties = properties;
     }
 
-    public void validateLogMessage(SAVCommand command, String logMessage, MetadataProperties metadataProperties) throws SVNException {
+    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties, Logger logger) throws SVNException {
         // each branch type has its own regular expression that messages must match
         String prefix = "logmessage." + metadataProperties.getBranchType().name().toLowerCase() + ".";
 
@@ -61,7 +61,7 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         }
         pattern = replaceBranchKeywords(metadataProperties, pattern);
 
-        command.log("Validating log message against pattern: " + pattern);
+        logger.fine("Validating log message against pattern: " + pattern);
 
         // check the log message against the required pattern
         if (!Pattern.matches(pattern, logMessage)) {

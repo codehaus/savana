@@ -40,10 +40,11 @@ import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public abstract class SAVCommand extends SVNCommand {
-    private static final Logger _sLog = Logger.getLogger("savana-info");
+    protected static final Logger _sLog = Logger.getLogger("savana-info");
 
     protected SAVCommand(String name, String[] aliases) {
         super(name, aliases);
@@ -89,6 +90,9 @@ public abstract class SAVCommand extends SVNCommand {
     }
 
     public void log(String message) {
-        _sLog.log(Level.FINE, getClass().getSimpleName() + " " + message);
+        // set the source class name explicitly or else the logger thinks it's always "SAVCommand"
+        LogRecord logRecord = new LogRecord(Level.FINE, message);
+        logRecord.setSourceClassName(getClass().getName());
+        _sLog.log(logRecord);
     }
 }
