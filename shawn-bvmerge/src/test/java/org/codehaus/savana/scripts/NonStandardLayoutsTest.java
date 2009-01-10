@@ -13,11 +13,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Logger;
 
 public class NonStandardLayoutsTest extends AbstractSavanaScriptsTestCase {
-
-    private static final Logger log = Logger.getLogger(NonStandardLayoutsTest.class.getName());
 
     public void testNonstandardLayout() throws Exception {
         // this is actually the "standard" configuration...
@@ -47,7 +44,6 @@ public class NonStandardLayoutsTest extends AbstractSavanaScriptsTestCase {
                                               String userBranchesDir,
                                               String projectDir) throws Exception {
         // create a new test repository
-        log.info("creating test repository");
         SVNURL repoUrl = TestRepoUtil.newRepository(false);
 
         // create directories along the path to trunk
@@ -59,7 +55,7 @@ public class NonStandardLayoutsTest extends AbstractSavanaScriptsTestCase {
         }
 
         // check out a working copy of the repo
-        File wc = createTempDir("wc");
+        File wc = createTempDir("non-standard-layout-wc");
         SVN.getUpdateClient().doCheckout(trunkPath, wc, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false);
         cd(wc);
 
