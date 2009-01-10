@@ -1,17 +1,10 @@
 package org.codehaus.savana.scripts;
 
 import junit.framework.TestCase;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.tmatesoft.svn.cli.AbstractSVNCommand;
-import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
-import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * Base test case for Savana unit tests - defines useful methods for testing savana components.
@@ -20,26 +13,7 @@ import java.io.PrintStream;
  */
 public abstract class AbstractSavanaScriptsTestCase extends TestCase {
 
-    protected static final SVNClientManager SVN =
-            SVNClientManager.newInstance(new DefaultSVNOptions(), "savana-user", "");
-
-    protected static final String EOL = System.getProperty("line.separator");
-    
-    protected static final File INITIAL_DIRECTORY = new File("").getAbsoluteFile();
-
-    protected File SUBVERSION_CONFIG_DIR;
-
-    static {
-        FSRepositoryFactory.setup();        
-    }
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        cd(INITIAL_DIRECTORY);
-
-        SUBVERSION_CONFIG_DIR = createTempDir("subversion-config");
-    }
+    protected static final SVNClientManager SVN = TestRepoUtil.SVN;
 
     /**
      * execute the given savana script with the given arguments, returning script output as a string.
@@ -50,43 +24,7 @@ public abstract class AbstractSavanaScriptsTestCase extends TestCase {
      * @throws Exception on error
      */
     protected String savana(Class<? extends AbstractSVNCommand> scriptClass, String... args) throws Exception {
-        final boolean[] success = new boolean[1];
-        final ByteArrayOutputStream bufOut = new ByteArrayOutputStream();
-        final ByteArrayOutputStream bufErr = new ByteArrayOutputStream();
-
-        SAV savana = new SAV() {
-            @Override
-            public void success() {
-                // suppress System.exit(0)
-                success[0] = true;
-            }
-            @Override
-            public void failure() {
-                // suppress System.exit(1)
-                success[0] = false;
-            }
-        };
-
-        //Add the command name as the first argument
-        String scriptName = scriptClass.newInstance().getName();
-        args = (String[]) ArrayUtils.addAll(new String[]{scriptName}, args);
-        //Ignore the user's local subversion configuration files
-        args = (String[]) ArrayUtils.addAll(args, new String[]{"--config-dir", SUBVERSION_CONFIG_DIR.getPath()});
-
-        //Run the command 
-        savana.setOut(new PrintStream(bufOut, true));
-        savana.setErr(new PrintStream(bufErr, true));
-        savana.run(args);
-
-        //Throw an exception if the script failed or printed anything to stderr.
-        String out = bufOut.toString();
-        String err = bufErr.toString();
-        if (!success[0] || err.length() > 0) {
-            throw new SavanaScriptsTestException(out, err);
-        }
-
-        //Success.  Return whatever was printed to stdout.
-        return out.toString().trim();
+        return TestSavanaUtil.savana(scriptClass, args);
     }
 
     /**
@@ -95,7 +33,7 @@ public abstract class AbstractSavanaScriptsTestCase extends TestCase {
      * @param dir the directory to which we want to change
      */
     protected void cd(File dir) {
-        System.setProperty("user.dir", dir.getAbsolutePath());
+        TestDirUtil.cd(dir);
     }
 
     /**
@@ -105,15 +43,6 @@ public abstract class AbstractSavanaScriptsTestCase extends TestCase {
      * @return the directory
      */
     protected File createTempDir(String tempDirName) {
-        File tmpDir = new File("target/testdata").getAbsoluteFile();
-        File dir = new File(tmpDir, tempDirName);
-        if (dir.exists()) {
-            try {
-                FileUtils.deleteDirectory(dir);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return dir;
+        return TestDirUtil.createTempDir(tempDirName);
     }
 }

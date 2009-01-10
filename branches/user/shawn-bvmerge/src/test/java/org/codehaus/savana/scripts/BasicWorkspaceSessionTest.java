@@ -3,14 +3,19 @@ package org.codehaus.savana.scripts;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.logging.Logger;
 
-public class BasicWorkspaceSessionTest extends AbstractBasicSavanaScriptsTestCase {
+public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(BasicWorkspaceSessionTest.class.getName());
+
+    private static final String EOL = System.getProperty("line.separator");
+
+    private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     /**
      * test a simple user workspace session, with no errors or unusual cases.
@@ -23,6 +28,10 @@ public class BasicWorkspaceSessionTest extends AbstractBasicSavanaScriptsTestCas
      * @throws Exception on error
      */
     public void testBasicWorkspaceSession() throws Exception {
+        // setup a test project with a working directory and import the 'test-project' files
+        String projectName = getClass().getSimpleName().toLowerCase();
+        File WC1 = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-project");
+
         // update the wc and record the starting revision
         log.info("updating working copy");
         long rev = SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false);
@@ -58,6 +67,7 @@ public class BasicWorkspaceSessionTest extends AbstractBasicSavanaScriptsTestCas
                 new File[]{WC1}, false, "user branch commit - changed monkey to mongoose", null, null, false, false, SVNDepth.INFINITY);
 
 
+        SVNURL trunkUrl = REPO_URL.appendPath(projectName, false).appendPath("trunk", false);
         assertEquals(
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
@@ -71,7 +81,7 @@ public class BasicWorkspaceSessionTest extends AbstractBasicSavanaScriptsTestCas
                         " rat\n" +
                         " dragon\n" +
                         "\\ No newline at end of file",
-                        TRUNK_URL.toString(),
+                        trunkUrl.toString(),
                         toSvnkitAbsolutePath(WC1),
                         branchPointRev),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
@@ -133,7 +143,7 @@ public class BasicWorkspaceSessionTest extends AbstractBasicSavanaScriptsTestCas
                 "---------------------------------------------" + EOL +
                 "Branch Name:           workspace" + EOL +
                 "---------------------------------------------" + EOL +
-                "Project Name:          test-project" + EOL +
+                "Project Name:          " + projectName + EOL +
                 "Branch Type:           user branch" + EOL +
                 "Source:                trunk" + EOL +
                 "Branch Point Revision: " + branchPointRev + "" + EOL +

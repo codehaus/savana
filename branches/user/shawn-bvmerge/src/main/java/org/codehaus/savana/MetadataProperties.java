@@ -252,9 +252,11 @@ public class MetadataProperties {
     public BranchType getSourceBranchType() {
         if (_sourcePath == null) {
             return null;
-        } else if (_sourcePath.equals(_trunkPath)) {
+        }
+        String sourcePath = PathUtil.getPathTail(_sourcePath, _projectRoot);
+        if (sourcePath.equals(_trunkPath)) {
             return BranchType.TRUNK;
-        } else if (SVNPathUtil.removeTail(_sourcePath).equals(_releaseBranchesPath)) {
+        } else if (SVNPathUtil.removeTail(sourcePath).equals(_releaseBranchesPath)) {
             return BranchType.RELEASE_BRANCH;
         } else {
             return BranchType.USER_BRANCH;
