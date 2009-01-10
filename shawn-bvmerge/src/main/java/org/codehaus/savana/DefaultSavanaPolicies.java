@@ -52,7 +52,7 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
 
     public void validateLogMessage(SAVCommand command, String logMessage, MetadataProperties metadataProperties) throws SVNException {
         // each branch type has its own regular expression that messages must match
-        String prefix = metadataProperties.getBranchType().name().toLowerCase() + ".";
+        String prefix = "logmessage." + metadataProperties.getBranchType().name().toLowerCase() + ".";
 
         // get the regular expression to match against the log message (if any) and expand variables
         String pattern = _properties.getProperty(prefix + "pattern");

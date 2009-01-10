@@ -65,8 +65,12 @@ def should_ignore_file(file):
 def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
     " Execute svnlook and capture standard output. "
     import subprocess
-    return subprocess.Popen(["svnlook"] + [subcmd] + svnlook_cmd_opts + subcmd_opts,
-                          stdout=subprocess.PIPE).communicate()[0]
+    process = subprocess.Popen(["svnlook"] + [subcmd] + svnlook_cmd_opts + subcmd_opts,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = process.communicate()
+    if process.returncode != 0:
+        raise Exception, stderr
+    return stdout
 
 def commit_comment(svnlook_cmd_opts):
     " Returns the commit comment associated with the svn transaction. "
@@ -207,8 +211,9 @@ Run pre-commit options on a repository transaction."""
       
         # call all pre-commit checks...
         errors += check_permissible_file_changes(svnlook_cmd_opts)
-      
+
     except:
+        sys.stderr.write("Unexpected error: X " + str(sys.exc_info()[1]).strip() + "\n\n")
         parser.print_help()
         errors += 1
     return errors

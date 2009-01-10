@@ -2,13 +2,18 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
 import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
 import java.util.logging.Logger;
 
-public class MultipleWorkspacesTest extends AbstractBasicSavanaScriptsTestCase {
+public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(MultipleWorkspacesTest.class.getName());
+
+    private static final String EOL = System.getProperty("line.separator");
+    
+    private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     /**
      * test several concurrent workspaces making changes and syncronizing back and forth.
@@ -21,6 +26,10 @@ public class MultipleWorkspacesTest extends AbstractBasicSavanaScriptsTestCase {
      * @throws Exception on error
      */
     public void testMultipleWorkspaces() throws Exception {
+        // setup a test project with a working directory and import the 'test-project' files
+        String projectName = getClass().getSimpleName().toLowerCase();
+        File WC1 = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-project");
+        File WC2 = TestRepoUtil.createTrunkWC(REPO_URL, projectName);
 
         // update working copy 1 and create a branch to edit the drinks list
         cd(WC1);
