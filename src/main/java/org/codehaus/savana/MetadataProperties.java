@@ -215,7 +215,7 @@ public class MetadataProperties {
             savanaPolicies = (ISavanaPolicies) Class.forName(className).newInstance();
         } catch(Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
-                    "Error creating Savana policy class instance: " + className, e), SVNLogType.CLIENT);
+                    "Error creating Savana policy class instance: " + className, null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
         }
         savanaPolicies.initialize(properties);
         return savanaPolicies;
