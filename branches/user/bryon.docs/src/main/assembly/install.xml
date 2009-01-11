@@ -65,13 +65,6 @@ will apply to all Software in this distribution.
             <outputDirectory>/bin</outputDirectory>
             <fileMode>0777</fileMode>
         </fileSet>
-        <fileSet>
-            <directory>target</directory>
-            <outputDirectory>/lib</outputDirectory>
-            <includes>
-                <include>*.jar</include>
-            </includes>
-        </fileSet>
     </fileSets>
 
 </assembly>
