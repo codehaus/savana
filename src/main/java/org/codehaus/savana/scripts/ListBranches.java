@@ -1,23 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.savana.ListDirEntryHandler;
-import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaArgument;
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.regex.Pattern;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -43,131 +26,154 @@ import java.util.regex.Pattern;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class ListBranches extends SVNScript {
-    private static final SavanaArgument PROJECT = new SavanaArgument(
-            "project", "the project from which to list branches");
-    private static final SavanaArgument FILTER = new SavanaArgument(
-            "filter", "branch name filter, filters the set of branches to list", "*");
-    private String _projectName;
-    private String _branchNameFilter;
-    private boolean _userBranch;
+package org.codehaus.savana.scripts;
 
-    public ListBranches()
-            throws SVNException, SVNScriptException {
-        this(false);
-    }
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.savana.ListDirEntryHandler;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.util.SVNLogType;
 
-    public ListBranches(boolean userBranch)
-            throws SVNException, SVNScriptException {
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.regex.Pattern;
+
+public class ListBranches extends SAVCommand {
+
+    private final boolean _userBranch;
+
+    public ListBranches(String name, String[] aliases, boolean userBranch) {
+        super(name, aliases);
         _userBranch = userBranch;
     }
 
-    public CommandLineProcessor constructCommandLineProcessor() {
-        return new CommandLineProcessor(
-                new CommandLineProcessor.ArgumentHandler(PROJECT) {
-                    public void handle(String arg) {
-                        _projectName = arg;
-                    }
-                },
-                new CommandLineProcessor.ArgumentHandler(FILTER) {
-                    public void handle(String arg) {
-                        _branchNameFilter = arg;
-                    }
-                });
+    @Override
+    protected Collection createSupportedOptions() {
+        return new ArrayList();
     }
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.size() > 1) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+        String branchNameFilter = targets.isEmpty() ? "*" : targets.get(0);
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Find the source of the branch
-        String branchesRootPath = (_userBranch) ?
-                                  wcInfo.getUserBranchPath(null) :
-                                  wcInfo.getReleaseBranchPath(null);
+        String branchesRootPath = _userBranch ?
+                                  wcProps.getUserBranchPath(null) :
+                                  wcProps.getReleaseBranchPath(null);
+        SVNURL branchesRootURL = wcInfo.getRepositoryURL(branchesRootPath);
 
         //Make sure the branch exists
         logStart("Check if path exists");
-        if (_repository.checkPath(_repository.getRepositoryPath(branchesRootPath), -1) != SVNNodeKind.DIR) {
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        if (repository.checkPath(repository.getRepositoryPath(branchesRootPath), -1) != SVNNodeKind.DIR) {
             String errorMessage =
                     "ERROR: Could not find project." +
-                    "\nProject: " + _projectName;
-            throw new SVNScriptException(errorMessage);
+                    "\nURL: " + branchesRootURL;
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check if branch exists");
 
         //Find all of the directories at that path
         logStart("List branches");
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL branchesRootURL = repositoryURL.appendPath(branchesRootPath, false);
         ListDirEntryHandler listDirEntryHandler = new ListDirEntryHandler(branchesRootURL);
-        _clientManager.getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
-                                             SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
+        env.getClientManager().getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
+                                                     SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
         logEnd("List branches");
-        
+
         logStart("Get branch names");
         SortedSet<String> branchNames = listDirEntryHandler.getNames();
         logEnd("Get branch names");
 
         logStart("Filter branch names");
         //Create a regular expression from the branch name filter
-        Pattern branchNamePattern = getBranchNamePattern(_branchNameFilter);
+        Pattern branchNamePattern = getBranchNamePattern(branchNameFilter);
 
         //Remove any branch names that don't match the pattern
-        for (Iterator it = branchNames.iterator(); it.hasNext();) {
-            String branchName = (String) it.next();
-
+        for (Iterator<String> it = branchNames.iterator(); it.hasNext();) {
+            String branchName = it.next();
             if (!branchNamePattern.matcher(branchName).matches()) {
                 it.remove();
             }
         }
         logEnd("Filter branch names");
 
-        //For each branch name
+        //For each branch name...
         logStart("Print branch info");
         if (branchNames.isEmpty()) {
-            getOut().println("No branches were found.");
+            env.getOut().println("No branches were found.");
         } else {
-            getOut().println("-----------------------------------------------------------------------------");
-            getOut().println(
+            env.getOut().println("--------------------------------------------------------------");
+            env.getOut().println(
                     pad("Branch Name", 20) +
                     pad("Source", 15) +
                     pad("Branch-Point", 15) +
-                    pad("Last-Merge", 15) +
-                    pad("Last-Promote", 0));
+                    pad("Last-Merge", 0));
 
-            getOut().println("-----------------------------------------------------------------------------");
+            env.getOut().println("--------------------------------------------------------------");
+
+            String userBranchesPath = wcProps.getUserBranchPath(null);
+            String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
 
             for (String branchName : branchNames) {
-                logStart("Get branch metadata info");
-                //Get the metadata file
+                //Skip the release and user branches top-level directory, if they're here
                 String branchPath = SVNPathUtil.append(branchesRootPath, branchName);
-                String metadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-                SVNProperties metadataFileProperties = new SVNProperties();
-                _repository.getFile(metadataFilePath, -1, metadataFileProperties, null);
-                logEnd("Get branch metadata info");
+                if (branchPath.equals(releaseBranchesPath) || branchPath.equals(userBranchesPath)) {
+                    continue;
+                }
+
+                //Get the metadata file
+                String metadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+                MetadataProperties metadataFileProperties;
+                try {
+                    metadataFileProperties = new MetadataProperties(repository, metadataFilePath, -1);
+                } catch (SVNException e) {
+                    // branch doesn't have a .savana file
+                    env.getOut().println(branchName);
+                    continue;
+                }
 
                 //Print the branch information
-                logStart("Print branch metadata info");
-                String sourcePath = metadataFileProperties.getStringValue(MetadataFile.PROP_SOURCE_PATH);
-                String branchPointRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_BRANCH_POINT_REVISION);
-                String lastMergeRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_MERGE_REVISION);
-                String lastPromoteRevision = metadataFileProperties.getStringValue(MetadataFile.PROP_LAST_PROMOTE_REVISION);
+                String sourcePath = metadataFileProperties.getSourcePath();
+                SVNRevision branchPointRevision = metadataFileProperties.getBranchPointRevision();
+                SVNRevision lastMergeRevision = metadataFileProperties.getLastMergeRevision();
 
-                getOut().println(
+                env.getOut().println(
                         pad(branchName, 20) +
                         pad(SVNPathUtil.tail(sourcePath), 15) +
-                        pad(branchPointRevision, 15) +
-                        pad(lastMergeRevision, 15) +
-                        pad(lastPromoteRevision, 0));
-                logEnd("Print branch metadata info");
+                        pad(branchPointRevision != null ? branchPointRevision.toString() : "", 15) +
+                        pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 0));
             }
         }
         logEnd("Print branch info");
     }
 
     private Pattern getBranchNamePattern(String branchNameFilter) {
-
         //Convert '*' characters to the '.*' regular expression pattern
 
         //Split the URI out by the '*' character
@@ -196,14 +202,10 @@ public class ListBranches extends SVNScript {
         if (s == null) {
             s = "";
         }
-
-        while (s.length() < length) {
-            s = s + " ";
+        StringBuilder buf = new StringBuilder(s);
+        while (buf.length() < length) {
+            buf.append(' ');
         }
-        return s;
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("listbranches");
+        return buf.toString();
     }
 }

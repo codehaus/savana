@@ -1,7 +1,7 @@
-@ECHO OFF
+@echo off
 
 REM  Savana - Transactional Workspaces for Subversion
-REM  Copyright (C) 2006  Bazaarvoice Inc.
+REM  Copyright (C) 2006-2009 Bazaarvoice Inc.
 REM
 REM  This file is part of Savana.
 REM
@@ -25,27 +25,21 @@ REM  licenses are listed in the "licenses" directory in this distribution. In an
 REM  the disclaimer of warranty and limitation of liability provision in this Agreement
 REM  will apply to all Software in this distribution.
 
-SETLOCAL
+setlocal
 
-:setupVariables
-SET BIN_DIR=%SAVANA_HOME%\bin
-SET LIB_DIR=%SAVANA_HOME%\lib
-SET OUT_DIR=%SAVANA_HOME%\out
-SET RES_DIR=%SAVANA_HOME%\res
+set DEFAULT_SAVANA_HOME=%~dp0..
 
-:setupClasspath
+if "%SAVANA_HOME%"=="" set SAVANA_HOME=%DEFAULT_SAVANA_HOME%
+
+rem Add everything in the /lib directory to the classpath
 setlocal EnableDelayedExpansion
-SET CLASSPATH=%SAVANA_HOME%
-FOR %%J IN ("%LIB_DIR%\*.jar") DO SET CLASSPATH=!CLASSPATH!;%%J
-rem FOR %%J IN ("%LIB_DIR%/*.jar") DO ECHO [%%J] 
-endlocal & set CLASSPATH=%CLASSPATH%
+set SAVANA_CLASSPATH=
+for %%J in ("%SAVANA_HOME%\lib\*.jar") do set SAVANA_CLASSPATH=!SAVANA_CLASSPATH!;%%J
+endlocal & set SAVANA_CLASSPATH=%SAVANA_CLASSPATH:~1%
 
-:parseArguments
-SET SCRIPT_NAME=%1
-SHIFT
+set SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
+set SAVANA_OPTIONS=-Xms128M -Xmx1024M -Djava.util.logging.config.file="%SAVANA_HOME%/logging.properties"
 
-java -classpath "%CLASSPATH%" -Dsavana.home=%SAVANA_HOME% org.codehaus.savana.scripts.SVNScript "%SCRIPT_NAME%" %1 %2 %3 %4 %5 %6 %7 %8 %9
-GOTO end
+java %SAVANA_OPTIONS% -cp "%SAVANA_CLASSPATH%" %SAVANA_MAINCLASS% %*
 
-:end
-ENDLOCAL
+endlocal

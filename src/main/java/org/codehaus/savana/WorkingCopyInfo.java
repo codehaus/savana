@@ -1,21 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.wc.SVNClientManager;
-import org.tmatesoft.svn.core.wc.SVNPropertyData;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-import static org.tmatesoft.svn.core.wc.SVNRevision.UNDEFINED;
-import static org.tmatesoft.svn.core.wc.SVNRevision.WORKING;
-import static org.codehaus.savana.MetadataFile.*;
-
-import java.io.File;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -41,33 +26,41 @@ import java.io.File;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
+package org.codehaus.savana;
+
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.wc.SVNClientManager;
+import org.tmatesoft.svn.core.wc.SVNInfo;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+
 public class WorkingCopyInfo {
     private File _rootDir;
     private MetadataFile _metadataFile;
-    private String _projectName;
-    private String _branchPath;
-    private String _sourcePath;
-    private String _branchType;
-    private String _projectRoot = null;
-    private String _trunkPath = MetadataFile.DEFAULT_TRUNK_PATH;
-    private String _branchesPath = MetadataFile.DEFAULT_BRANCHES_PATH;
-    private String _userBranchesPath = MetadataFile.DEFAULT_USER_BRANCHES_PATH;
-    private SVNVersion _svnVersion = SVNVersion.SVN_1_4;
-
-    private SVNRevision _branchPointRevision;
-    private SVNRevision _lastMergeRevision;
-    private SVNRevision _lastPromoteRevision;
+    private SVNURL _repositoryUrl;
+    private MetadataProperties _metadataProperties;
 
     public WorkingCopyInfo(SVNClientManager clientManager)
-            throws SVNException, SVNScriptException {
+            throws SVNException {
         this(clientManager, new File(System.getProperty("user.dir")));
     }
 
     public WorkingCopyInfo(SVNClientManager clientManager, File currentDirectory)
-            throws SVNException, SVNScriptException {
+            throws SVNException {
         while (currentDirectory != null) {
             MetadataFile metadataFile = new MetadataFile(currentDirectory, MetadataFile.METADATA_FILE_NAME);
+            if (!metadataFile.exists()) {
+                metadataFile = new MetadataFile(currentDirectory, MetadataFile.METADATA_FILE_NAME_BACKWARD_COMPATIBLE);
+            }
             if (metadataFile.exists()) {
                 _metadataFile = metadataFile;
                 _rootDir = currentDirectory;
@@ -78,72 +71,33 @@ public class WorkingCopyInfo {
         }
 
         if (_metadataFile == null) {
-            throw new SVNScriptException("ERROR: Current directory is not part of a working copy.");
+            String errorMessage = "ERROR: Current directory is not part of a working copy.";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CLIENT_VERSIONED_PATH_REQUIRED, errorMessage), SVNLogType.CLIENT);
         }
 
-        //Find the branch path from the metadata file
+        //Load all the metadata properties from the metadata file
+        _metadataProperties = new MetadataProperties(clientManager, _metadataFile);
+
+        //Make sure that the actual repository location of the working copy and the location of the .savana file match
+        //One way for these to not match is if a promotion script failed after the merge to the source but before the commit
+        //In this case, the working copy will be pointed at the source in the repository, but the metadata file will still
+        //be the copy from the branch.
+        //If this condition ever happens, the scripts should fail since the working copy info will be inaccurate
+
+        //Make sure that the path in the repository matches the path from the metadata file.
+        //Get the working copy location according to subversion
+        String branchPath = _metadataProperties.getBranchPath();
         SVNWCClient wcClient = clientManager.getWCClient();
-
-        SVNPropertyData projectNameProps = wcClient.doGetProperty(_metadataFile, PROP_PROJECT_NAME, UNDEFINED, WORKING);
-        SVNPropertyData branchPathProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_PATH, UNDEFINED, WORKING);
-        SVNPropertyData sourcePathProps = wcClient.doGetProperty(_metadataFile, PROP_SOURCE_PATH, UNDEFINED, WORKING);
-        SVNPropertyData branchTypeProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_TYPE, UNDEFINED, WORKING);
-        SVNPropertyData projectRootProps = wcClient.doGetProperty(_metadataFile, PROP_PROJECT_ROOT, UNDEFINED, WORKING);
-        SVNPropertyData trunkPathProps = wcClient.doGetProperty(_metadataFile, PROP_TRUNK_PATH, UNDEFINED, WORKING);
-        SVNPropertyData branchesPathProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCHES_PATH, UNDEFINED, WORKING);
-        SVNPropertyData userBranchesPathProps = wcClient.doGetProperty(_metadataFile, PROP_USER_BRANCHES_PATH, UNDEFINED, WORKING);
-        SVNPropertyData branchPointRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_BRANCH_POINT_REVISION, UNDEFINED, WORKING);
-        SVNPropertyData lastMergeRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_LAST_MERGE_REVISION, UNDEFINED, WORKING);
-        SVNPropertyData lastPromoteRevisionProps = wcClient.doGetProperty(_metadataFile, PROP_LAST_PROMOTE_REVISION, UNDEFINED, WORKING);
-        SVNPropertyData svnVersionProps = wcClient.doGetProperty(_metadataFile, PROP_SVN_VERSION, UNDEFINED, WORKING);
-
-        if (projectNameProps != null) {
-            _projectName = _projectRoot = SVNPropertyValue.getPropertyAsString(projectNameProps.getValue());
+        SVNInfo info = wcClient.doInfo(_metadataFile.getParentFile(), SVNRevision.WORKING);
+        String pathUrl = info.getURL().toString();
+        String actualPath = PathUtil.getPathTail(pathUrl, info.getRepositoryRootURL().toString());
+        if (!actualPath.equals(branchPath)) {
+            String errorMessage = "ERROR: The working copy does not match the repository location. [actualPath: " + actualPath + "] [branchPath: " + branchPath + "]";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.WC_INVALID_OP_ON_CWD, errorMessage), SVNLogType.CLIENT);
         }
 
-        if (branchPathProps != null) {
-            _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps.getValue());
-        }
-
-        if (sourcePathProps != null) {
-            _sourcePath = SVNPropertyValue.getPropertyAsString(sourcePathProps.getValue());
-        }
-
-        if (branchTypeProps != null) {
-            _branchType = SVNPropertyValue.getPropertyAsString(branchTypeProps.getValue());
-        }
-
-        if (projectRootProps != null) {
-            _projectRoot = SVNPropertyValue.getPropertyAsString(projectRootProps.getValue());
-        }
-
-        if (trunkPathProps != null) {
-            _trunkPath = SVNPropertyValue.getPropertyAsString(trunkPathProps.getValue());
-        }
-
-        if (branchesPathProps != null) {
-            _branchesPath = SVNPropertyValue.getPropertyAsString(branchesPathProps.getValue());
-        }
-
-        if (userBranchesPathProps != null) {
-            _userBranchesPath = SVNPropertyValue.getPropertyAsString(userBranchesPathProps.getValue());
-        }
-
-        if (branchPointRevisionProps != null) {
-            _branchPointRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(branchPointRevisionProps.getValue())));
-        }
-
-        if (lastMergeRevisionProps != null) {
-            _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps.getValue())));
-        }
-
-        if (lastPromoteRevisionProps != null) {
-            _lastPromoteRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastPromoteRevisionProps.getValue())));
-        }
-
-        if (svnVersionProps != null) {
-            _svnVersion = SVNVersion.valueOf(SVNPropertyValue.getPropertyAsString(svnVersionProps.getValue()));
-        }
+        //Remember the repository URL
+        _repositoryUrl = info.getRepositoryRootURL();
     }
 
     public File getRootDir() {
@@ -154,87 +108,21 @@ public class WorkingCopyInfo {
         return _metadataFile;
     }
 
-    public String getProjectName() {
-        return _projectName;
+    public MetadataProperties getMetadataProperties() {
+        return _metadataProperties;
     }
 
-    public String getBranchPath() {
-        return _branchPath;
-    }
-
-    public String getProjectRoot() {
-        return _projectRoot;
-    }
-
-    public String getBranchesPath() {
-        return _branchesPath;
-    }
-
-    public String getUserBranchesPath() {
-        return _userBranchesPath;
-    }
-
-    public SVNVersion getSVNVersion() {
-        return _svnVersion;
-    }
-
-    public String getBranchName() {
-        if (_branchPath == null) {
-            return null;
-        } else {
-            return SVNPathUtil.tail(_branchPath);
+    public SVNURL getRepositoryURL(String... pathParts) throws SVNException {
+        SVNURL url = _repositoryUrl;
+        for (String pathPart : pathParts) {
+            if (pathPart != null) {
+                url = url.appendPath(pathPart, false);
+            }
         }
-    }
-
-    public String getSourcePath() {
-        return _sourcePath;
-    }
-
-    public String getSourceName() {
-        if (_sourcePath == null) {
-            return null;
-        } else {
-            return SVNPathUtil.tail(_sourcePath);
-        }
-    }
-
-    public String getBranchType() {
-        return _branchType;
-    }
-
-    public SVNRevision getBranchPointRevision() {
-        return _branchPointRevision;
-    }
-
-    public SVNRevision getLastMergeRevision() {
-        return _lastMergeRevision;
-    }
-
-    public SVNRevision getLastPromoteRevision() {
-        return _lastPromoteRevision;
+        return url;
     }
 
     public String toString() {
-        return
-                "---------------------------------------------" +
-                "\nBranch Name:           " + getBranchName() +
-                "\n---------------------------------------------" +
-                "\nProject Name:          " + _projectName +
-                "\nBranch Type:           " + _branchType.toLowerCase() +
-                "\nSource:                " + ((getSourceName() != null) ? getSourceName() : "none") +
-                "\nBranch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none") +
-                "\nLast Merge Revision:   " + ((_lastMergeRevision != null) ? _lastMergeRevision : "none");
-    }
-
-    public String getTrunkPath() {
-        return SVNPathUtil.append(getProjectRoot(), _trunkPath);
-    }
-    
-    public String getReleaseBranchPath(String branchName) {
-        return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), getBranchesPath()), branchName);
-    }
-
-    public String getUserBranchPath(String branchName) {
-        return SVNPathUtil.append(SVNPathUtil.append(getProjectRoot(), getUserBranchesPath()), branchName);
+        return _metadataProperties.toString();
     }
 }
