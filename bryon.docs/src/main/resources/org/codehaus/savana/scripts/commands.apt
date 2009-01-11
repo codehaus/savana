@@ -1,0 +1,152 @@
+  --------
+  Commands
+  --------
+
+Savana Commands
+
+    The base Savana executable is called "sav", and the various functions of Savana are
+    implemented as "sub-commands" (the same mechanism as used by Subversion).  The general usage
+    of savana is:
+
++--
+sav <subcommand> <options> <arguments>
++--
+
+    The sub-commands are:
+
+    * {{{help}help (?, h)}}
+
+    * {{{createreleasebranch}createreleasebranch (crb)}}
+
+    * {{{createuserbranch}createuserbranch (cb, cub)}}
+
+    * {{{deleteuserbranch}deleteuserbranch}}
+
+    * {{{diffchangesfromsource}diffchangesfromsource (diff)}}
+
+    * {{{listchangesfromsource}listchangesfromsource (lc)}}
+
+    * {{{listreleasebranches}listreleasebranches (lrb)}}
+
+    * {{{listuserbranches}listuserbranches (lub, lb)}}
+
+    * {{{listworkingcopyinfo}listworkingcopyinfo (wci, info)}}
+
+    * {{{promote}promote}}
+
+    * {{{reverttosource}reverttosource (rs, revert)}}
+
+    * {{{setbranch}setbranch (sb)}}
+
+    * {{{synchronize}synchronize (sync)}}
+
+    * {{{createmetadatafile}createmetadatafile (bootstrap)}}
+
+    []
+
+    To see the full documentation of a sub-command, along with detailed descriptions of its
+    options and arguments, run:
+
++--
+sav help <subcommand>
++--
+
+
+{help} (?, h)
+
++--
+@help.description@
++--
+
+
+{createreleasebranch} (crb)
+
++--
+@createreleasebranch.description@
++--
+
+
+{createuserbranch} (cb, cub)
+
++--
+@createuserbranch.description@
++--
+
+
+{deleteuserbranch}
+
++--
+@deleteuserbranch.description@
++--
+
+
+{diffchangesfromsource} (diff)
+
++--
+@diffchangesfromsource.description@
++--
+
+
+{listchangesfromsource} (lc)
+
++--
+@listchangesfromsource.description@
++--
+
+
+{listreleasebranches} (lrb)
+
++--
+@listreleasebranches.description@
++--
+
+
+{listuserbranches} (lub, lb)
+
++--
+@listuserbranches.description@
++--
+
+
+{listworkingcopyinfo} (wci, info)
+
++--
+@listworkingcopyinfo.description@
++--
+
+
+{promote}
+
++--
+@promote.description@
++--
+
+
+{reverttosource} (rs, revert)
+
++--
+@reverttosource.description@
++--
+
+
+{setbranch} (sb)
+
++--
+@setbranch.description@
++--
+
+
+{synchronize} (sync)
+
++--
+@synchronize.description@
++--
+
+
+{createmetadatafile} (bootstrap)
+
++--
+@createmetadatafile.description@
++--
+
+
