@@ -1,4 +1,0 @@
-monkey
-dog
-rat
-dragon
