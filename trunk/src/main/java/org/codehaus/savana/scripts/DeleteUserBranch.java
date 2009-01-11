@@ -1,11 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.SVNScriptException;
-import org.tmatesoft.svn.core.SVNException;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -31,14 +26,17 @@ import org.tmatesoft.svn.core.SVNException;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class DeleteUserBranch extends DeleteBranch {
-    public DeleteUserBranch()
-            throws SVNException, SVNScriptException {
-        super(true);
-    }
+package org.codehaus.savana.scripts;
 
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("deleteuserbranch");
+public class DeleteUserBranch extends DeleteBranch {
+
+    public DeleteUserBranch() {
+        // somewhat dangerous command, so no shortcut aliases are defined.  for example, since
+        // 's' and 'd' are next to each other on the keyboard, it seems easy to mistype "ss sb branch"
+        // as "ss db branch".  a deleted branch can be recovered using "svn merge -r n:n-1 <project-url>"
+        // where n is the changeset that deleted the branch.
+        super("deleteuserbranch", null, true);
     }
 }

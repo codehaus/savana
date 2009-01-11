@@ -1,17 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
-import org.tmatesoft.svn.core.wc.SVNDiffClient;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -37,38 +26,98 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class DiffChangesFromSource extends SVNScript {
-    public DiffChangesFromSource()
-            throws SVNException, SVNScriptException {}
+package org.codehaus.savana.scripts;
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNOption;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
+import org.tmatesoft.svn.core.wc.SVNDiffClient;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+public class DiffChangesFromSource extends SAVCommand {
+
+    public DiffChangesFromSource() {
+        super("diffchangesfromsource", new String[]{"diff"});
+    }
+
+    @Override
+    protected Collection createSupportedOptions() {
+        ArrayList options = new ArrayList();
+        options.add(SVNOption.DIFF_CMD);
+        options.add(SVNOption.EXTENSIONS);
+        options.add(SVNOption.NO_DIFF_DELETED);
+        options.add(SVNOption.FORCE);        
+        return options;
+    }
+
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.size() > 0) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //If there is no source (we are in the trunk)
-        if (wcInfo.getSourcePath() == null) {
-            String errorMessage = "Error: No source path found.";
-            throw new SVNScriptException(errorMessage);
+        if (wcProps.getSourcePath() == null) {
+            String errorMessage = "Error: No source path found (you are probably in the TRUNK).";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
 
         //Create the source URL
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL sourceURL = repositoryURL.appendPath(wcInfo.getSourcePath(), false);
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
 
         //Diff [source:HEAD, branch:HEAD] to see what has changes
         logStart("Get Diff Client");
-        SVNDiffClient diffClient = _clientManager.getDiffClient();
-        diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
+        SVNDiffClient diffClient = env.getClientManager().getDiffClient();
+        final String metadataFile = wcInfo.getMetadataFile().getAbsolutePath();
+        DefaultSVNDiffGenerator diffGenerator = new DefaultSVNDiffGenerator() {
+            @Override
+            public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result) throws SVNException {
+                // ignore changes in the metadata file
+                if (!new File(path).getAbsolutePath().equals(metadataFile)) {
+                    super.displayPropDiff(path, baseProps, diff, result);
+                }
+            }
+        };
+        if (env.getDiffCommand() != null) {
+            diffGenerator.setExternalDiffCommand(env.getDiffCommand());
+            diffGenerator.setRawDiffOptions(env.getExtensions());
+        } else {
+            diffGenerator.setDiffOptions(env.getDiffOptions());
+        }
+        diffGenerator.setDiffDeleted(!env.isNoDiffDeleted());
+        diffGenerator.setForcedBinaryDiff(env.isForce());
+        diffGenerator.setBasePath(new File("").getAbsoluteFile());
+        diffGenerator.setFallbackToAbsolutePath(true);
+        diffGenerator.setOptions(diffClient.getOptions());
+        diffClient.setDiffGenerator(diffGenerator);
         logEnd("Get Diff Client");
 
         logStart("Do Diff");
-        diffClient.doDiff(sourceURL, wcInfo.getLastMergeRevision(), wcInfo.getRootDir(),
-                          SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, getOut(), null);
+        diffClient.doDiff(sourceURL, wcProps.getLastMergeRevision(), wcInfo.getRootDir(),
+                SVNRevision.WORKING, SVNDepth.INFINITY, false, env.getOut(), null);
         logEnd("Do Diff");
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("diff");
     }
 }
