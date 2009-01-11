@@ -36,6 +36,8 @@
  */
 package org.codehaus.savana;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -50,16 +52,17 @@ public class Version {
             org.tmatesoft.svn.util.Version.getMicroVersion();
 
     private static String getVersion() {
-        InputStream in = Version.class.getClassLoader().getResourceAsStream("META-INF/maven/org.codehaus/savana/pom.properties");
+        InputStream in = Version.class.getClassLoader().getResourceAsStream("org/codehaus/savana/version.properties");
         if (in != null) {
+            Properties props = new Properties();
             try {
-                Properties props = new Properties();
                 props.load(in);
-                in.close();
-                return props.getProperty("version");
             } catch (IOException e) {
                 throw new IllegalStateException(e); // should never happen
+            } finally {
+                IOUtils.closeQuietly(in);
             }
+            return props.getProperty("savana.version") + " (revision " + props.getProperty("savana.revision") + ")";
         }
         return "UNKNOWN";
     }
