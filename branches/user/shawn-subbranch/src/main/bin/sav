@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Savana - Transactional Workspaces for Subversion
+# Copyright (C) 2006-2009  Bazaarvoice Inc.
+# 
+# This file is part of Savana.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# Third party components of this software are provided or made available only subject
+# to their respective licenses. The relevant components and corresponding
+# licenses are listed in the "licenses" directory in this distribution. In any event,
+# the disclaimer of warranty and limitation of liability provision in this Agreement
+# will apply to all Software in this distribution.
+
+cygwin=false;
+case "`uname`" in
+  CYGWIN*) cygwin=true ;;
+esac
+
+if [ "$SAVANA_HOME" = "" ]
+then
+  old_wd=`pwd`
+
+  progname=`basename "$0"`
+  linkdir=`dirname "$0"`
+
+  cd "$linkdir"
+  prg="$progname"
+
+  # traverse symbolic links to the actual install directory
+  while [ -h "$prg" ] ; do
+    ls=`ls -ld "$prg"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '.*/.*' > /dev/null; then
+      prg="$link"
+    else
+      prg="`dirname \"$prg\"`/$link"
+    fi
+  done
+
+  SAVANA_HOME="`dirname \"$prg\"`/.."
+  SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
+
+  cd "$old_wd"
+fi
+
+# add everything in the /lib directory to the classpath
+SAVANA_CP=""
+for I in "$SAVANA_HOME"/lib/*.jar
+do
+  SAVANA_CP="$SAVANA_CP:$I"
+done
+SAVANA_CP="${SAVANA_CP:1}"  # strip off leading ':'
+
+# under cygwin, convert to Windows path after all bash path processing is complete
+if $cygwin ; then
+  SAVANA_HOME=`cygpath --windows "$SAVANA_HOME"`
+  SAVANA_CP=`cygpath --windows --path "$SAVANA_CP"`
+fi
+
+SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false"
+
+SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
+java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" -Djava.util.logging.config.file="$SAVANA_HOME/logging.properties" $SAVANA_MAINCLASS "$@"
+
