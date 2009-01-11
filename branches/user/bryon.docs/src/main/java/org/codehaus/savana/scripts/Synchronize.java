@@ -1,22 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.ChangeLogEntryHandler;
-import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
-import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.wc.*;
-
-import java.io.File;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -42,28 +26,70 @@ import java.io.File;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class Synchronize extends SVNScript {
-    public Synchronize()
-            throws SVNException, SVNScriptException {}
+package org.codehaus.savana.scripts;
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+import org.codehaus.savana.BranchType;
+import org.codehaus.savana.MetadataFile;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
+import org.tmatesoft.svn.core.wc.SVNDiffClient;
+import org.tmatesoft.svn.core.wc.SVNInfo;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.util.SVNLogType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+public class Synchronize extends SAVCommand {
+
+    public Synchronize() {
+        super("synchronize", new String[]{"sync"});
+    }
+
+    @Override
+    protected Collection createSupportedOptions() {
+        return new ArrayList();
+    }
+
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.size() > 0) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Find the source and branch URLs
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL sourceURL = repositoryURL.appendPath(wcInfo.getSourcePath(), false);
-        SVNURL branchURL = repositoryURL.appendPath(wcInfo.getBranchPath(), false);
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
+        SVNURL branchURL = wcInfo.getRepositoryURL(wcProps.getBranchPath());
 
         //Make sure that we are in a user branch
         logStart("Check for user branch");
-        if (!MetadataFile.BRANCH_TYPE_USER_BRANCH.equals(wcInfo.getBranchType())) {
+        if (wcProps.getBranchType() != BranchType.USER_BRANCH) {
             String errorMessage =
                     "ERROR: Merges can only be performed from user branches." +
                     "\nBranch: " + branchURL +
-                    "\nBranch Type: " + wcInfo.getBranchType();
-            throw new SVNScriptException(errorMessage);
+                    "\nBranch Type: " + wcProps.getBranchType();
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for user branch");
 
@@ -71,51 +97,36 @@ public class Synchronize extends SVNScript {
         //Use this version from here on.  If we were to use the keyword HEAD, the revision that it maps to could change
         //That would give us unpredictable results about which versions are being used.
         logStart("Get latest revision");
-        SVNRevision latestRevision = SVNRevision.create(_repository.getLatestRevision());
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        SVNRevision latestRevision = SVNRevision.create(repository.getLatestRevision());
         logEnd("Get latest revision");
 
-        //Determine if there have been any changes in the source from [source:LastMergeRevision -> source:LatestRevision]
-        //We can't use the revision numbers to figure this out because commits in branches other than the source
-        //will cause the revision numbers to be bumped even though nothing changed in the source.
-        //Therefore, we will detect the need to merge by doing a log on the source and looking for any commits
-        logStart("Do log");
-        SVNLogClient logClient = _clientManager.getLogClient();
-        ChangeLogEntryHandler logEntryHandler = new ChangeLogEntryHandler();
-        logClient.doLog(sourceURL, new String[]{""}, wcInfo.getLastMergeRevision(),
-                        wcInfo.getLastMergeRevision(), latestRevision, false, false, 1, logEntryHandler);
-        logEnd("Do log");
+        //Find out if there are any changes in the source that need to be merged in
+        logStart("Do info on source");
+        SVNWCClient wcClient = env.getClientManager().getWCClient();
+        SVNInfo sourceInfo = wcClient.doInfo(sourceURL, latestRevision, latestRevision);
+        SVNRevision sourceLastChange = sourceInfo.getCommittedRevision();
+        logEnd("Do info on source");
 
-        if (logEntryHandler.isChanged()) {
+        if (sourceLastChange.getNumber() > wcProps.getLastMergeRevision().getNumber()) {
 
             //Merge in differences from [source:LastMergeRevision, source:LatestRevision] into the working copy
             logStart("Do merge");
-            SVNDiffClient diffClient = _clientManager.getDiffClient();
+            SVNDiffClient diffClient = env.getClientManager().getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-            diffClient.setEventHandler(new SVNNotifyPrinter(
-                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
-            diffClient.doMerge(sourceURL, wcInfo.getLastMergeRevision(), sourceURL, latestRevision,
-                               wcInfo.getRootDir(), SVNDepth.fromRecurse(true), true, false, false, false);
+            diffClient.setEventHandler(new SVNNotifyPrinter(env));
+            diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
+                    wcInfo.getRootDir(), SVNDepth.INFINITY, true, false, false, false);
             logEnd("Do merge");
-
-            //Revert the changes to the metadata file
-            logStart("Revert metadata file");
-            SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
-                              SVNDepth.fromRecurse(false), null);
-            logEnd("Revert metadata file");
 
             //Update the last merge revision in the metadata file
             logStart("Update last merge revision");
             wcClient.doSetProperty(wcInfo.getMetadataFile(), MetadataFile.PROP_LAST_MERGE_REVISION,
-                                   SVNPropertyValue.create(Long.toString(latestRevision.getNumber())),
-                                   false, SVNDepth.fromRecurse(false), null, null);
+                    SVNPropertyValue.create(Long.toString(latestRevision.getNumber())),
+                    false, SVNDepth.EMPTY, null, null);
             logEnd("Update last merge revision");
         } else {
-            getOut().println("Branch is up to date.");
+            env.getOut().println("Branch is up to date.");
         }
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("synchronize");
     }
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Savana - Transactional Workspaces for Subversion
-# Copyright (C) 2006  Bazaarvoice Inc.
+# Copyright (C) 2006-2009  Bazaarvoice Inc.
 # 
 # This file is part of Savana.
 #
@@ -25,23 +25,54 @@
 # the disclaimer of warranty and limitation of liability provision in this Agreement
 # will apply to all Software in this distribution.
 
-# if the user hasn't set SAVANA_HOME, then we assume it to be the parent of the directory from
-# which the "sav" command is run
+cygwin=false;
+case "`uname`" in
+  CYGWIN*) cygwin=true ;;
+esac
+
 if [ "$SAVANA_HOME" = "" ]
 then
-  SAVANA_HOME="`dirname $0`/.."
+  old_wd=`pwd`
+
+  progname=`basename "$0"`
+  linkdir=`dirname "$0"`
+
+  cd "$linkdir"
+  prg="$progname"
+
+  # traverse symbolic links to the actual install directory
+  while [ -h "$prg" ] ; do
+    ls=`ls -ld "$prg"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '.*/.*' > /dev/null; then
+      prg="$link"
+    else
+      prg="`dirname \"$prg\"`/$link"
+    fi
+  done
+
+  SAVANA_HOME="`dirname \"$prg\"`/.."
+  SAVANA_HOME=`cd "$SAVANA_HOME" ; pwd`
+
+  cd "$old_wd"
 fi
 
 # add everything in the /lib directory to the classpath
-CLASSPATH="$SAVANA_HOME"
-for I in $SAVANA_HOME/lib/*.jar
+SAVANA_CP=""
+for I in "$SAVANA_HOME"/lib/*.jar
 do
-  CLASSPATH="$CLASSPATH:$I"
+  SAVANA_CP="$SAVANA_CP:$I"
 done
+SAVANA_CP="${SAVANA_CP:1}"  # strip off leading ':'
 
-# the subcommand is the first argument, everything else is args to the subcommand
-SUBCOMMAND="$1" ; shift
-java -classpath "$CLASSPATH" -Dsavana.home=$SAVANA_HOME \
-    org.codehaus.savana.scripts.SVNScript "$SUBCOMMAND" "$@"
+# under cygwin, convert to Windows path after all bash path processing is complete
+if $cygwin ; then
+  SAVANA_HOME=`cygpath --windows "$SAVANA_HOME"`
+  SAVANA_CP=`cygpath --windows --path "$SAVANA_CP"`
+fi
 
-exit
+SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false"
+
+SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
+java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" -Djava.util.logging.config.file="$SAVANA_HOME/logging.properties" $SAVANA_MAINCLASS "$@"
+

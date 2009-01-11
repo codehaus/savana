@@ -1,26 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.LocalChangeStatusHandler;
-import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaArgument;
-import org.codehaus.savana.util.cli.SavanaOption;
-import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
-import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNStatusClient;
-import org.tmatesoft.svn.core.wc.SVNUpdateClient;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-
-import java.io.File;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -46,81 +26,102 @@ import java.io.File;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class SetBranch extends SVNScript {
-    private static final SavanaArgument BRANCH = new SavanaArgument(
-            "branch", "the name of the branch to set");
-    private static final SavanaOption FORCE = new SavanaOption(
-            "F", "force", false, false, "force the branch to be changed, even if there are changes.");
-    private static final SavanaOption CHANGE_ROOT = new SavanaOption(
-            "C", "changeRoot", false, false, "change the root of the current branch");
+package org.codehaus.savana.scripts;
 
-    private boolean _force;
-    private boolean _changeRoot;
-    private String _branchName;
+import org.codehaus.savana.BranchType;
+import org.codehaus.savana.LocalChangeStatusHandler;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.cli.svn.SVNOption;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusClient;
+import org.tmatesoft.svn.core.wc.SVNUpdateClient;
+import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.util.SVNLogType;
 
-    public SetBranch()
-            throws SVNException, SVNScriptException {
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+public class SetBranch extends SAVCommand {
+
+    public SetBranch() {
+        super("setbranch", new String[]{"sb"});
     }
 
-    public CommandLineProcessor constructCommandLineProcessor() {
-        return new CommandLineProcessor(
-                new CommandLineProcessor.OptionHandler(FORCE) {
-                    public void ifSet() {
-                        _force = true;
-                    }
-                },
-                new CommandLineProcessor.OptionHandler(CHANGE_ROOT) {
-                    public void ifSet() {
-                        _changeRoot = true;
-                    }
-                },
-                new CommandLineProcessor.ArgumentHandler(BRANCH) {
-                    public void handle(String arg) {
-                        _branchName = arg;
-                    }
-                });
+    @Override
+    protected Collection createSupportedOptions() {
+        Collection options = new ArrayList();
+        options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes
+        options.add(SAVOption.CHANGE_ROOT); // change the root of the current branch
+        return options;
     }
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.isEmpty()) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
+        }
+        if (targets.size() > 1) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+        String branchName = targets.get(0);
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Make sure all changes are committed first
-        if (!_force) {
+        if (!env.isForce()) {
             logStart("Check for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
-            SVNStatusClient statusClient = _clientManager.getStatusClient();
+            SVNStatusClient statusClient = env.getClientManager().getStatusClient();
             statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
-                                  SVNDepth.fromRecurse(true), false, true, false, false,
-                                  statusHandler, null);
+                    SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
             if (statusHandler.isChanged()) {
                 //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
                         "ERROR: Cannot switch branches while the working copy has local changes." +
                         "\nRun 'svn status' to find changes";
-                throw new SVNScriptException(errorMessage);
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
             logEnd("Check for local changes");
         }
 
-        String branchPath = MetadataFile.BRANCH_TYPE_TRUNK.equalsIgnoreCase(_branchName) ?
-                            wcInfo.getTrunkPath() :
-                            wcInfo.getUserBranchPath(_branchName);
+        String branchPath = BranchType.TRUNK.getKeyword().equalsIgnoreCase(branchName) ?
+                            wcProps.getTrunkPath() :
+                            wcProps.getUserBranchPath(branchName);
 
         //If the path doesn't exist
         logStart("Check for the path");
-        if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        if (repository.checkPath(repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
             //Try a release branch instead
             logStart("Check for the path as a release branch");
-            branchPath = wcInfo.getReleaseBranchPath(_branchName);
+            branchPath = wcProps.getReleaseBranchPath(branchName);
 
             //If the path doesn't exist as a release branch either, throw an error
-            if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
+            if (repository.checkPath(repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.DIR) {
                 String errorMessage =
                         "ERROR: Could not find branch." +
-                        "\nBranch Name: " + _branchName;
-                throw new SVNScriptException(errorMessage);
+                        "\nBranch Name: " + branchName;
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
             logEnd("Check for the path as a release branch");
         }
@@ -128,18 +129,14 @@ public class SetBranch extends SVNScript {
 
         //Get the metadata properties for the branch
         logStart("Get metadata properties");
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
-        SVNProperties branchProperties = new SVNProperties();
-        _repository.getFile(branchMetadataFilePath, -1, branchProperties, null);
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+        MetadataProperties branchProps = new MetadataProperties(repository, branchMetadataFilePath, -1);
         logEnd("Get metadata properties");
 
         //Get the root path for the working copy and the branch
         logStart("Get branch tree root paths");
-        String wcRootPath = getBranchTreeRootPath(wcInfo.getBranchType(), wcInfo.getSourcePath(), wcInfo.getBranchPath());
-        String branchRootPath = getBranchTreeRootPath(
-                branchProperties.getStringValue(MetadataFile.PROP_BRANCH_TYPE),
-                branchProperties.getStringValue(MetadataFile.PROP_SOURCE_PATH),
-                branchProperties.getStringValue(MetadataFile.PROP_BRANCH_PATH));
+        String wcRootPath = wcProps.getBranchTreeRootPath();
+        String branchRootPath = branchProps.getBranchTreeRootPath();
         logEnd("Get branch tree root paths");
 
         //Make sure that we are switching to a branch that has the same root as the working copy
@@ -151,64 +148,44 @@ public class SetBranch extends SVNScript {
         //5. release branch -> user branch of the same release branch
         //6. user branch of a release branch -> user branch of the same release branch
         logStart("Check switch type");
-        if (!_changeRoot && !wcRootPath.equals(branchRootPath)) {
+        if (!env.isChangeRoot() && !wcRootPath.equals(branchRootPath)) {
             String errorMessage =
                     "ERROR: Can't switch to a branch with a different root than the working copy." +
                     "\nBranch Path:       " + branchPath +
                     "\nBranch Root:       " + branchRootPath +
                     "\nWorking Copy Root: " + wcRootPath;
-            throw new SVNScriptException(errorMessage);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check switch type");
 
         //Create the branch URL
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL branchURL = repositoryURL.appendPath(branchPath, false);
+        SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
 
         //Switch the working copy to the new branch
         logStart("Get update client");
-        SVNUpdateClient updateClient = _clientManager.getUpdateClient();
-        updateClient.setEventHandler(new SVNNotifyPrinter(
-                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
+        SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
+        updateClient.setEventHandler(new SVNNotifyPrinter(env));
         logEnd("Get update client");
         logStart("Do switch");
         updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
-                              SVNDepth.fromRecurse(true), false, false);
+                SVNDepth.INFINITY, false, false);
         logEnd("Do switch");
 
         //Even if we are forcing the setbranch while there are uncommitted changes
         //Changes to the metadata file should never be ported from one branch to another
-        if (_force) {
+        if (env.isForce()) {
             //Revert any changes to the metadata file'
             logStart("Revert metadata file");
-            SVNWCClient wcClient = _clientManager.getWCClient();
-            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
-                              SVNDepth.fromRecurse(false), null);
+            SVNWCClient wcClient = env.getClientManager().getWCClient();
+            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
             logEnd("Revert metadata file");
         }
 
         //Print out information about the new branch
         logStart("Print working copy info");
-        wcInfo = new WorkingCopyInfo(_clientManager);
-        getOut().println("");
-        getOut().println(wcInfo);
+        wcInfo = new WorkingCopyInfo(env.getClientManager());
+        env.getOut().println("");
+        env.getOut().println(wcInfo);
         logEnd("Print working copy info");
-    }
-
-    private String getBranchTreeRootPath(String branchType, String sourcePath, String branchPath) {
-        //We want to find the path that is the source of all branches from this point
-        //For a user branch, that's just the real source of the user branch
-
-        //Since release branches are like a trunk for user branches made off of them, we want to return the
-        //path of the release branch
-
-        //For the trunk, there is no source path, so we want to return the branch path (which is trunk)
-        return (MetadataFile.BRANCH_TYPE_USER_BRANCH.equals(branchType)) ?
-               sourcePath :
-               branchPath;
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("setbranch");
     }
 }

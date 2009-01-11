@@ -1,0 +1,223 @@
+#!/usr/bin/python
+
+# Savana - Transactional Workspaces for Subversion
+# Copyright (C) 2008-2009  Bazaarvoice Inc.
+# <p/>
+# This file is part of Savana.
+# <p/>
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 3
+# of the License, or (at your option) any later version.
+# <p/>
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+# <p/>
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# Third party components of this software are provided or made available only subject
+# to their respective licenses. The relevant components and corresponding
+# licenses are listed in the "licenses" directory in this distribution. In any event,
+# the disclaimer of warranty and limitation of liability provision in this Agreement
+# will apply to all Software in this distribution.
+
+"""
+Subversion pre-commit hook.
+
+Enforces several restrictions on changesets:
+
+1. A single changeset may not modify multiple workspaces.
+
+2. The commit comment on a changeset must start with the name of the workspace,
+   except that any user workspace can be modified if the commit comment starts
+   with the text 'user branch' such as 'user branch commit' and 'user branch sync'.
+
+All restrictions can be bypassed by using a commit comment that starts with
+the text 'branch admin'.
+"""
+
+import os
+import re
+import subprocess
+
+# always allow changes to files that start with one of these paths (directories should have a trailing '/')
+IGNORE_PATH_PREFIXES = []
+
+# define regular expressions for each of the branch types, with a group with the branch name
+RE_TRUNK = r"^[^/]+/(trunk)/"
+RE_RELEASE = r"^[^/]+/branches/([^/]+)/"
+RE_USER = r"^[^/]+/branches/user/([^/]+)/"
+
+# define constants for the types of workspaces
+WS_TRUNK = "trunk"
+WS_RELEASE = "release branch"
+WS_USER = "user branch"
+WS_FILE = "file"
+
+METADATA_FILES = ['.savana', '.svnscripts']
+
+def should_ignore_file(file):
+    for path in IGNORE_PATH_PREFIXES:
+        if file.startswith(path):
+            return True
+    return False
+
+def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
+    " Execute svnlook and capture standard output. "
+    process = subprocess.Popen(["svnlook"] + [subcmd] + svnlook_cmd_opts + subcmd_opts,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = process.communicate()
+    if process.returncode != 0:
+        raise Exception, stderr
+    return stdout
+
+def commit_comment(svnlook_cmd_opts):
+    " Returns the commit comment associated with the svn transaction. "
+    return svnlook_output("log", svnlook_cmd_opts).strip()
+
+def files_changed(svnlook_cmd_opts):
+    """ Returns the files added or updated by the svn transaction with their change flags.
+
+"svnlook changed" gives output like:
+  U   trunk/file1.java
+  UU  trunk/file2.java
+  A   trunk/file3.java
+  D   trunk/file4.java
+    """
+    def flags(line):
+        return line[0:2]
+    def filename(line):
+        return line[4:]
+    changed_files = {}
+    for line in re.split("\r?\n", svnlook_output("changed", svnlook_cmd_opts)):
+        if len(filename(line)) > 0 and not(should_ignore_file(filename(line))):
+            changed_files[filename(line)] = flags(line)
+    return changed_files
+
+def workspaces_changed(changed_files):
+    """ Returns a list of unique tuples that were modified by the svn transaction:
+  [(workspace-type, workspace-name, workspace-description), ...]
+
+Each file belongs to a workspace as determined by one of the following patterns:
+  <project>/trunk/...                      - workspace type is 'trunk', name is 'trunk'
+  <project>/branches/b3.3.x/...            - workspace type is 'release', name is 'b3.3.x'
+  <project>/branches/user/john-11234/...   - workspace type is 'user', name is 'john-11234'
+  <anything-else>                          - workspace type is 'file', name is the file name
+      """
+    workspace_type_format_pattern = [
+        (WS_TRUNK,   re.compile(RE_TRUNK),   "%s"),
+        (WS_USER,    re.compile(RE_USER),    "user branch: %s"),  # match user before release
+        (WS_RELEASE, re.compile(RE_RELEASE), "release branch: %s")]
+
+    def extract_workspace(fname):
+        for (type, pattern, format) in workspace_type_format_pattern:
+            m = pattern.match(fname)
+            if m:
+               return (type, m.group(1), format % m.group(1))
+        # unknown workspace type, use the filename for the workspace name
+        return (WS_FILE, fname, "file: %s" % fname)
+
+    unique_workspaces = {}
+    for fname in changed_files:
+        unique_workspaces[extract_workspace(fname)] = 1
+    workspaces = unique_workspaces.keys()
+    workspaces.sort()
+    return workspaces
+
+def check_permissible_file_changes(svnlook_cmd_opts):
+    """ Check that all files modified by the svn transaction belong to the expected workspace.
+
+The requirements depend on the first words of the commit comment:
+  'branch admin'   - there are no restrictions on the transaction.
+  'trunk'          - the transaction must modify only a single WS_TRUNK workspace
+  'b3.3.x'         - the transaction must modify only a single WS_RELEASE workspace named 'b3.3.x'
+  'user branch'    - the transaction must modify only a single WS_USER workspace (with any name)
+  'john-11234'     - the transaction must modify only a single WS_USER workspace named 'john-11234'
+  """
+
+    # call subversion to get the commit comment associated with the svn transaction
+    comment = commit_comment(svnlook_cmd_opts)
+
+    # branch administration commits have no restrictions
+    if comment.startswith("branch admin"):
+        return 0
+
+    # call subversion to get the list of files changed by the svn transaction
+    changed_files = files_changed(svnlook_cmd_opts)
+
+    # get the list of workspaces affected by the svn transaction
+    workspaces = workspaces_changed(changed_files.keys())
+
+    # normal commits may modify only one workspace
+    if len(workspaces) > 1:
+        sys.stderr.write("The changeset modifies multiple workspaces:\n  %s\n" %
+            "\n  ".join([ws_description for (ws_type, ws_name, ws_description) in workspaces]))
+        return 1  # commit failed
+
+    # if all files were ignored by should_ignore_file() then there may be zero workspaces
+    if len(workspaces) == 0:
+        return 0
+
+    # we've validated that exactly one workspace was modified.  get its type, name and description.
+    (ws_type, ws_name, ws_description) = workspaces[0]
+
+    # if we couldn't determine the workspace type, fail.  must use 'branch admin' for these commits
+    if ws_type == WS_FILE:
+        sys.stderr.write("The changeset modifies a file outside the usual trunk, release and user branches:\n  file: %s\n" % ws_name)
+        return 1
+
+    # verify that the Savana metadata file isn't modified accidentally in a trunk or release branch
+    if ws_type != WS_USER:
+        for (file, flags) in changed_files.items():
+            # only allow adding metadata files (branch create is reported as a directory add and metadata file update)
+            (directory, filename) = os.path.split(file)
+            if filename in METADATA_FILES and flags != "A " and changed_files.get(directory + "/") != "A ":
+                sys.stderr.write("The changeset may not modify Savana metadata files in the trunk or "
+                    "in a release branch:\n  workspace: %s\n  metadata file: %s\n" % (ws_name, file))
+                return 1
+
+    # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
+    expected_name = re.split("\s", comment)[0]         # first word
+    if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
+        if ws_type == WS_USER:
+            sys.stderr.write("The subversion commit comment must start with \"user branch\" "
+                "or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        else:
+            sys.stderr.write("The subversion commit comment must start with the name of the "
+                "modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+        return 1
+
+    return 0
+
+
+def main():
+    usage = """usage: %prog REPOS TXN
+
+Run pre-commit options on a repository transaction."""
+    from optparse import OptionParser
+    parser = OptionParser(usage=usage)
+    parser.add_option("-r", "--revision",
+                    help="Test mode. TXN actually refers to a revision.",
+                    action="store_true", default=False)
+    errors = 0
+    try:
+        (opts, (repos, txn_or_rvn)) = parser.parse_args()
+        look_opt = ("--transaction", "--revision")[opts.revision]
+        svnlook_cmd_opts = [repos, look_opt, txn_or_rvn]
+
+        # call all pre-commit checks...
+        errors += check_permissible_file_changes(svnlook_cmd_opts)
+
+    except:
+        sys.stderr.write("Unexpected error: " + str(sys.exc_info()[1]).strip() + "\n\n")
+        parser.print_help()
+        errors += 1
+    return errors
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
