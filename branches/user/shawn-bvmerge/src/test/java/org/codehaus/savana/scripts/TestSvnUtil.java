@@ -4,6 +4,8 @@ import org.apache.commons.lang.StringUtils;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utilities for working with the Subversion command-line programs (not SVNKit).
@@ -17,36 +19,66 @@ public class TestSvnUtil {
     public static final boolean REPO_PRE15;
 
     static {
-        String versionString;
+        // detect the version of the 'svn' command-line utility so the tests can create
+        // working copy files that are compatible with 'svn'.
+        String clientVersionString;
         try {
-            versionString = TestProcessUtil.exec("svn", "--version", "--quiet").trim();
+            clientVersionString = TestProcessUtil.exec("svn", "--version", "--quiet").trim();
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
 
-        String[] fields = StringUtils.split(versionString, ".");
-        int major = Integer.parseInt(fields[0]);
-        int minor = Integer.parseInt(fields[1]);
+        String[] clientFields = StringUtils.split(clientVersionString, ".");
+        int clientMajor = Integer.parseInt(clientFields[0]);
+        int clientMinor = Integer.parseInt(clientFields[1]);
 
-        if (major == 1 && minor == 3) {
-            _sLog.info("Using svn 1.3-compatible repository and working copy file formats");
-            REPO_PRE14 = true;
-            REPO_PRE15 = true;
+        if (clientMajor == 1 && clientMinor == 3) {
+            _sLog.info("Using svn 1.3-compatible working copy file format");
             WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_13;
 
-        } else if (major == 1 && minor == 4) {
-            _sLog.info("Using svn 1.4-compatible repository and working copy file formats");
-            REPO_PRE14 = false;
-            REPO_PRE15 = true;
+        } else if (clientMajor == 1 && clientMinor == 4) {
+            _sLog.info("Using svn 1.4-compatible working copy file format");
             WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_14;
 
         } else {
-            _sLog.info("Using svn 1.5-compatible repository and working copy file formats");
+            _sLog.info("Using svn 1.5-compatible working copy file format");
+            WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_15;
+        }
+
+        // detect the version of the 'svnlook' command-line utility used by the subversion
+        // server.  the back-end pre-commit hook uses svnlook, so the test repository file
+        // format needs to be compatible with it.
+        String serverVersionString;
+        try {
+            serverVersionString = TestProcessUtil.exec("svnlook", "--version").trim();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        Matcher serverMatcher = Pattern.compile("version ([0-9]+)\\.([0-9]+)\\b").matcher(serverVersionString);
+        if (!serverMatcher.find()) {
+            throw new IllegalStateException("Unexpected svnlook version string: " + serverVersionString);
+        }
+        int serverMajor = Integer.parseInt(serverMatcher.group(1));
+        int serverMinor = Integer.parseInt(serverMatcher.group(2));
+
+        if (serverMajor == 1 && serverMinor == 3) {
+            _sLog.info("Using svn 1.3-compatible repository format");
+            REPO_PRE14 = true;
+            REPO_PRE15 = true;
+
+        } else if (serverMajor == 1 && serverMinor == 4) {
+            _sLog.info("Using svn 1.4-compatible repository format");
+            REPO_PRE14 = false;
+            REPO_PRE15 = true;
+
+        } else {
+            _sLog.info("Using svn 1.5-compatible repository format");
             REPO_PRE14 = false;
             REPO_PRE15 = false;
-            WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_15;            
         }
     }
 }
