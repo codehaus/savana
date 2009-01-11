@@ -1,27 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.*;
-import org.codehaus.savana.util.cli.CommandLineProcessor;
-import org.codehaus.savana.util.cli.SavanaArgument;
-import org.codehaus.savana.util.cli.SavanaOption;
-import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
-import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.io.ISVNEditor;
-import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNStatusClient;
-import org.tmatesoft.svn.core.wc.SVNUpdateClient;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.io.File;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -47,120 +26,155 @@ import java.io.File;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class CreateBranch extends SVNScript {
-    private static final SavanaArgument BRANCH = new SavanaArgument(
-            "branch", "the name of the branch to create");
-    private static final SavanaOption FORCE = new SavanaOption(
-            "F", "force", false, false, "force the branch to be created");
-    private static final SavanaOption MESSAGE = new SavanaOption(
-            "m", "message", true, false, "override the svn log message");
+package org.codehaus.savana.scripts;
 
-    private boolean _userBranch;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.savana.BranchType;
+import org.codehaus.savana.LocalChangeStatusHandler;
+import org.codehaus.savana.MetadataFile;
+import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.PathUtil;
+import org.codehaus.savana.SVNEditorHelper;
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.cli.svn.SVNOption;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.ISVNEditor;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusClient;
+import org.tmatesoft.svn.core.wc.SVNUpdateClient;
+import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.util.SVNLogType;
 
-    private boolean _force;
-    private String _branchName;
-    private String _commitMessage;
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-    public CreateBranch()
-            throws SVNException, SVNScriptException {
-        this(false);
-    }
+public class CreateBranch extends SAVCommand {
 
-    public CreateBranch(boolean userBranch)
-            throws SVNException, SVNScriptException {
+    private final boolean _userBranch;
+
+    public CreateBranch(String name, String[] aliases, boolean userBranch) {
+        super(name, aliases);
         _userBranch = userBranch;
     }
 
-    public CommandLineProcessor constructCommandLineProcessor() {
-        return new CommandLineProcessor(
-                new CommandLineProcessor.ArgumentHandler(BRANCH) {
-                    public void handle(String arg) {
-                        _branchName = arg;
-                    }
-                },
-                new CommandLineProcessor.OptionHandler(FORCE) {
-                    public void ifSet() {
-                        _force = true;
-                    }
-                },
-                new CommandLineProcessor.OptionHandler(MESSAGE) {
-                    public void withArg(String arg) {
-                        _commitMessage = arg;
-                    }
-                });
+    @Override
+    public boolean isCommitter() {
+        return true;
     }
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
+    @Override
+    protected Collection createSupportedOptions() {
+        Collection options = new ArrayList();
+        options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes
+        options = SVNOption.addLogMessageOptions(options);
+        return options;
+    }
+
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.isEmpty()) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
+        }
+        if (targets.size() > 1) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+        String branchName = targets.get(0);
+
+        //Validate the branch name doesn't have illegal characters
+        if (StringUtils.containsAny(branchName, "/\\")) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+                    "ERROR: Branch name may not contain slash characters: " + branchName), SVNLogType.CLIENT);
+        }
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Don't allow the user to convert a working copy to a new branch if there are uncommitted changes, unless:
         //1. The force flag is enabled AND
         //2. The new branch will be a user branch
-        if (!_force || !_userBranch) {
+        if (!env.isForce() || !_userBranch) {
             logStart("Looking for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
-            SVNStatusClient statusClient = _clientManager.getStatusClient();
+            SVNStatusClient statusClient = env.getClientManager().getStatusClient();
             statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
-                                  SVNDepth.fromRecurse(true), false, true, false, false,
-                                  statusHandler, null);
+                    SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
             logEnd("Looking for local changes");
             if (statusHandler.isChanged()) {
                 //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
                         "ERROR: Cannot create a new branch while the working copy has local changes." +
                         "\nRun 'svn status' to find changes";
-                throw new SVNScriptException(errorMessage);
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
         }
 
         //Get the project name from the working copy
-        String projectName = wcInfo.getProjectName();
+        String projectName = wcProps.getProjectName();
 
         //Get the branch type
-        String branchType = (_userBranch) ? MetadataFile.BRANCH_TYPE_USER_BRANCH : MetadataFile.BRANCH_TYPE_RELEASE_BRANCH;
+        BranchType branchType = _userBranch ? BranchType.USER_BRANCH : BranchType.RELEASE_BRANCH;
 
         //Get the source path of the new branch based on the current working copy.
         //WC=TRUNK          ==> SOURCE=TRUNK (Branch path of working copy)
         //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
         //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
-        String sourcePath = (MetadataFile.BRANCH_TYPE_USER_BRANCH.equals(wcInfo.getBranchType())) ?
-                            wcInfo.getSourcePath() :
-                            wcInfo.getBranchPath();
+        String sourcePath = wcProps.getBranchTreeRootPath();
 
         //Get the branch path for the new branch
-        String branchPath = (_userBranch) ?
-                            wcInfo.getUserBranchPath(_branchName) :
-                            wcInfo.getReleaseBranchPath(_branchName);
+        String branchPath = _userBranch ?
+                            wcProps.getUserBranchPath(branchName) :
+                            wcProps.getReleaseBranchPath(branchName);
 
         //Make sure the branch doesn't exist
         logStart("Check that the branch doesn't exist");
-        if (_repository.checkPath(_repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.NONE) {
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        if (repository.checkPath(repository.getRepositoryPath(branchPath), -1) != SVNNodeKind.NONE) {
             String errorMessage =
                     "ERROR: Branch already exists." +
                     "\nBranch Path: " + branchPath;
-            throw new SVNScriptException(errorMessage);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        //Deny creating user branch with same name as release branch.
+        if (_userBranch && repository.checkPath(repository.getRepositoryPath(wcProps.getReleaseBranchPath(branchName)), -1) != SVNNodeKind.NONE) {
+            String errorMessage = MessageFormat.format("ERROR: There is a release branch for the project= {0} with name {1}. Please choose another name for your user branch", projectName, branchName);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check that the branch doesn't exist");
 
         //Figure out the paths to the parent dir of the branch and to the metadata file
         String branchParentPath = SVNPathUtil.removeTail(branchPath);
-        String branchMetadataFilePath =
-                SVNPathUtil.append(branchPath, MetadataFile.METADATA_FILE_NAME);
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
 
         //Figure out which subpaths to the branch are missing
-        List<String> missingPaths = getMissingSubpaths(_repository, branchParentPath);
+        List<String> missingPaths = getMissingSubpaths(repository, branchParentPath);
 
         //Perform the copy
         try {
-            long sourceRevision = _repository.getLatestRevision();
+            long sourceRevision = repository.getLatestRevision();
 
             //Create an editor
             logStart("Get commit editor");
-            String commitMessage =
-                    _commitMessage == null ? "Creating branch: " + _branchName : _commitMessage;
-            ISVNEditor editor = _repository.getCommitEditor(commitMessage, null);
+            String commitMessage = getCommitMessage(branchName);
+            ISVNEditor editor = repository.getCommitEditor(commitMessage, null, false, env.getRevisionProperties(), null);
             SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
             editor.openRoot(-1);
             logEnd("Get commit editor");
@@ -189,7 +203,7 @@ public class CreateBranch extends SVNScript {
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath));
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             logEnd("Create metadata file");
@@ -201,32 +215,29 @@ public class CreateBranch extends SVNScript {
         }
         catch (SVNException e) {
             String errorMessage =
-                    "ERROR: Failed to perform copy." +
+                    "ERROR: Failed to perform copy: " + e +
                     "\nSource: " + sourcePath +
                     "\nBranch: " + branchPath;
-            throw new SVNScriptException(errorMessage, e);
+            SVNErrorManager.error(SVNErrorMessage.create(e.getErrorMessage().getErrorCode(), errorMessage), SVNLogType.CLIENT);
         }
 
         //Switch the working copy
         logStart("Switch to new branch");
-        SVNURL repositoryURL = getRepositoryURL();
-        SVNURL branchURL = repositoryURL.appendPath(branchPath, false);
-        SVNUpdateClient updateClient = _clientManager.getUpdateClient();
-        updateClient.setEventHandler(new SVNNotifyPrinter(
-                    new SVNCommandEnvironment("savana", getOut(), getOut(), System.in)));
+        SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
+        SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
+        updateClient.setEventHandler(new SVNNotifyPrinter(env));
         updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
-                              SVNDepth.fromRecurse(true), false, false);
+                SVNDepth.INFINITY, false, false);
         logEnd("Switch to new branch");
 
         //Revert the changes to the metadata file
         logStart("Revert metadata file");
-        SVNWCClient wcClient = _clientManager.getWCClient();
-        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, 
-                          SVNDepth.fromRecurse(false), null);
+        SVNWCClient wcClient = env.getClientManager().getWCClient();
+        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
         logEnd("Revert metadata file");
 
-        wcInfo = new WorkingCopyInfo(_clientManager);
-        getOut().println(wcInfo);
+        wcInfo = new WorkingCopyInfo(env.getClientManager());
+        env.getOut().println(wcInfo);
     }
 
     private List<String> getMissingSubpaths(SVNRepository repository, String path)
@@ -247,7 +258,13 @@ public class CreateBranch extends SVNScript {
         return missingSubpaths;
     }
 
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("createbranch");
+    private String getCommitMessage(String branchName) throws SVNException {
+        // get the commit message from the command line.  if it's not specified, default
+        // to a reasonable value instead of starting an interactive editor. 
+        String message = getSVNEnvironment().getCommitMessage(null, null);
+        if (StringUtils.isEmpty(message)) {
+            message = branchName + " - creating branch";
+        }
+        return message;
     }
 }

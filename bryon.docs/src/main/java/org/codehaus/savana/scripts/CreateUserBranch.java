@@ -1,11 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.SVNScriptException;
-import org.tmatesoft.svn.core.SVNException;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -31,15 +26,13 @@ import org.tmatesoft.svn.core.SVNException;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
+package org.codehaus.savana.scripts;
+
 public class CreateUserBranch extends CreateBranch {
 
-    public CreateUserBranch()
-            throws SVNException, SVNScriptException {
-        super(true);
-    }
-
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("createuserbranch");
+    public CreateUserBranch() {
+        super("createuserbranch", new String[]{"cb", "cub"}, true);
     }
 }

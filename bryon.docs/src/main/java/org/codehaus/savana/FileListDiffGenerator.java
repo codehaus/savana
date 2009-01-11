@@ -1,16 +1,6 @@
-package org.codehaus.savana;
-
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
-
-import java.io.File;
-import java.io.OutputStream;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -37,15 +27,28 @@ import java.util.Set;
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
  */
-public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
-    private Set<String> _changedFilePaths;
-    private Set<String> _addedFilePaths;
-    private Set<String> _deletedFilePaths;
+package org.codehaus.savana;
 
-    public FileListDiffGenerator() {
-        _changedFilePaths = new LinkedHashSet<String>();
-        _addedFilePaths = new LinkedHashSet<String>();
-        _deletedFilePaths = new LinkedHashSet<String>();
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
+
+import java.io.File;
+import java.io.OutputStream;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
+    private final String _metadataFile;
+    private final Set<String> _changedFilePaths;
+    private final Set<String> _addedFilePaths;
+    private final Set<String> _deletedFilePaths;
+
+    public FileListDiffGenerator(File metadataFile) {
+        _metadataFile = metadataFile.getAbsolutePath();
+        _changedFilePaths = new TreeSet<String>();
+        _addedFilePaths = new TreeSet<String>();
+        _deletedFilePaths = new TreeSet<String>();
     }
 
     public Set<String> getChangedFilePaths() {
@@ -60,13 +63,16 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
         return _deletedFilePaths;
     }
 
-    public void displayPropDiff(String path)
+    @Override
+    public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result)
             throws SVNException {
-        if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
+        if (diff != null && !diff.isEmpty() && !new File(path).getAbsolutePath().equals(_metadataFile) &&
+                !_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);
         }
     }
 
+    @Override
     public void displayFileDiff(String path, File file1, File file2, String rev1, String rev2, String mimeType1, String mimeType2, OutputStream result)
             throws SVNException {
         if (file1 == null && file2 != null) {

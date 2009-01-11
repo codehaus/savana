@@ -1,12 +1,6 @@
-package org.codehaus.savana.scripts;
-
-import org.codehaus.savana.SVNScriptException;
-import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.core.SVNException;
-
-/**
+/*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006  Bazaarvoice Inc.
+ * Copyright (C) 2006-2009  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -32,18 +26,43 @@ import org.tmatesoft.svn.core.SVNException;
  *
  * @author Brian Showers (brian@bazaarvoice.com)
  * @author Bryon Jacob (bryon@jacob.net)
+ * @author Shawn Smith (shawn@bazaarvoice.com)
  */
-public class ListWorkingCopyInfo extends SVNScript {
-    public ListWorkingCopyInfo()
-            throws SVNException, SVNScriptException {}
+package org.codehaus.savana.scripts;
 
-    public void run()
-            throws SVNException, SVNScriptException {
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(_clientManager);
-        getOut().println(wcInfo);
+import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.util.SVNLogType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+public class ListWorkingCopyInfo extends SAVCommand {
+
+    public ListWorkingCopyInfo() {
+        super("listworkingcopyinfo", new String[]{"wci", "info"});
     }
 
-    public String getUsageMessage() {
-        return _commandLineProcessor.usage("listworkingcopyinfo");
+    @Override
+    protected Collection createSupportedOptions() {
+        return new ArrayList();
+    }
+             
+    public void doRun() throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        //Parse command-line arguments
+        List<String> targets = env.combineTargets(null, false);
+        if (targets.size() > 0) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        }
+
+        //Get information about the current workspace from the metadata file
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        env.getOut().println(wcInfo);
     }
 }
