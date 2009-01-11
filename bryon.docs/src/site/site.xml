@@ -33,10 +33,9 @@
     </body>
 
     <poweredBy>
-        <logo name="SVNKit" href="http://svnkit.com/"
-              img="http://svnkit.com/img/svnkit_logo.jpg"/>
-        <logo name="Subversion" href="http://subversion.tigris.org/"
-              img="http://subversion.tigris.org/images/subversion_logo_hor-468x64.png"/>
+        <logo name="SVNKit" href="http://svnkit.com/" img="images/svnkit.png"/>
+        <logo name="Subversion" href="http://subversion.tigris.org/" img="images/subversion.png"/>
+        <logo name="Maven" href="http://maven.apache.org/" img="images/maven.png"/>
     </poweredBy>
 
     <skin>
