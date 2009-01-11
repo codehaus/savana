@@ -4,29 +4,41 @@
 
 Installing Savana
 
-  * {{{downloads.html}Download}} the version of the distribution (<<savana-<VERSION>-install.tar.gz>>)
-    that you want to install.
+  * {{{downloads.html}Download}} the latest version of the distribution
+    (<<savana-<VERSION>-install.tar.gz>> OR <<savana-<VERSION>-install.zip>>).
 
-  * unpack the distribution to the directory where you want to install savana (for example,
-    /opt/tools)
+  * unpack the distribution to the directory where you want to install savana (for example, /opt/tools)
 
 +--
 %> cd /opt/tools
 %> tar -zxvf savana-1.0-install.tar.gz
+savana-1.0/licenses/
 savana-1.0/bin/
-savana-1.0/lib/svnkit-cli-1.1.4.jar
-savana-1.0/lib/ganymed-ssh2-build210.jar
-savana-1.0/lib/savana-1.0.jar
-savana-1.0/lib/commons-logging-1.0.4.jar
-savana-1.0/lib/svnkit-1.1.4.jar
-savana-1.0/lib/log4j-1.2.9.jar
-savana-1.0/lib/commons-lang-2.1.jar
-savana-1.0/lib/commons-io-1.3.1.jar
+savana-1.0/
+savana-1.0/svn-hooks/
+savana-1.0/lib/trilead-ssh2.jar
+savana-1.0/lib/commons-lang.jar
+savana-1.0/lib/commons-io.jar
+savana-1.0/lib/svnkit.jar
+savana-1.0/lib/svnkit-cli.jar
+savana-1.0/lib/savana.jar
+savana-1.0/lib/jna.jar
+savana-1.0/COPYING
+savana-1.0/COPYING.LESSER
+savana-1.0/licenses/commons-io-license.txt
+savana-1.0/licenses/commons-lang-license.txt
+savana-1.0/licenses/jna-license.txt
+savana-1.0/licenses/svnkit-license.txt
+savana-1.0/licenses/trilead-license.txt
 savana-1.0/bin/sav
-savana-1.0/bin/savana-admin.bat
 savana-1.0/bin/sav.bat
-%>
+savana-1.0/logging.properties
+savana-1.0/svn-hooks/pre-commit
+savana-1.0/svn-hooks/pre-commit.bat
+savana-1.0/svn-hooks/savana-policies.properties
 +--
+
+    on windows, unzip the .zip version of the installer to your chosen install location.
 
   * set the environment variable <<SAVANA_HOME>> to the unpacked directory
 
