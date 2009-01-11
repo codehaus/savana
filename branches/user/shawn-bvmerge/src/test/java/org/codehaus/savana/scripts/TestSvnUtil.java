@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * Utilities for working with the Subversion command-line programs (not SVNKit).
  */
 public class TestSvnUtil {
-    private static final Logger _sLog = Logger.getLogger(TestRepoUtil.class.getName());
+    private static final Logger _sLog = Logger.getLogger(TestSvnUtil.class.getName());
 
     public static final int WC_FORMAT;
 

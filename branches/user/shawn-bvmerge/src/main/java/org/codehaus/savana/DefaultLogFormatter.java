@@ -88,7 +88,7 @@ public class DefaultLogFormatter extends Formatter {
     private String getSimpleClassName(String className) {
         // strip off any inner class name
         className = StringUtils.substringBefore(className, "$");
-        // strip off the package package
+        // strip off the package name
         int idx = className.lastIndexOf('.');
         if (idx != -1) {
             className = className.substring(idx + 1);
