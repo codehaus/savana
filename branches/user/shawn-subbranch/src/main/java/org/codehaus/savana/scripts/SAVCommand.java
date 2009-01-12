@@ -65,9 +65,11 @@ public abstract class SAVCommand extends SVNCommand {
 
         // catch runtime exceptions and errors and rethrown them as SVNException
         } catch (RuntimeException e) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, "Internal Savana exception: " + e, e), SVNLogType.CLIENT);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN,
+                    "Internal Savana exception: " + e, null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
         } catch (Error e) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, "Internal Savana error: " + e, e), SVNLogType.CLIENT);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN,
+                    "Internal Savana error: " + e, null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
         }
     }
 
