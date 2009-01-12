@@ -1,6 +1,7 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
@@ -45,10 +46,10 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         savana(CreateUserBranch.class, "workspace");
 
         // list the user branches - there should be just the one
-        assertEquals("--------------------------------------------------------------" + EOL +
+        assertEquals("-----------------------------------------------------------------------------" + EOL +
                      "Branch Name         Source         Branch-Point   Last-Merge     Subpath" + EOL +
-                     "--------------------------------------------------------------" + EOL +
-                     "workspace           trunk          " + branchPointRev + "              " + branchPointRev,
+                     "-----------------------------------------------------------------------------" + EOL +
+                     "workspace           trunk          " + pad(branchPointRev, 15) + branchPointRev,
                      savana(ListUserBranches.class));
 
         // check that we've changed into the "workspace" branch, and that the revision has updated
@@ -91,12 +92,9 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals(
-                MessageFormat.format(
-                        "Modified Files:" + EOL +
-                        "-------------------------------------------------" + EOL +
-                        "src/text/animals.txt",
-                        branchPointRev),
+        assertEquals("Modified Files:" + EOL +
+                     "-------------------------------------------------" + EOL +
+                     "src/text/animals.txt",
                 savana(ListChangesFromSource.class));
 
         // move the file "autos.txt" to "cars.txt"
@@ -115,7 +113,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals(MessageFormat.format(
+        assertEquals(
                 "Added Files:" + EOL +
                 "-------------------------------------------------" + EOL +
                 "src/text/cars.txt" + EOL +
@@ -127,8 +125,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                 "Deleted Files:" + EOL +
                 "-------------------------------------------------" + EOL +
                 "src/text/autos.txt",
-                branchPointRev),
-                     savana(ListChangesFromSource.class));
+                savana(ListChangesFromSource.class));
 
         // sync from trunk (should be a no-op since there aren't any changes to sync)
         log.info("syncing from trunk");
@@ -146,7 +143,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                 "Project Name:          " + projectName + EOL +
                 "Branch Type:           user branch" + EOL +
                 "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev + "" + EOL +
+                "Branch Point Revision: " + branchPointRev + EOL +
                 "Last Merge Revision:   " + branchPointRev,
                 savana(ListWorkingCopyInfo.class));
 
@@ -175,5 +172,9 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
             path = "/" + path;
         }
         return path;
+    }
+
+    private String pad(long rev, int n) {
+        return StringUtils.rightPad(Long.toString(rev), n);
     }
 }

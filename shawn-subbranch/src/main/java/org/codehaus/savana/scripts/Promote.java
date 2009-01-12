@@ -115,12 +115,23 @@ public class Promote extends SAVCommand {
         LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
-                false, true, false, false, statusHandler, null);
+                true, true, false, false, statusHandler, null);
         if (statusHandler.isChanged()) {
-            //TODO: Just list the changes here rather than making the user run 'svn status'
             String errorMessage =
                     "ERROR: Cannot promote while the working copy has local changes." +
                             "\nRun 'svn status' to find changes";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        if (statusHandler.isSwitched()) {
+            String errorMessage =
+                    "ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
+                            "\nRun 'svn status' to find changes";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        if (statusHandler.isOutOfDate()) {
+            String errorMessage =
+                    "ERROR: Cannot promote while the working copy is out-of-date." +
+                            "\nRun 'svn update' to update the working copy";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for local changes");
@@ -191,7 +202,11 @@ public class Promote extends SAVCommand {
 
         logStart("Revert metadata file");
         //Revert the changes to the metadata file
-        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+        if (wcProps.getBranchSubpath().length() == 0) {
+            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+        } else {
+            wcClient.doDelete(wcInfo.getMetadataFile(), true, false);
+        }
         logEnd("Revert metadata file");
 
         //Don't allow the promote if there are replaced files

@@ -30,6 +30,7 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.codehaus.savana.FileListDiffGenerator;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNOption;
@@ -63,7 +64,7 @@ public class DiffChangesFromSource extends SAVCommand {
         options.add(SVNOption.DIFF_CMD);
         options.add(SVNOption.EXTENSIONS);
         options.add(SVNOption.NO_DIFF_DELETED);
-        options.add(SVNOption.FORCE);        
+        options.add(SVNOption.FORCE);
         return options;
     }
 
@@ -95,9 +96,16 @@ public class DiffChangesFromSource extends SAVCommand {
         DefaultSVNDiffGenerator diffGenerator = new DefaultSVNDiffGenerator() {
             @Override
             public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result) throws SVNException {
-                // ignore changes in the metadata file
+                // ignore changes in the metadata file since it will be reverted on promote
                 if (!new File(path).getAbsolutePath().equals(metadataFile)) {
-                    super.displayPropDiff(path, baseProps, diff, result);
+                    super.displayPropDiff(path, baseProps, FileListDiffGenerator.getInterestingProperties(diff), result);
+                }
+            }
+            @Override
+            public void displayFileDiff(String path, File file1, File file2, String rev1, String rev2, String mimeType1, String mimeType2, OutputStream result) throws SVNException {
+                // ignore changes in the metadata file since it will be reverted on promote
+                if (!new File(path).getAbsolutePath().equals(metadataFile)) {
+                    super.displayFileDiff(path, file1, file2, rev1, rev2, mimeType1, mimeType2, result);
                 }
             }
         };

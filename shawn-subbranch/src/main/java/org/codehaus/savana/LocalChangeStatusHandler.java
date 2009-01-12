@@ -48,6 +48,8 @@ import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_REPLACED;
 
 public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHandler {
     private boolean _changed;
+    private boolean _switched;
+    private boolean _outOfDate;
 
     public LocalChangeStatusHandler() {
         _changed = false;
@@ -57,12 +59,34 @@ public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHan
         return _changed;
     }
 
-    public void handleStatus(SVNStatus status) {
+    public boolean isSwitched() {
+        return _switched;
+    }
 
-        //Check the status of the file
-        SVNStatusType contentsStatus = status.getContentsStatus();
+    public boolean isOutOfDate() {
+        return _outOfDate;
+    }
+
+    public void handleStatus(SVNStatus status) {
+        //Check the status of the file and its properties
+        if (isChanged(status.getContentsStatus()) || isChanged(status.getPropertiesStatus())) {
+            _changed = true;
+        }
+
+        //Check whether the file belongs to a different branch
+        if (status.isSwitched()) {
+            _switched = true;
+        }
+
+        //Check whether there are updates that haven't been pulled down by an 'svn update'
+        if (isChanged(status.getRemoteContentsStatus()) || isChanged(status.getRemotePropertiesStatus())) {
+            _outOfDate = true;
+        }
+    }
+
+    private boolean isChanged(SVNStatusType contentsStatus) {
         // TODO: make sure we are covering all possible status values
-        if (STATUS_MODIFIED.equals(contentsStatus) ||
+        return STATUS_MODIFIED.equals(contentsStatus) ||
             STATUS_CONFLICTED.equals(contentsStatus) ||
             MERGED.equals(contentsStatus) ||
             STATUS_DELETED.equals(contentsStatus) ||
@@ -70,18 +94,7 @@ public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHan
             STATUS_MISSING.equals(contentsStatus) ||
             STATUS_INCOMPLETE.equals(contentsStatus) ||
             STATUS_OBSTRUCTED.equals(contentsStatus) ||
-            STATUS_REPLACED.equals(contentsStatus)) {
-
-            _changed = true;
-        }
-
-        //Check the status of the file's properties
-        SVNStatusType propertiesStatus = status.getPropertiesStatus();
-        if (STATUS_MODIFIED.equals(propertiesStatus) ||
-            STATUS_CONFLICTED.equals(propertiesStatus)) {
-
-            _changed = true;
-        }
+            STATUS_REPLACED.equals(contentsStatus);
     }
 
     /*

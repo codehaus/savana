@@ -10,6 +10,7 @@ import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.admin.ISVNAdminAreaFactorySelector;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -27,6 +28,11 @@ import java.util.logging.Logger;
 
 public abstract class TestRepoUtil {
     private static final Logger _sLog = Logger.getLogger(TestRepoUtil.class.getName());
+
+    static {
+        // we don't care much about file timestamps.  don't sleep to generate distinct ones--tests run much faster
+        SVNFileUtil.setSleepForTimestamp(false);
+    }
 
     public static File SUBVERSION_CONFIG_DIR = TestDirUtil.createTempDir("subversion-config");
 
@@ -46,7 +52,7 @@ public abstract class TestRepoUtil {
 
         FSRepositoryFactory.setup();
 
-        // configure SVNKit to use file formats that match the installed version of subversion   
+        // configure SVNKit to use file formats that match the installed version of subversion
         SVNAdminAreaFactory.setSelector(new ISVNAdminAreaFactorySelector() {
             public Collection getEnabledFactories(File path, Collection factories, boolean writeAccess) {
                 Collection<SVNAdminAreaFactory> enabledFactories = new TreeSet<SVNAdminAreaFactory>();
@@ -134,6 +140,9 @@ public abstract class TestRepoUtil {
             SVN.getCommitClient().doCommit(new File[] {wc}, false,
                     "trunk - initial setup of savana", null, null, false, false, SVNDepth.INFINITY);
         }
+
+        // get the workspace up-to-date
+        SVN.getUpdateClient().doUpdate(wc, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 
         return wc;
     }

@@ -60,7 +60,7 @@ public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
         log.info("append 'tequila' to src/text/drinks.txt");
         File wc1_drinksFile = new File(WC1, "src/text/drinks.txt");
         String drinks = FileUtils.readFileToString(wc1_drinksFile, "UTF-8");
-        FileUtils.writeStringToFile(wc1_drinksFile, drinks + "" + EOL + "tequila", "UTF-8");
+        FileUtils.writeStringToFile(wc1_drinksFile, drinks + EOL + "tequila", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "user branch commit - added tequila to drinks.txt", null, null, false, false, SVNDepth.INFINITY);
@@ -124,7 +124,7 @@ public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
         FileUtils.writeStringToFile(wc1_drinksFile, drinks.replaceAll("gin", "scotch"), "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "user branch commit - changed gin to bourbon", null, null, false, false, SVNDepth.INFINITY);
+                new File[]{WC1}, false, "user branch commit - changed gin to scotch", null, null, false, false, SVNDepth.INFINITY);
 
         // check that the change happened
         assertFalse(FileUtils.readFileToString(wc1_drinksFile, "UTF-8").contains("gin"));
