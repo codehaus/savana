@@ -1,0 +1,57 @@
+  -----------------------------------------
+  Adapting Savana to your Repository Layout
+  -----------------------------------------
+
+Adapting Savana to your Repository Layout
+
+    By default, Savana assumes that your repository has the following layout:
+
++--
+repository
+`-- project
+    |-- trunk
+    |-- branches
+    `-- tags
++--
+
+    If your repository is laid out like this, then "bootstrapping" a project into savana is as
+    simple as:
+
++--
+%> svn co https://<host>/<repo>/<project>/trunk working
+%> cd working
+%> sav bootstrap <project>/trunk TRUNK
++--
+
+    Another somewhat common repository layout has trunk, branches, and tags at the root of the
+    repository, and puts projects underneath those directories.
+
++--
+repository
+|-- trunk
+|   `-- project
+|-- branches
+|   `-- project
+`-- tags
+    |-- project-v1
+    `-- project-v2
++--
+
+    Savana can work with a repository layout like this - the "bootstrap" command takes several
+    command line arguments that allow you to control where the Savana-managed branches are kept:
+
++--
+%> svn co https://<host>/<repo>/trunk/<project> working
+%> cd working
+%> sav bootstrap / TRUNK --projectName <project> --releaseBranchesPath branches/<project> \
+       --userBranchesPath branches/<project>/user --trunkPath trunk/<project>
++--
+
+    The key thing to note is that the PROJECTROOT argument to the
+    {{{commands.html#createmetadatafile}sav bootstrap}} command is set to "/" - this is because the
+    project root must be above the trunk and branches directories in the repository, and since the
+    branches and trunk are at the root of the repository, then "/" is the only path that meets that
+    requirement.
+
+    By setting the values for the arguments to "sav bootstrap", you should be able to use Savana
+    for just about any rational repository layout.

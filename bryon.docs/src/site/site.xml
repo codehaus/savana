@@ -25,7 +25,8 @@
         </menu>
 
         <menu name="Usage">
-            <item name="Commands" href="commands.html"/>
+            <item name="Command Reference" href="commands.html"/>
+            <item name="Adapting Savana to your Repository Layout" href="layouts.html"/>
         </menu>
 
         ${reports}
