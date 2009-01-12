@@ -46,7 +46,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // list the user branches - there should be just the one
         assertEquals("--------------------------------------------------------------" + EOL +
-                     "Branch Name         Source         Branch-Point   Last-Merge" + EOL +
+                     "Branch Name         Source         Branch-Point   Last-Merge     Subpath" + EOL +
                      "--------------------------------------------------------------" + EOL +
                      "workspace           trunk          " + branchPointRev + "              " + branchPointRev,
                      savana(ListUserBranches.class));

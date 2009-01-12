@@ -99,7 +99,7 @@ public class RevertToSource extends SAVCommand {
             relativePath = SVNPathUtil.validateFilePath(relativePath);
 
             //Find the relative path of the file in both the source and branch
-            String relativeSourcePath = SVNPathUtil.append(wcProps.getSourcePath(), relativePath);
+            String relativeSourcePath = SVNPathUtil.append(wcProps.getSourcePathPlusSubpath(), relativePath);
             String relativeBranchPath = SVNPathUtil.append(wcProps.getBranchPath(), relativePath);
 
             //Create the source URL

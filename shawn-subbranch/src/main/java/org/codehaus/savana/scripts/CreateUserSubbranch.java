@@ -30,9 +30,9 @@
  */
 package org.codehaus.savana.scripts;
 
-public class CreateReleaseBranch extends CreateBranch {
+public class CreateUserSubbranch extends CreateBranch {
 
-    public CreateReleaseBranch() {
-        super("createreleasebranch", new String[]{"crb"}, false, false);
+    public CreateUserSubbranch() {
+        super("createusersubbranch", new String[]{"csb", "cusb"}, true, true);
     }
 }
