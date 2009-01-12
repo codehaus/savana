@@ -66,8 +66,10 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
     @Override
     public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result)
             throws SVNException {
-        if (diff != null && !diff.isEmpty() && !new File(path).getAbsolutePath().equals(_metadataFile) &&
-                !_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
+        if (new File(path).getAbsolutePath().equals(_metadataFile)) {
+            return; // skip .savana
+        }
+        if (diff != null && !getInterestingProperties(diff).isEmpty() && !_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);
         }
     }
@@ -75,16 +77,28 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
     @Override
     public void displayFileDiff(String path, File file1, File file2, String rev1, String rev2, String mimeType1, String mimeType2, OutputStream result)
             throws SVNException {
+        if (new File(path).getAbsolutePath().equals(_metadataFile)) {
+            return; // skip .savana
+        }
         if (file1 == null && file2 != null) {
             _addedFilePaths.add(path);
             _changedFilePaths.remove(path);
         } else if (file1 != null && file2 == null) {
             _deletedFilePaths.add(path);
             _changedFilePaths.remove(path);
-        }
-
-        if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
+        } else if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);
         }
+    }
+
+    public static SVNProperties getInterestingProperties(SVNProperties props) {
+        // ignore changes to svn:mergeinfo when listing changes to promote--users don't care about merge tracking
+        SVNProperties result = new SVNProperties();
+        for (String name : (Set<String>) props.nameSet()) {
+            if (!"svn:mergeinfo".equals(name)) {
+                result.put(name, props.getSVNPropertyValue(name));
+            }
+        }
+        return result;
     }
 }

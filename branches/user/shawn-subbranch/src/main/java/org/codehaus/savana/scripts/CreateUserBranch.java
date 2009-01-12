@@ -33,6 +33,6 @@ package org.codehaus.savana.scripts;
 public class CreateUserBranch extends CreateBranch {
 
     public CreateUserBranch() {
-        super("createuserbranch", new String[]{"cb", "cub"}, true, false);
+        super("createuserbranch", new String[]{"cb", "cub"}, true, true);
     }
 }

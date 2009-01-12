@@ -68,12 +68,12 @@ import java.util.List;
 public class CreateBranch extends SAVCommand {
 
     private final boolean _userBranch;
-    private final boolean _subbranch;
+    private final boolean _allowSubbranches;
 
-    public CreateBranch(String name, String[] aliases, boolean userBranch, boolean subbranch) {
+    public CreateBranch(String name, String[] aliases, boolean userBranch, boolean allowSubbranches) {
         super(name, aliases);
         _userBranch = userBranch;
-        _subbranch = subbranch;
+        _allowSubbranches = allowSubbranches;
     }
 
     @Override
@@ -94,14 +94,15 @@ public class CreateBranch extends SAVCommand {
 
         //Parse command-line arguments
         List<String> targets = env.combineTargets(null, false);
-        if (targets.size() < (_subbranch ? 2 : 1)) {
+        if (targets.isEmpty()) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
         }
-        if (targets.size() > (_subbranch ? 2 : 1)) {
+        if (targets.size() > (_allowSubbranches ? 2 : 1)) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
         }
         String branchName = targets.get(0);
-        File startingDirectory = new File(_subbranch ? targets.get(1) : "").getAbsoluteFile();
+        boolean subpathSpecified = targets.size() > 1;
+        File startingDirectory = new File(subpathSpecified ? targets.get(1) : "").getAbsoluteFile();
 
         //Validate the branch name doesn't have illegal characters
         if (StringUtils.containsAny(branchName, "/\\")) {
@@ -113,16 +114,8 @@ public class CreateBranch extends SAVCommand {
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), startingDirectory);
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
-        //If a subbranch command, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
-        File branchRootDir;
-        String branchSubpath;
-        if (_subbranch) {
-            branchRootDir = startingDirectory;
-            branchSubpath = PathUtil.getPathTail(startingDirectory.getPath(), wcInfo.getRootDir().getPath());
-        } else {
-            branchRootDir = wcInfo.getRootDir();
-            branchSubpath = "";
-        }
+        //If creating a subbranch, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
+        File branchRootDir = subpathSpecified ? startingDirectory : wcInfo.getRootDir();
 
         //Validate newBranchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll 'svn switch' it later
         logStart("Validating working copy directory status");
@@ -161,24 +154,31 @@ public class CreateBranch extends SAVCommand {
         //Get the project name from the working copy
         String projectName = wcProps.getProjectName();
 
-        //Get the branch type
+        //Get the branch type for the new branch
         BranchType branchType = _userBranch ? BranchType.USER_BRANCH : BranchType.RELEASE_BRANCH;
 
-        //Get the source path of the new branch based on the current working copy.
+        //Get the branch path for the new branch
+        String branchPath = _userBranch ?
+                wcProps.getUserBranchPath(branchName) :
+                wcProps.getReleaseBranchPath(branchName);
+
+        //Get the source path and subpath of the new branch based on the current working copy.
         //WC=TRUNK          ==> SOURCE=TRUNK (Branch path of working copy)
         //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
         //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
-        String sourcePath = wcProps.getBranchTreeRootPath();
-
-        String sourceMetadataFilePath = SVNPathUtil.append(sourcePath, wcInfo.getMetadataFile().getName());
+        String sourcePath;
+        String branchSubpath = PathUtil.getPathTail(branchRootDir.getPath(), wcInfo.getRootDir().getPath());
+        if (wcProps.getBranchType() == BranchType.USER_BRANCH) {
+            sourcePath = wcProps.getSourcePath();
+            branchSubpath = SVNPathUtil.append(wcProps.getBranchSubpath(), branchSubpath);
+        } else {
+            sourcePath = wcProps.getBranchPath();
+        }
 
         //The new branch is a copy starting at the source path plus the branch subpath.
         String sourcePathPlusSubpath = SVNPathUtil.append(sourcePath, branchSubpath);
 
-        //Get the branch path for the new branch
-        String branchPath = _userBranch ?
-                            wcProps.getUserBranchPath(branchName) :
-                            wcProps.getReleaseBranchPath(branchName);
+        String sourceMetadataFilePath = SVNPathUtil.append(sourcePath, wcInfo.getMetadataFile().getName());
 
         //Make sure the branch doesn't exist
         logStart("Check that the branch doesn't exist");

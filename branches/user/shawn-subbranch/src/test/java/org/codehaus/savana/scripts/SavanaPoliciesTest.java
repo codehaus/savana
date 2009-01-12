@@ -10,8 +10,6 @@ import org.tmatesoft.svn.core.SVNURL;
 import java.io.File;
 import java.util.logging.Logger;
 
-/**
- */
 public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(SavanaPoliciesTest.class.getName());
 
