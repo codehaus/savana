@@ -1,8 +1,14 @@
-  --------
-  Commands
-  --------
+~~ This file is a template for an APT (almost-plain-text) file to be used by maven's site
+~~ generation.  This file contains a number of Ant-style "filter tokens", of the form
+~~ @token.name@ - these keys correspond to the property names in the commands.properties
+~~ resource bundle that is used by the Savana command-line tool to render help messages.
+~~ The intended usage of this file is to be "filtered" with an Ant <copy> task, and then
+~~ compiled to an HTML file by the APT compiler during maven's site generation phase.
+  -----------------
+  Command Reference
+  -----------------
 
-Savana Commands
+Savana Command Reference
 
     The base Savana executable is called "sav", and the various functions of Savana are
     implemented as "sub-commands" (the same mechanism as used by Subversion).  The general usage
