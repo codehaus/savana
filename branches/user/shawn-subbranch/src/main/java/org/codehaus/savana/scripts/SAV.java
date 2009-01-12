@@ -70,6 +70,7 @@ public class SAV extends AbstractSVNLauncher {
     protected void registerCommands() {
         AbstractSVNCommand.registerCommand(new CreateReleaseBranch());
         AbstractSVNCommand.registerCommand(new CreateUserBranch());
+        AbstractSVNCommand.registerCommand(new CreateUserSubbranch());
         // there's no DeleteReleaseBranch command--it's dangerous, almost never useful,
         // and has an easy workaround: svn delete <release branch url>
         AbstractSVNCommand.registerCommand(new DeleteUserBranch());

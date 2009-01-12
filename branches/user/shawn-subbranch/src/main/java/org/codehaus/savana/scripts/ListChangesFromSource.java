@@ -79,7 +79,7 @@ public class ListChangesFromSource extends SAVCommand {
         }
 
         //Create the source URL
-        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePathPlusSubpath());
 
         //Diff [source:HEAD, branch:HEAD] to see what has changes
         logStart("Get Diff Client");

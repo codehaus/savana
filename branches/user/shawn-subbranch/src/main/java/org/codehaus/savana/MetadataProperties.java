@@ -85,7 +85,11 @@ public class MetadataProperties {
     private String _branchPath;
 
     /**
-     * Path within the repository from which this branch was derived (eg. 'myproject/trunk').  This will
+     */
+    private String _branchSubpath = "";
+
+    /**
+     * The branch path of the branch from which this branch was derived (eg. 'myproject/trunk').  This will
      * be null for the 'trunk' branch.
      */
     private String _sourcePath;
@@ -160,6 +164,11 @@ public class MetadataProperties {
         SVNPropertyValue branchPathProps = properties.getSVNPropertyValue(MetadataFile.PROP_BRANCH_PATH);
         if (branchPathProps != null) {
             _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps);
+        }
+
+        SVNPropertyValue branchSubpathProps = properties.getSVNPropertyValue(MetadataFile.PROP_BRANCH_SUBPATH);
+        if (branchSubpathProps != null) {
+            _branchSubpath = SVNPropertyValue.getPropertyAsString(branchSubpathProps);
         }
 
         SVNPropertyValue sourcePathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_PATH);
@@ -237,6 +246,10 @@ public class MetadataProperties {
         return _branchPath;
     }
 
+    public String getBranchSubpath() {
+        return _branchSubpath;
+    }
+
     public String getBranchName() {
         return (_branchPath != null) ? SVNPathUtil.tail(_branchPath) : null;
     }
@@ -247,6 +260,10 @@ public class MetadataProperties {
 
     public String getSourceName() {
         return (_sourcePath != null) ? SVNPathUtil.tail(_sourcePath) : null;
+    }
+
+    public String getSourcePathPlusSubpath() {
+        return SVNPathUtil.append(_sourcePath, _branchSubpath);
     }
 
     public BranchType getSourceBranchType() {
@@ -302,6 +319,9 @@ public class MetadataProperties {
         out.println("Branch Name:           " + getBranchName());
         out.println("---------------------------------------------");
         out.println("Project Name:          " + _projectName);
+        if (_branchSubpath.length() > 0) {
+            out.println("Branch Subpath:        " + _branchSubpath);
+        }
         out.println("Branch Type:           " + _branchType.getKeyword().toLowerCase());
         out.println("Source:                " + ((getSourceName() != null) ? getSourceName() : "none"));
         out.println("Branch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none"));
