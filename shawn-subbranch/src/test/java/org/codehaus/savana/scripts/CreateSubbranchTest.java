@@ -103,7 +103,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         rev++;
 
         // assert that sync brings in changes
-        assertEquals("U    text/drinks.txt", savana(Synchronize.class).replaceAll("^---.*?\n", ""));
+        assertEquals("U    text" + File.separatorChar + "drinks.txt", savana(Synchronize.class).replaceAll("^---.*?\n", ""));
 
         // commit.  we have to update first for some reason related to the svn:mergeinfo property
         SVN.getUpdateClient().doUpdate(WC1_src, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
@@ -183,8 +183,51 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
-                         "\nRun 'svn status' to find changes" + EOL, e.getErr());
+                         "\nRun 'sav info -R' to find nested workspaces" + EOL, e.getErr());
         }
+
+        // recursively list workspace info
+        cd(WC1);
+        assertEquals(
+                WC1 + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           trunk\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          createsubbranchtest\n" +
+                "Branch Type:           trunk\n" +
+                "Source:                none\n" +
+                "Branch Point Revision: none\n" +
+                "Last Merge Revision:   none\n" +
+                "\n" +
+                WC1_src + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           user1-src\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          createsubbranchtest\n" +
+                "Branch Subpath:        src\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev1 + "\n" +
+                "Last Merge Revision:   " + lastMergeRev1 + "\n" +
+                "\n" +
+                WC1_src_text + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           user1-src-text\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          createsubbranchtest\n" +
+                "Branch Subpath:        src/text\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev2 + "\n" +
+                "Last Merge Revision:   " + branchPointRev2,
+                savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
+
+        // switch from user1-src-text to user1-src
+        cd(WC1_src_text);
+        savana(SetBranch.class, "user1-src");
+
+        // now we can promote
+        savana(Promote.class, "-m", "trunk - changed animals.txt");
     }
 
     /** Returns the absolute path of a file in the way that matches svnkit. */

@@ -30,15 +30,22 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.cli.svn.SVNOption;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.util.SVNLogType;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatus;
+import org.tmatesoft.svn.core.wc.SVNStatusClient;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class ListWorkingCopyInfo extends SAVCommand {
@@ -49,20 +56,86 @@ public class ListWorkingCopyInfo extends SAVCommand {
 
     @Override
     protected Collection createSupportedOptions() {
-        return new ArrayList();
+        Collection options = new ArrayList();
+        options.add(SVNOption.RECURSIVE);
+        options.add(SVNOption.TARGETS);
+        return options;
     }
              
     public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
         //Parse command-line arguments
-        List<String> targets = env.combineTargets(null, false);
-        if (targets.size() > 0) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
+        List<String> targets = env.combineTargets(env.getTargets(), false);
+        if (targets.isEmpty()) {
+            targets = Arrays.asList("");
         }
 
-        //Get information about the current workspace from the metadata file
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
-        env.getOut().println(wcInfo);
+        File currentDirectory = new File("").getAbsoluteFile();
+
+        boolean first = true;
+        for (String target : targets) {
+            File targetDir = new File(target).getAbsoluteFile();
+
+            //Print a blank line between workspaces
+            if (first) {
+                first = false;
+            } else {
+                env.getOut().println();
+            }
+
+            //Get information about the current workspace from the metadata file
+            WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), targetDir);
+
+            //Print the root directory of the branch unless the command is just "sav info" from the top-level
+            boolean forcePrintPath = targets.size() > 1 || env.getDepth() == SVNDepth.INFINITY || !"".equals(target);
+
+            //Print the workspace metadata
+            wcInfo.println(env.getOut(), forcePrintPath);
+
+            //If the recursive flag was specified, print info for workspaces underneath this one
+            if (env.getDepth() == SVNDepth.INFINITY) {
+                printNestedWorkspaces(wcInfo);
+
+            }
+        }
+    }
+
+    private void printNestedWorkspaces(WorkingCopyInfo wcInfo) throws SVNException {
+        SAVCommandEnvironment env = getSVNEnvironment();
+
+        // look for all subdirectories that are switched relative to the working copy root
+        SwitchedDirectoriesHandler statusHandler = new SwitchedDirectoriesHandler();
+        SVNStatusClient statusClient = env.getClientManager().getStatusClient();
+        statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
+                false, true, false, false, statusHandler, null);
+        List<File> switchedDirectories = statusHandler.getSwitchedDirectories();
+
+        Collections.sort(switchedDirectories);
+        for (File switchedDirectory : switchedDirectories) {
+            // if a switched directory contains a Savana metadata file, then it's a workspace.  print out its info.
+            File switchedMetadataFile = new File(switchedDirectory, wcInfo.getMetadataFile().getName());
+            if (switchedMetadataFile.exists()) {
+                MetadataProperties switchedProperties =
+                        new MetadataProperties(env.getClientManager(), switchedMetadataFile);
+                env.getOut().println();
+                env.getOut().println(switchedDirectory + ":");
+                env.getOut().println(switchedProperties);
+            }
+        }
+    }
+
+    private static class SwitchedDirectoriesHandler implements ISVNStatusHandler {
+        private final List<File> _switchedDirectories = new ArrayList<File>();
+
+        public List<File> getSwitchedDirectories() {
+            return _switchedDirectories;
+        }
+
+        public void handleStatus(SVNStatus status) throws SVNException {
+            if (status.isSwitched() && status.getKind() == SVNNodeKind.DIR) {
+                _switchedDirectories.add(status.getFile());
+            }
+        }
     }
 }

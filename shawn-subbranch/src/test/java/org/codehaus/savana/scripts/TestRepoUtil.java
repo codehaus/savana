@@ -30,8 +30,19 @@ public abstract class TestRepoUtil {
     private static final Logger _sLog = Logger.getLogger(TestRepoUtil.class.getName());
 
     static {
-        // we don't care much about file timestamps.  don't sleep to generate distinct ones--tests run much faster
-        SVNFileUtil.setSleepForTimestamp(false);
+        // Internally SVNKit sleeps for about a second after most update operations
+        // to make sure timestamps are distinct--the 'svn status' operation relies
+        // on timestamps to detect changes where the file size stays the same, and
+        // it uses per-second resolution.  As long as the test cases don't generate
+        // changes where file sizes stay the same, we should be able to disable the
+        // sleeps and run tests at full speed, about a 10x improvement.
+        //
+        // Note: subversion 1.4 repos appear not to store timestamps--see the source for
+        // org.tmatesoft.svn.core.internal.wc.admin.SVNAdminArea14#INAPPLICABLE_PROPERTIES
+        // which includes SVNProperty.WORKING_SIZE).  So sleeping is only disabled w/1.5+.
+        if (!TestSvnUtil.REPO_PRE15) {
+            SVNFileUtil.setSleepForTimestamp(false);
+        }
     }
 
     public static File SUBVERSION_CONFIG_DIR = TestDirUtil.createTempDir("subversion-config");

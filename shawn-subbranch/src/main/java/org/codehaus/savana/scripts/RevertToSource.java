@@ -51,8 +51,8 @@ import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 public class RevertToSource extends SAVCommand {
@@ -63,7 +63,7 @@ public class RevertToSource extends SAVCommand {
 
     @Override
     protected Collection createSupportedOptions() {
-        Collection options = new LinkedList();
+        Collection options = new ArrayList();
         options.add(SVNOption.TARGETS);
         return options;
     }

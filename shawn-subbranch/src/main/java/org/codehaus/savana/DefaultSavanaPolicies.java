@@ -74,7 +74,7 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         }
     }
 
-    private String replaceBranchKeywords(MetadataProperties metadataProperties, String template) {
+    private String replaceBranchKeywords(MetadataProperties metadataProperties, String template) throws SVNException {
         template = replace(template, "@projectName", metadataProperties.getProjectName());
         template = replace(template, "@branchName", metadataProperties.getBranchName());
         template = replace(template, "@branchType", metadataProperties.getBranchType());

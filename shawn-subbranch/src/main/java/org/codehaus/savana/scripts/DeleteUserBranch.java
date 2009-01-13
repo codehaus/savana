@@ -34,8 +34,8 @@ public class DeleteUserBranch extends DeleteBranch {
 
     public DeleteUserBranch() {
         // somewhat dangerous command, so no shortcut aliases are defined.  for example, since
-        // 's' and 'd' are next to each other on the keyboard, it seems easy to mistype "ss sb branch"
-        // as "ss db branch".  a deleted branch can be recovered using "svn merge -r n:n-1 <project-url>"
+        // 's' and 'd' are next to each other on the keyboard, it seems easy to mistype "sav sb branch"
+        // as "sav db branch".  a deleted branch can be recovered using "svn merge -r n:n-1 <project-url>"
         // where n is the changeset that deleted the branch.
         super("deleteuserbranch", null, true);
     }

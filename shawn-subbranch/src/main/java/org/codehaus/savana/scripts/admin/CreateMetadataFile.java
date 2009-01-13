@@ -98,6 +98,9 @@ public class CreateMetadataFile extends SAVCommand {
         }
         String sourceBranchName = (targets.size() > 2) ? targets.get(2) : null;
 
+        //Normalize slashes
+        projectRoot = normalize(projectRoot);
+
         //Default the optional arguments if they weren't specified
         String projectName = env.getProjectName();
         if (projectName == null) {
@@ -114,9 +117,9 @@ public class CreateMetadataFile extends SAVCommand {
         }
 
         //Make sure the branch paths are all different from each other
-        String trunkPath = env.getTrunkPath();
-        String releaseBranchesPath = env.getReleaseBranchesPath();
-        String userBranchesPath = env.getUserBranchesPath();
+        String trunkPath = normalize(env.getTrunkPath());
+        String releaseBranchesPath = normalize(env.getReleaseBranchesPath());
+        String userBranchesPath = normalize(env.getUserBranchesPath());
         if (trunkPath.equals(releaseBranchesPath) || trunkPath.equals(userBranchesPath) || releaseBranchesPath.equals(userBranchesPath)) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
                     "ERROR: trunk, release and user branches paths must be different from each other"), SVNLogType.CLIENT);
@@ -135,7 +138,7 @@ public class CreateMetadataFile extends SAVCommand {
         String branchPath = getPathWithinRepo(branchType, workspaceDirName, projectRoot, trunkPath, releaseBranchesPath, userBranchesPath);
 
         //Make sure the workspaceDirUrl and the branch path match
-        String workspaceDirPath = PathUtil.getPathTail(workspaceDirUrl.getPath(), repositoryUrl.getPath());
+        String workspaceDirPath = PathUtil.getPathTail(workspaceDirUrl, repositoryUrl);
         if (!workspaceDirPath.equalsIgnoreCase(branchPath)) {
             String errorMessage =
                     "ERROR: Branch type argument does not match current repository location." +
@@ -218,7 +221,7 @@ public class CreateMetadataFile extends SAVCommand {
         env.getOut().println("-------------------------------------------------");
         env.getOut().println();
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
-        env.getOut().println(wcInfo);
+        wcInfo.println(env.getOut(), false);
         env.getOut().println();
         env.getOut().println("Please 'svn commit' to save the metadata file to the Subversion repository:\n  " + metadataFile);
     }
@@ -250,6 +253,10 @@ public class CreateMetadataFile extends SAVCommand {
         }
 
         return path;
+    }
+
+    private String normalize(String projectRoot) {
+        return projectRoot.replace(File.separatorChar, '/');
     }
 
     private static class RevisionNumberLogEntryHandler implements ISVNLogEntryHandler {

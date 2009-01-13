@@ -125,7 +125,7 @@ public class Promote extends SAVCommand {
         if (statusHandler.isSwitched()) {
             String errorMessage =
                     "ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
-                            "\nRun 'svn status' to find changes";
+                            "\nRun 'sav info -R' to find nested workspaces";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         if (statusHandler.isOutOfDate()) {
@@ -239,7 +239,7 @@ public class Promote extends SAVCommand {
         //Print the new working copy info
         wcInfo = new WorkingCopyInfo(env.getClientManager());
         env.getOut().println("");
-        env.getOut().println(wcInfo);
+        wcInfo.println(env.getOut(), false);
         env.getOut().println("");
         env.getOut().println("Promotion Changeset:   [" + commitInfo.getNewRevision() + "]");
     }

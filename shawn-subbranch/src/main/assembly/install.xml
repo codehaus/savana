@@ -61,13 +61,6 @@ will apply to all Software in this distribution.
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>target</directory>
-            <outputDirectory>/lib</outputDirectory>
-            <includes>
-                <include>*.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>src/main/svn-hooks</directory>
             <outputDirectory>/svn-hooks</outputDirectory>
             <fileMode>0755</fileMode>
