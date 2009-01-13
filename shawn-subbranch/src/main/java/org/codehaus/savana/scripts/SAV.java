@@ -101,6 +101,7 @@ public class SAV extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SVNOption.FORCE);
         SVNCommandLine.registerOption(SVNOption.NO_DIFF_DELETED);
         SVNCommandLine.registerOption(SVNOption.RECURSIVE);
+        SVNCommandLine.registerOption(SVNOption.DEPTH);
         SVNCommandLine.registerOption(SVNOption.TARGETS);
 
         //Global options

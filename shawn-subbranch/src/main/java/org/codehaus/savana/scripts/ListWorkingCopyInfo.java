@@ -60,9 +60,10 @@ public class ListWorkingCopyInfo extends SAVCommand {
         Collection options = new ArrayList();
         options.add(SVNOption.RECURSIVE);
         options.add(SVNOption.TARGETS);
+        options.add(SVNOption.DEPTH);
         return options;
     }
-             
+
     public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
@@ -87,13 +88,13 @@ public class ListWorkingCopyInfo extends SAVCommand {
             WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), targetDir);
 
             //Print the root directory of the branch unless the command is just "sav info" from the top-level
-            boolean forcePrintPath = targets.size() > 1 || env.getDepth() == SVNDepth.INFINITY || !"".equals(target);
+            boolean forcePrintPath = targets.size() > 1 || env.getDepth() != SVNDepth.UNKNOWN || !"".equals(target);
 
             //Print the workspace metadata
             wcInfo.println(env.getOut(), forcePrintPath);
 
             //If the recursive flag was specified, print info for workspaces underneath this one
-            if (env.getDepth() == SVNDepth.INFINITY) {
+            if (env.getDepth() != SVNDepth.UNKNOWN) {
                 printNestedWorkspaces(wcInfo);
 
             }
@@ -106,7 +107,7 @@ public class ListWorkingCopyInfo extends SAVCommand {
         // look for all subdirectories that are switched relative to the working copy root
         SwitchedDirectoriesHandler statusHandler = new SwitchedDirectoriesHandler();
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
-        statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
+        statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, env.getDepth(),
                 false, true, false, false, statusHandler, null);
         List<File> switchedDirectories = statusHandler.getSwitchedDirectories();
 

@@ -128,15 +128,15 @@ public class ListBranches extends SAVCommand {
         if (branchNames.isEmpty()) {
             env.getOut().println("No branches were found.");
         } else {
-            env.getOut().println("-----------------------------------------------------------------------------");
+            env.getOut().println("------------------------------------------------------------------------------");
             env.getOut().println(
-                    pad("Branch Name", 20) +
-                    pad("Source", 15) +
-                    pad("Branch-Point", 15) +
-                    pad("Last-Merge", 15) +
+                    pad("Branch Name", 22) + " " +
+                    pad("Source", 13) + " " +
+                    pad("Branch-Point", 13) + " " +
+                    pad("Last-Merge", 13) + " " +
                     pad("Subpath", 0));
 
-            env.getOut().println("-----------------------------------------------------------------------------");
+            env.getOut().println("------------------------------------------------------------------------------");
 
             String userBranchesPath = wcProps.getUserBranchPath(null);
             String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
@@ -164,10 +164,10 @@ public class ListBranches extends SAVCommand {
                 SVNRevision lastMergeRevision = metadataFileProperties.getLastMergeRevision();
 
                 env.getOut().println(
-                        pad(branchName, 20) +
-                        pad(metadataFileProperties.getSourceName(), 15) +
-                        pad(branchPointRevision != null ? branchPointRevision.toString() : "", 15) +
-                        pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 15) +
+                        pad(branchName, 22) + " " +
+                        pad(metadataFileProperties.getSourceName(), 13) + " " +
+                        pad(branchPointRevision != null ? branchPointRevision.toString() : "", 13) + " " +
+                        pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 13) + " " +
                         pad(metadataFileProperties.getSourceSubpath(), 0));
             }
         }
