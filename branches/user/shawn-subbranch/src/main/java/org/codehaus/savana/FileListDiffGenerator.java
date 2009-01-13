@@ -31,6 +31,7 @@ package org.codehaus.savana;
 
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 
 import java.io.File;
@@ -95,7 +96,7 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
         // ignore changes to svn:mergeinfo when listing changes to promote--users don't care about merge tracking
         SVNProperties result = new SVNProperties();
         for (String name : (Set<String>) props.nameSet()) {
-            if (!"svn:mergeinfo".equals(name)) {
+            if (!SVNProperty.MERGE_INFO.equals(name)) {
                 result.put(name, props.getSVNPropertyValue(name));
             }
         }

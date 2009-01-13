@@ -117,7 +117,7 @@ public class CreateBranch extends SAVCommand {
         //If creating a subbranch, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
         File branchRootDir = subpathSpecified ? startingDirectory : wcInfo.getRootDir();
 
-        //Validate newBranchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll 'svn switch' it later
+        //Validate branchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll 'svn switch' it later
         logStart("Validating working copy directory status");
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         SVNStatus branchRootDirStatus = statusClient.doStatus(branchRootDir, false);
@@ -146,7 +146,13 @@ public class CreateBranch extends SAVCommand {
                 //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
                         "ERROR: Cannot create a new branch while the working copy has local changes." +
-                        "\nRun 'svn status' to find changes";
+                        "\nRun 'svn status' to find changes or retry with --force";
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+            if (statusHandler.isSwitched()) {
+                String errorMessage =
+                        "ERROR: Cannot create a new branch while a subdirectory or file is switched relative to the root." +
+                        "\nRun 'sav info -R' to find nested workspaces or retry with --force";
                 SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
         }
@@ -167,7 +173,7 @@ public class CreateBranch extends SAVCommand {
         //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
         //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
         String sourcePath;
-        String branchSubpath = PathUtil.getPathTail(branchRootDir.getPath(), wcInfo.getRootDir().getPath());
+        String branchSubpath = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
         if (wcProps.getBranchType() == BranchType.USER_BRANCH) {
             sourcePath = wcProps.getSourcePath();
             branchSubpath = SVNPathUtil.append(wcProps.getBranchSubpath(), branchSubpath);
@@ -278,7 +284,7 @@ public class CreateBranch extends SAVCommand {
         logEnd("Revert metadata file");
 
         wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);
-        env.getOut().println(wcInfo);
+        wcInfo.println(env.getOut(), false);
     }
 
     private List<String> getMissingSubpaths(SVNRepository repository, String path, long revision)

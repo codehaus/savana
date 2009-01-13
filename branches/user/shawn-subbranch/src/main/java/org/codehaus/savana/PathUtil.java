@@ -29,8 +29,15 @@
  */
 package org.codehaus.savana;
 
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -47,16 +54,43 @@ public class PathUtil {
         return subPaths;
     }
 
-    public static String getPathTail(String path, String prefixToRemove) {
-        if (!path.startsWith(prefixToRemove)) {
-            throw new IllegalArgumentException("ERROR: The path does not start with the expected prefix: " + path + " : " + prefixToRemove);
-        }
+    public static String getPathTail(SVNURL path, SVNURL prefixToRemove) throws SVNException {
+        return getPathTail(path.toDecodedString(), prefixToRemove.toDecodedString());
+    }
 
-        String tail = path.substring(prefixToRemove.length());
-        if (tail.startsWith("/") || tail.startsWith("\\")) {
-            tail = tail.substring(1);
-        }
+    public static String getPathTail(File path, File prefixToRemove) throws SVNException {
+        return getPathTail(normalizePath(path), normalizePath(prefixToRemove));
+    }
 
-        return tail;
+    public static String getPathTail(String path, String prefixToRemove) throws SVNException {
+        // assumption: path and prefix don't have leading or trailing '/' characters 
+        if (!isSubpath(path, prefixToRemove)) {
+            String errorMessage = "ERROR: Path does not start with the expected prefix: " + path + " : " + prefixToRemove + "/";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, errorMessage), SVNLogType.CLIENT);
+        }
+        if ("".equals(prefixToRemove)) {
+            return path;
+        } else if (path.equals(prefixToRemove)) {
+            return "";
+        } else {
+            return path.substring(prefixToRemove.length() + 1);
+        }
+    }
+
+    /** Returns true if the specified path is a subdirectory of the prefix, inclusive. */
+    public static boolean isSubpath(String path, String prefix) {
+        // assumption: path and prefix don't have leading or trailing '/' characters
+        return "".equals(prefix) || path.equals(prefix) || path.startsWith(prefix + "/");
+    }
+
+    /** Returns true path1 is an ancestor or descendent of path2, inclusive. */
+    public static boolean isAncestorOrDescendentOrSelf(File file1, File file2) throws SVNException {
+        String path1 = normalizePath(file1);
+        String path2 = normalizePath(file2);
+        return isSubpath(path1, path2) || isSubpath(path2, path1); 
+    }
+
+    private static String normalizePath(File file) {
+        return file.getPath().replace(File.separatorChar, '/');
     }
 }

@@ -266,26 +266,18 @@ public class MetadataProperties {
         return SVNPathUtil.append(_sourcePath, _branchSubpath);
     }
 
-    public BranchType getSourceBranchType() {
+    public BranchType getSourceBranchType() throws SVNException {
         if (_sourcePath == null) {
             return null;
         }
-        String sourcePath = PathUtil.getPathTail(_sourcePath, _projectRoot);
-        if (sourcePath.equals(_trunkPath)) {
+        String relativeSourcePath = PathUtil.getPathTail(_sourcePath, _projectRoot);
+        if (relativeSourcePath.equals(_trunkPath)) {
             return BranchType.TRUNK;
-        } else if (SVNPathUtil.removeTail(sourcePath).equals(_releaseBranchesPath)) {
+        } else if (SVNPathUtil.removeTail(relativeSourcePath).equals(_releaseBranchesPath)) {
             return BranchType.RELEASE_BRANCH;
         } else {
             return BranchType.USER_BRANCH;
         }
-    }
-
-    public String getBranchTreeRootPath() {
-        //Return the path that is the source of all branches from this point.
-        // * For a user branch, that's just the real source of the user branch.
-        // * Since release branches are like a trunk for user branches made off of them, we want to return the path of the release branch.
-        // * For the trunk, there is no source path, so we want to return the branch path (which is trunk)
-        return _branchType == BranchType.USER_BRANCH ? _sourcePath : _branchPath;
     }
 
     public String getTrunkPath() {
