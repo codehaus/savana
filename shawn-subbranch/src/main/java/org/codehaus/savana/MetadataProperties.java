@@ -56,6 +56,11 @@ import java.util.Properties;
 public class MetadataProperties {
 
     /**
+     * The name of the Savana metadata filename.  For example: '.savana' or '.svnscripts'.
+     */
+    private String _metadataFileName;
+
+    /**
      * User-friendly name of the project.  For example: 'myproject'.
      */
     private String _projectName;
@@ -85,14 +90,18 @@ public class MetadataProperties {
     private String _branchPath;
 
     /**
-     */
-    private String _branchSubpath = "";
-
-    /**
-     * The branch path of the branch from which this branch was derived (eg. 'myproject/trunk').  This will
-     * be null for the 'trunk' branch.
+     * The path within the repository where the source of this branch lives (eg. 'myproject/trunk').
+     * This will be the same as the source workspace's 'branchPath' value.  To get the path from which
+     * this branch was actually copied from, see {@link #getSourcePathPlusSubpath()}.  This will be
+     * null for the 'trunk' branch.
      */
     private String _sourcePath;
+
+    /**
+     * The subdirectory within the source branch from which this branch was copied.  For top-level
+     * branches, including all trunk and release branches, this will be the empty string.
+     */
+    private String _sourceSubpath = "";
 
     /**
      * Path underneath the project root of the project trunk branch.
@@ -129,6 +138,7 @@ public class MetadataProperties {
      * Creates a MetadataProperties from a file in a remote repository.
      */
     public MetadataProperties(SVNRepository repository, String metadataFilePath, long revision) throws SVNException {
+        _metadataFileName = SVNPathUtil.tail(metadataFilePath);
         SVNProperties properties = new SVNProperties();
         // note: SVNRepository.getFile() is *much* faster than SVNWCClient.doGetProperty(SVNURL...).  ListBranches is 2x faster using getFile().
         repository.getFile(metadataFilePath, revision, properties, null);
@@ -139,6 +149,7 @@ public class MetadataProperties {
      * Creates a MetadataProperties from a metadata file on the local file system.
      */
     public MetadataProperties(SVNClientManager clientManager, File metadataFile) throws SVNException {
+        _metadataFileName = metadataFile.getName();
         SVNProperties properties = new SVNProperties();
         SVNWCClient wcClient = clientManager.getWCClient();
         wcClient.doGetProperty(metadataFile, null, SVNRevision.WORKING, SVNRevision.WORKING, SVNDepth.EMPTY, new PropertyHandler(properties), null);
@@ -166,14 +177,14 @@ public class MetadataProperties {
             _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps);
         }
 
-        SVNPropertyValue branchSubpathProps = properties.getSVNPropertyValue(MetadataFile.PROP_BRANCH_SUBPATH);
-        if (branchSubpathProps != null) {
-            _branchSubpath = SVNPropertyValue.getPropertyAsString(branchSubpathProps);
-        }
-
         SVNPropertyValue sourcePathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_PATH);
         if (sourcePathProps != null) {
             _sourcePath = SVNPropertyValue.getPropertyAsString(sourcePathProps);
+        }
+
+        SVNPropertyValue sourceSubpathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_SUBPATH);
+        if (sourceSubpathProps != null) {
+            _sourceSubpath = SVNPropertyValue.getPropertyAsString(sourceSubpathProps);
         }
 
         SVNPropertyValue trunkPathProps = properties.getSVNPropertyValue(MetadataFile.PROP_TRUNK_PATH);
@@ -230,6 +241,10 @@ public class MetadataProperties {
         return savanaPolicies;
     }
 
+    public String getMetadataFileName() {
+        return _metadataFileName;
+    }
+
     public String getProjectName() {
         return _projectName;
     }
@@ -238,32 +253,36 @@ public class MetadataProperties {
         return _projectRoot;
     }
 
-    public BranchType getBranchType() {
-        return _branchType;
+    public String getBranchName() {
+        return (_branchPath != null) ? SVNPathUtil.tail(_branchPath) : null;
     }
 
     public String getBranchPath() {
         return _branchPath;
     }
 
-    public String getBranchSubpath() {
-        return _branchSubpath;
-    }
-
-    public String getBranchName() {
-        return (_branchPath != null) ? SVNPathUtil.tail(_branchPath) : null;
-    }
-
-    public String getSourcePath() {
-        return _sourcePath;
+    public BranchType getBranchType() {
+        return _branchType;
     }
 
     public String getSourceName() {
         return (_sourcePath != null) ? SVNPathUtil.tail(_sourcePath) : null;
     }
 
+    public String getSourcePath() {
+        return _sourcePath;
+    }
+
+    public String getSourceSubpath() {
+        return _sourceSubpath;
+    }
+
     public String getSourcePathPlusSubpath() {
-        return SVNPathUtil.append(_sourcePath, _branchSubpath);
+        return SVNPathUtil.append(_sourcePath, _sourceSubpath);
+    }
+
+    public String getSourceMetadataFilePath() {
+        return SVNPathUtil.append(_sourcePath, _metadataFileName);
     }
 
     public BranchType getSourceBranchType() throws SVNException {
@@ -311,8 +330,8 @@ public class MetadataProperties {
         out.println("Branch Name:           " + getBranchName());
         out.println("---------------------------------------------");
         out.println("Project Name:          " + _projectName);
-        if (_branchSubpath.length() > 0) {
-            out.println("Branch Subpath:        " + _branchSubpath);
+        if (_sourceSubpath.length() > 0) {
+            out.println("Branch Subpath:        " + _sourceSubpath);
         }
         out.println("Branch Type:           " + _branchType.getKeyword().toLowerCase());
         out.println("Source:                " + ((getSourceName() != null) ? getSourceName() : "none"));

@@ -10,7 +10,7 @@ import java.io.File;
 import java.text.MessageFormat;
 
 /**
- * Basic tests for creating user branches on subdirectories (ie.where BRANCH_SUBPATH is not empty).
+ * Basic tests for creating user branches on subdirectories (ie.where SOURCE_SUBPATH is not empty).
  * Verifies that basic operations work correctly on those user branches. 
  */
 public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
@@ -184,6 +184,18 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
                          "\nRun 'sav info -R' to find nested workspaces" + EOL, e.getErr());
+        }
+
+        // verify that RevertToSource won't revert files in a switched branch
+        try {
+            savana(RevertToSource.class, "text/animals.txt");
+            assertTrue("we expected an exception to be thrown", false);
+
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: ERROR: Can't revert a file that is switched relative to the working copy.\n" +
+                         "Expected Path URL: " + REPO_URL.appendPath("createsubbranchtest/branches/user/user1-src/text/animals.txt", false) + "\n" +
+                         "Switched URL:      " + REPO_URL.appendPath("createsubbranchtest/branches/user/user1-src-text/animals.txt", false) + EOL, e.getErr());
         }
 
         // recursively list workspace info

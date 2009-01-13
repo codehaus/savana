@@ -42,6 +42,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class PathUtil {
+    public static File getValidatedAbsoluteFile(String path) {
+        // this is a little weird, but it matches the way SVNKit uses SVNPathUtil.validateFilePath() internally... 
+        return new File(SVNPathUtil.validateFilePath(new File(path).getAbsolutePath())).getAbsoluteFile();
+    }
+
     public static List<String> getAllSubpaths(String path) {
         LinkedList<String> subPaths = new LinkedList<String>();
 
