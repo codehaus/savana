@@ -57,6 +57,7 @@ public class WorkingCopyInfo {
 
     public WorkingCopyInfo(SVNClientManager clientManager, File currentDirectory)
             throws SVNException {
+        currentDirectory = currentDirectory.getAbsoluteFile();
         while (currentDirectory != null) {
             MetadataFile metadataFile = new MetadataFile(currentDirectory, MetadataFile.METADATA_FILE_NAME);
             if (!metadataFile.exists()) {

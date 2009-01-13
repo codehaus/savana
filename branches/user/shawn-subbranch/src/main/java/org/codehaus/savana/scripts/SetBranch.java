@@ -115,7 +115,7 @@ public class SetBranch extends SAVCommand {
 
         //Get the metadata properties for the branch
         logStart("Get metadata properties");
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
         MetadataProperties branchProps = new MetadataProperties(repository, branchMetadataFilePath, -1);
         logEnd("Get metadata properties");
 
@@ -144,43 +144,42 @@ public class SetBranch extends SAVCommand {
         }
         logEnd("Check switch type");
 
-        //If the new branch has a subpath inside the working copy or vice versa, move the root directory.
+        //If the new branch is a subpath inside the working copy or vice versa, move the root directory.
         logStart("Get switch target directory");
         File branchRootDir = wcInfo.getRootDir();
-        String branchPathWithSubpath = branchPath;
-        if (!wcProps.getBranchSubpath().equals(branchProps.getBranchSubpath())) {
+        if (!wcProps.getSourceSubpath().equals(branchProps.getSourceSubpath())) {
             
-            if (PathUtil.isSubpath(branchProps.getBranchSubpath(), wcProps.getBranchSubpath())) {
+            if (PathUtil.isSubpath(branchProps.getSourceSubpath(), wcProps.getSourceSubpath())) {
                 // new branch is rooted in a subdirectory of the current working copy.  eg.
                 //    workspace trunk   -> /
-                //    workspace userSub -> /subdir
-                // $ cd <project>/working
-                // $ sav sb trunk     => switches $project/working to 'trunk'
-                // $ sav sb userSub   => switches $project/working/usersub
-                String relativeSubpath = PathUtil.getPathTail(branchProps.getBranchSubpath(), wcProps.getBranchSubpath());
-                branchRootDir = new File(wcInfo.getRootDir(), relativeSubpath);
+                //    workspace usersub -> /subdir
+                // $ cd /project/working
+                // $ sav sb trunk     => switches /project/working to 'trunk'
+                // $ sav sb usersub   => switches /project/working/usersub to 'usersub'
+                String relativeSubpath = PathUtil.getPathTail(branchProps.getSourceSubpath(), wcProps.getSourceSubpath());
+                branchRootDir = new File(branchRootDir, relativeSubpath);
 
                 // if in a subdirectory of the working copy, don't allow switching a sibling directory (must be a parent or child or self)
                 File currentDirectory = new File("").getAbsoluteFile();
                 if (!PathUtil.isAncestorOrDescendentOrSelf(branchRootDir, currentDirectory)) {
                     String errorMessage =
-                            "ERROR: Can't switch to a directory outside of the current path." +
-                            "\nWorking Directory: " + currentDirectory +
+                            "ERROR: Can't switch to a branch that's not a child or parent of the current directory." +
+                            "\nCurrent Directory: " + currentDirectory +
                             "\nBranch Root:       " + branchRootDir;
                     SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
                 }
 
-            } else if (PathUtil.isSubpath(wcProps.getBranchSubpath(), branchProps.getBranchSubpath())) {
+            } else if (PathUtil.isSubpath(wcProps.getSourceSubpath(), branchProps.getSourceSubpath())) {
                 // working copy is rooted in a subdirectory of the new branch.  eg.
                 //    workspace trunk   -> /
-                //    workspace userSub -> /subdir
-                // $ cd <project>/working
-                // $ sav sb trunk     => switches $project/working to 'trunk'
-                // $ sav sb userSub   => switches $project/working/usersub to 'usersub' branch
-                // $ cd userSub
-                // $ sav sb trunk     => switches $project/working/usersub to 'trunk' branch, but leaves parent alone
-                String relativeSubpath = PathUtil.getPathTail(wcProps.getBranchSubpath(), branchProps.getBranchSubpath());
-                branchPathWithSubpath = SVNPathUtil.append(branchPath, relativeSubpath);
+                //    workspace usersub -> /subdir
+                // $ cd /project/working
+                // $ sav sb trunk     => switches /project/working to 'trunk'
+                // $ sav sb usersub   => switches /project/working/usersub to 'usersub' branch
+                // $ cd usersub
+                // $ sav sb trunk     => switches /project/working/usersub to 'trunk' branch, but leaves parent alone
+                String relativeSubpath = PathUtil.getPathTail(wcProps.getSourceSubpath(), branchProps.getSourceSubpath());
+                branchPath = SVNPathUtil.append(branchPath, relativeSubpath);
 
                 // if we want to switch to a location inside another branch (not the top-level directory)
                 // make sure we're just realigning the branchRootDir with its parent working copy directory.
@@ -194,17 +193,17 @@ public class SetBranch extends SAVCommand {
                     !parentInfo.getMetadataProperties().getBranchPath().equals(branchProps.getBranchPath())) {
                     String errorMessage =
                             "ERROR: Can't switch to a branch with a root above the working copy." +
-                            "\nWorking Copy Root: <project>/" + wcProps.getBranchSubpath() +
-                            "\nBranch Root:       <project>/" + branchProps.getBranchSubpath();
+                            "\nWorking Copy Root: <project>/" + wcProps.getSourceSubpath() +
+                            "\nBranch Root:       <project>/" + branchProps.getSourceSubpath();
                     SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
                 }
 
             } else {
-                // throw an error if the branch subpath and working copy subpath aren't related.
+                // throw an error if the source subpath and working copy subpath aren't related.
                 String errorMessage =
                         "ERROR: Can't switch to a directory outside of the working copy." +
-                        "\nWorking Copy Root: <project>/" + wcProps.getBranchSubpath() +
-                        "\nBranch Root:       <project>/" + branchProps.getBranchSubpath();
+                        "\nWorking Copy Root: <project>/" + wcProps.getSourceSubpath() +
+                        "\nBranch Root:       <project>/" + branchProps.getSourceSubpath();
                 SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
         }
@@ -248,7 +247,7 @@ public class SetBranch extends SAVCommand {
         }
 
         //Create the branch URL
-        SVNURL branchURL = wcInfo.getRepositoryURL(branchPathWithSubpath);
+        SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
 
         //Switch the working copy to the new branch
         logStart("Get update client");
@@ -262,7 +261,7 @@ public class SetBranch extends SAVCommand {
 
         //Even if we are forcing the setbranch while there are uncommitted changes
         //Changes to the metadata file should never be ported from one branch to another
-        File branchMetadataFile = new File(branchRootDir, wcInfo.getMetadataFile().getName());
+        File branchMetadataFile = new File(branchRootDir, wcProps.getMetadataFileName());
         if (env.isForce() && branchMetadataFile.exists()) {
             //Revert any changes to the metadata file'
             logStart("Revert metadata file");

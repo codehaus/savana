@@ -102,7 +102,7 @@ public class CreateBranch extends SAVCommand {
         }
         String branchName = targets.get(0);
         boolean subpathSpecified = targets.size() > 1;
-        File startingDirectory = new File(subpathSpecified ? targets.get(1) : "").getAbsoluteFile();
+        File startingDirectory = PathUtil.getValidatedAbsoluteFile(subpathSpecified ? targets.get(1) : "");
 
         //Validate the branch name doesn't have illegal characters
         if (StringUtils.containsAny(branchName, "/\\")) {
@@ -143,7 +143,6 @@ public class CreateBranch extends SAVCommand {
                     SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
             logEnd("Looking for local changes");
             if (statusHandler.isChanged()) {
-                //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
                         "ERROR: Cannot create a new branch while the working copy has local changes." +
                         "\nRun 'svn status' to find changes or retry with --force";
@@ -173,18 +172,22 @@ public class CreateBranch extends SAVCommand {
         //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
         //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
         String sourcePath;
-        String branchSubpath = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
+        String sourceSubpath;
         if (wcProps.getBranchType() == BranchType.USER_BRANCH) {
             sourcePath = wcProps.getSourcePath();
-            branchSubpath = SVNPathUtil.append(wcProps.getBranchSubpath(), branchSubpath);
+            sourceSubpath = wcProps.getSourceSubpath();
         } else {
             sourcePath = wcProps.getBranchPath();
+            sourceSubpath = "";
         }
+        //Append the path from the working copy root down to the new branch root to the new source subpath
+        String relativeSubpath = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
+        sourceSubpath = SVNPathUtil.append(sourceSubpath, relativeSubpath);
 
         //The new branch is a copy starting at the source path plus the branch subpath.
-        String sourcePathPlusSubpath = SVNPathUtil.append(sourcePath, branchSubpath);
+        String sourcePathPlusSubpath = SVNPathUtil.append(sourcePath, sourceSubpath);
 
-        String sourceMetadataFilePath = SVNPathUtil.append(sourcePath, wcInfo.getMetadataFile().getName());
+        String sourceMetadataFilePath = SVNPathUtil.append(sourcePath, wcProps.getMetadataFileName());
 
         //Make sure the branch doesn't exist
         logStart("Check that the branch doesn't exist");
@@ -204,7 +207,7 @@ public class CreateBranch extends SAVCommand {
 
         //Figure out the paths to the parent dir of the branch and to the metadata file
         String branchParentPath = SVNPathUtil.removeTail(branchPath);
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
 
         //Perform the copy
         try {
@@ -240,7 +243,7 @@ public class CreateBranch extends SAVCommand {
             editorHelper.addOpenedDir(branchPath);
 
             //Copy the metdata file if we're copying from a subpath, not the top-level of the source path
-            if (branchSubpath.length() > 0) {
+            if (sourceSubpath.length() > 0) {
                 editor.addFile(branchMetadataFilePath, sourceMetadataFilePath, sourceRevision);
             }
 
@@ -248,10 +251,10 @@ public class CreateBranch extends SAVCommand {
             logStart("Create metadata file");
             editorHelper.openFile(branchMetadataFilePath);
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName));
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()));
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_SUBPATH, SVNPropertyValue.create(branchSubpath));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_SUBPATH, SVNPropertyValue.create(sourceSubpath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             logEnd("Create metadata file");
@@ -280,7 +283,7 @@ public class CreateBranch extends SAVCommand {
         //Revert any merged changes to the metadata file
         logStart("Revert metadata file");
         SVNWCClient wcClient = env.getClientManager().getWCClient();
-        wcClient.doRevert(new File[] {new File(branchRootDir, wcInfo.getMetadataFile().getName())}, SVNDepth.EMPTY, null);
+        wcClient.doRevert(new File[] {new File(branchRootDir, wcProps.getMetadataFileName())}, SVNDepth.EMPTY, null);
         logEnd("Revert metadata file");
 
         wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);

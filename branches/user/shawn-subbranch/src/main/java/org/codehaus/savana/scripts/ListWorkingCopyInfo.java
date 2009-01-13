@@ -31,6 +31,7 @@
 package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -71,11 +72,9 @@ public class ListWorkingCopyInfo extends SAVCommand {
             targets = Arrays.asList("");
         }
 
-        File currentDirectory = new File("").getAbsoluteFile();
-
         boolean first = true;
         for (String target : targets) {
-            File targetDir = new File(target).getAbsoluteFile();
+            File targetDir = PathUtil.getValidatedAbsoluteFile(target);
 
             //Print a blank line between workspaces
             if (first) {
@@ -114,7 +113,7 @@ public class ListWorkingCopyInfo extends SAVCommand {
         Collections.sort(switchedDirectories);
         for (File switchedDirectory : switchedDirectories) {
             // if a switched directory contains a Savana metadata file, then it's a workspace.  print out its info.
-            File switchedMetadataFile = new File(switchedDirectory, wcInfo.getMetadataFile().getName());
+            File switchedMetadataFile = new File(switchedDirectory, wcInfo.getMetadataProperties().getMetadataFileName());
             if (switchedMetadataFile.exists()) {
                 MetadataProperties switchedProperties =
                         new MetadataProperties(env.getClientManager(), switchedMetadataFile);

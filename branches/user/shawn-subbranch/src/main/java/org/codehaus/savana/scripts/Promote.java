@@ -43,7 +43,6 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
@@ -164,8 +163,7 @@ public class Promote extends SAVCommand {
 
         //Get metadata properties on the source so we can get its savana policies object
         logStart("Get metadata for the source branch");
-        String sourceMetadataPath = SVNPathUtil.append(wcProps.getSourcePath(), wcInfo.getMetadataFile().getName());
-        MetadataProperties sourceProps = new MetadataProperties(repository, sourceMetadataPath, sourceInfo.getRevision().getNumber());
+        MetadataProperties sourceProps = new MetadataProperties(repository, wcProps.getSourceMetadataFilePath(), sourceInfo.getRevision().getNumber());
         logEnd("Get metadata for the source branch");
 
         //Get the commit message (may launch an external editor).  We don't want to diff branches yet, so pass a dummy string as the commit item.
@@ -202,7 +200,7 @@ public class Promote extends SAVCommand {
 
         logStart("Revert metadata file");
         //Revert the changes to the metadata file
-        if (wcProps.getBranchSubpath().length() == 0) {
+        if (wcProps.getSourceSubpath().length() == 0) {
             wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
         } else {
             wcClient.doDelete(wcInfo.getMetadataFile(), true, false);

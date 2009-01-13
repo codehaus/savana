@@ -149,7 +149,7 @@ public class ListBranches extends SAVCommand {
                 }
 
                 //Get the metadata file
-                String metadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+                String metadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
                 MetadataProperties metadataFileProperties;
                 try {
                     metadataFileProperties = new MetadataProperties(repository, metadataFilePath, -1);
@@ -160,17 +160,15 @@ public class ListBranches extends SAVCommand {
                 }
 
                 //Print the branch information
-                String sourceName = metadataFileProperties.getSourceName();
                 SVNRevision branchPointRevision = metadataFileProperties.getBranchPointRevision();
                 SVNRevision lastMergeRevision = metadataFileProperties.getLastMergeRevision();
-                String branchSubpath = metadataFileProperties.getBranchSubpath();
 
                 env.getOut().println(
                         pad(branchName, 20) +
-                        pad(sourceName, 15) +
+                        pad(metadataFileProperties.getSourceName(), 15) +
                         pad(branchPointRevision != null ? branchPointRevision.toString() : "", 15) +
                         pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 15) +
-                        pad(branchSubpath, 0));
+                        pad(metadataFileProperties.getSourceSubpath(), 0));
             }
         }
         logEnd("Print branch info");
