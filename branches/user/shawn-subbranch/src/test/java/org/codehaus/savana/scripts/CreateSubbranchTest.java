@@ -167,11 +167,11 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 savana(ListWorkingCopyInfo.class));
 
         // list the two user branches - there should be just the one
-        assertEquals("-----------------------------------------------------------------------------" + EOL +
-                     "Branch Name         Source         Branch-Point   Last-Merge     Subpath" + EOL +
-                     "-----------------------------------------------------------------------------" + EOL +
-                     "user1-src           trunk          " + pad(branchPointRev1, 15) + pad(lastMergeRev1, 15) + "src" + EOL +
-                     "user1-src-text      trunk          " + pad(branchPointRev2, 15) + pad(branchPointRev2, 15) + "src/text",
+        assertEquals("------------------------------------------------------------------------------" + EOL +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath" + EOL +
+                     "------------------------------------------------------------------------------" + EOL +
+                     "user1-src              trunk         " + pad(branchPointRev1, 14) + pad(lastMergeRev1, 14) + "src" + EOL +
+                     "user1-src-text         trunk         " + pad(branchPointRev2, 14) + pad(branchPointRev2, 14) + "src/text",
                      savana(ListUserBranches.class));
 
         // try to promote 'user1-src'.  it should fail because the text subdirectory is switched to a different branch

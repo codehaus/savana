@@ -213,13 +213,13 @@ public class SetBranch extends SAVCommand {
         logStart("Validating working copy directory status");
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         SVNStatus branchRootDirStatus = statusClient.doStatus(branchRootDir, false);
-        if (branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+        if (branchRootDirStatus == null || branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: Branch root must be a versioned directory.\nPath: " + branchRootDir), SVNLogType.CLIENT);
         }
         SVNStatusType branchRootDirStatusType = branchRootDirStatus.getContentsStatus();
         if (branchRootDirStatusType != SVNStatusType.STATUS_NORMAL && branchRootDirStatusType != SVNStatusType.STATUS_MODIFIED) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: Branch root directory may not have a status of " +
                     branchRootDirStatusType + ".\nPath" + branchRootDir), SVNLogType.CLIENT);
         }
@@ -229,7 +229,7 @@ public class SetBranch extends SAVCommand {
         if (!env.isForce()) {
             logStart("Check for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
-            statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
+            statusClient.doStatus(branchRootDir, SVNRevision.UNDEFINED,
                     SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
             if (statusHandler.isChanged()) {
                 String errorMessage =
