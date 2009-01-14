@@ -85,7 +85,7 @@ public class RevertToSource extends SAVCommand {
         SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
 
         //If there is no source (we are in the trunk)
-        if (wcProps.getSourcePath() == null) {
+        if (wcProps.getSourceRoot() == null) {
             String errorMessage = "Error: No source path found (you are probably in the TRUNK).";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
@@ -100,7 +100,7 @@ public class RevertToSource extends SAVCommand {
             String relativePath = PathUtil.getPathTail(path, wcInfo.getRootDir());
 
             //Find the relative path of the file in both the source and branch
-            String relativeSourcePath = SVNPathUtil.append(wcProps.getSourcePathPlusSubpath(), relativePath);
+            String relativeSourcePath = SVNPathUtil.append(wcProps.getSourcePath(), relativePath);
             String relativeBranchPath = SVNPathUtil.append(wcProps.getBranchPath(), relativePath);
 
             //Create the source URL

@@ -79,7 +79,7 @@ public class Synchronize extends SAVCommand {
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Find the source and branch URLs
-        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePathPlusSubpath());
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
         SVNURL branchURL = wcInfo.getRepositoryURL(wcProps.getBranchPath());
 
         //Make sure that we are in a user branch
