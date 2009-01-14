@@ -106,7 +106,7 @@ public class CreateBranch extends SAVCommand {
 
         //Validate the branch name doesn't have illegal characters
         if (StringUtils.containsAny(branchName, "/\\")) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: Branch name argument may not contain slash characters: " + branchName), SVNLogType.CLIENT);
         }
 
@@ -116,18 +116,28 @@ public class CreateBranch extends SAVCommand {
 
         //If creating a subbranch, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
         File branchRootDir = subpathSpecified ? startingDirectory : wcInfo.getRootDir();
+        String relativeSubpathFromWC = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
 
-        //Validate branchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll 'svn switch' it later
+        //Restrict the user from creating subbranches inside another user branch.  Nesting user branches creates a lot
+        //of usability headaches, and makes it easier for users to lose track of where they are and make mistakes.
+        if (relativeSubpathFromWC.length() > 0 && wcProps.getBranchType() == BranchType.USER_BRANCH) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Cannot create a user branch in a subdirectory of another user branch." +
+                    "\nSwitch to 'trunk' or a release branch before creating the new branch."), SVNLogType.CLIENT);
+        }
+
+        //Validate branchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll
+        //'svn switch' it later.  The user may not bypass this check using --force.
         logStart("Validating working copy directory status");
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         SVNStatus branchRootDirStatus = statusClient.doStatus(branchRootDir, false);
-        if (branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+        if (branchRootDirStatus == null || branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: New branch root must be a versioned directory.\nPath: " + branchRootDir), SVNLogType.CLIENT);
         }
         SVNStatusType branchRootDirStatusType = branchRootDirStatus.getContentsStatus();
         if (branchRootDirStatusType != SVNStatusType.STATUS_NORMAL && branchRootDirStatusType != SVNStatusType.STATUS_MODIFIED) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: New branch root directory may not have a status of " +
                     branchRootDirStatusType + ".\nPath" + branchRootDir), SVNLogType.CLIENT);
         }
@@ -181,8 +191,7 @@ public class CreateBranch extends SAVCommand {
             sourceSubpath = "";
         }
         //Append the path from the working copy root down to the new branch root to the new source subpath
-        String relativeSubpath = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
-        sourceSubpath = SVNPathUtil.append(sourceSubpath, relativeSubpath);
+        sourceSubpath = SVNPathUtil.append(sourceSubpath, relativeSubpathFromWC);
 
         //The new branch is a copy starting at the source path plus the branch subpath.
         String sourcePathPlusSubpath = SVNPathUtil.append(sourcePath, sourceSubpath);

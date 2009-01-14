@@ -200,10 +200,10 @@ public class Promote extends SAVCommand {
 
         logStart("Revert metadata file");
         //Revert the changes to the metadata file
-        if (wcProps.getSourceSubpath().length() == 0) {
-            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
-        } else {
-            wcClient.doDelete(wcInfo.getMetadataFile(), true, false);
+        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+        //Delete a subbranch metadata file
+        if (wcProps.getSourceSubpath().length() > 0) {
+            wcInfo.getMetadataFile().delete();
         }
         logEnd("Revert metadata file");
 

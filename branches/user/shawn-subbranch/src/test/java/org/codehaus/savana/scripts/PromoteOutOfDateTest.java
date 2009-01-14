@@ -26,7 +26,7 @@ public class PromoteOutOfDateTest extends AbstractSavanaScriptsTestCase {
         cd(WC1);
         savana(CreateUserBranch.class, "user1");
 
-        // switch to the same user branch in WC1
+        // switch to the same user branch in WC2
         cd(WC2);
         savana(SetBranch.class, "user1");
 

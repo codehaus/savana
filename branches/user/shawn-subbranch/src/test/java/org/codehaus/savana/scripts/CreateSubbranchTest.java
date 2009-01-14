@@ -2,6 +2,7 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.savana.PathUtil;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -49,9 +50,9 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         assertEquals(
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src" + EOL +
+                "Branch Subpath:        src" + EOL +
                 "---------------------------------------------" + EOL +
                 "Project Name:          " + projectName + EOL +
-                "Branch Subpath:        src" + EOL +
                 "Branch Type:           user branch" + EOL +
                 "Source:                trunk" + EOL +
                 "Branch Point Revision: " + branchPointRev1 + EOL +
@@ -87,7 +88,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        toSvnkitAbsolutePath(WC1),
+                        PathUtil.normalizePath(WC1),
                         branchPointRev1),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
 
@@ -103,7 +104,9 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         rev++;
 
         // assert that sync brings in changes
-        assertEquals("U    text" + File.separatorChar + "drinks.txt", savana(Synchronize.class).replaceAll("^---.*?\n", ""));
+        assertEquals(
+                "U    text" + File.separatorChar + "drinks.txt",
+                savana(Synchronize.class).replaceAll("^---.*?\n", ""));
 
         // commit.  we have to update first for some reason related to the svn:mergeinfo property
         SVN.getUpdateClient().doUpdate(WC1_src, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
@@ -114,9 +117,9 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         assertEquals(
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src" + EOL +
+                "Branch Subpath:        src" + EOL +
                 "---------------------------------------------" + EOL +
                 "Project Name:          " + projectName + EOL +
-                "Branch Subpath:        src" + EOL +
                 "Branch Type:           user branch" + EOL +
                 "Source:                trunk" + EOL +
                 "Branch Point Revision: " + branchPointRev1 + EOL +
@@ -144,7 +147,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        toSvnkitAbsolutePath(WC1),
+                        PathUtil.normalizePath(WC1),
                         lastMergeRev1),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
 
@@ -157,9 +160,9 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         assertEquals(
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src-text" + EOL +
+                "Branch Subpath:        src/text" + EOL +
                 "---------------------------------------------" + EOL +
                 "Project Name:          " + projectName + EOL +
-                "Branch Subpath:        src/text" + EOL +
                 "Branch Type:           user branch" + EOL +
                 "Source:                trunk" + EOL +
                 "Branch Point Revision: " + branchPointRev2 + EOL +
@@ -240,15 +243,6 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // now we can promote
         savana(Promote.class, "-m", "trunk - changed animals.txt");
-    }
-
-    /** Returns the absolute path of a file in the way that matches svnkit. */
-    private String toSvnkitAbsolutePath(File file) {
-        String path = file.getAbsolutePath().replace(File.separatorChar, '/');
-        if (!path.startsWith("/")) {
-            path = "/" + path;
-        }
-        return path;
     }
 
     private String pad(long rev, int n) {
