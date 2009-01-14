@@ -95,7 +95,7 @@ public class Promote extends SAVCommand {
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //Find the source and branch URLs
-        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePathPlusSubpath());
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
         SVNURL branchURL = wcInfo.getRepositoryURL(wcProps.getBranchPath());
 
         //Make sure that we are in a user branch
@@ -237,7 +237,7 @@ public class Promote extends SAVCommand {
         //Print the new working copy info
         wcInfo = new WorkingCopyInfo(env.getClientManager());
         env.getOut().println("");
-        wcInfo.println(env.getOut(), false);
+        wcInfo.println(env.getOut());
         env.getOut().println("");
         env.getOut().println("Promotion Changeset:   [" + commitInfo.getNewRevision() + "]");
     }

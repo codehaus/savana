@@ -40,7 +40,8 @@ public class MetadataFile extends File {
     public static final String PROP_PROJECT_NAME = "PROJECT_NAME";
     public static final String PROP_BRANCH_PATH = "BRANCH_PATH";
     public static final String PROP_BRANCH_TYPE = "BRANCH_TYPE";
-    public static final String PROP_SOURCE_PATH = "SOURCE_PATH";
+    public static final String PROP_SOURCE_ROOT = "SOURCE_ROOT";
+    public static final String PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE = "SOURCE_PATH";
     public static final String PROP_SOURCE_SUBPATH = "SOURCE_SUBPATH";
     public static final String PROP_BRANCH_POINT_REVISION = "BRANCH_POINT_REVISION";
     public static final String PROP_LAST_MERGE_REVISION = "LAST_MERGE_REVISION";

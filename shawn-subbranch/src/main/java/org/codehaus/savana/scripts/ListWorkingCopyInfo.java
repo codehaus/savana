@@ -84,14 +84,9 @@ public class ListWorkingCopyInfo extends SAVCommand {
                 env.getOut().println();
             }
 
-            //Get information about the current workspace from the metadata file
+            //Print information about the current workspace from the metadata file
             WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), targetDir);
-
-            //Print the root directory of the branch unless the command is just "sav info" from the top-level
-            boolean forcePrintPath = targets.size() > 1 || env.getDepth() != SVNDepth.UNKNOWN || !"".equals(target);
-
-            //Print the workspace metadata
-            wcInfo.println(env.getOut(), forcePrintPath);
+            wcInfo.println(env.getOut());
 
             //If the recursive flag was specified, print info for workspaces underneath this one
             if (env.getDepth() != SVNDepth.UNKNOWN) {

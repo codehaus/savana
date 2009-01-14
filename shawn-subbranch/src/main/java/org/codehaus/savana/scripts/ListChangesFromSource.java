@@ -73,13 +73,13 @@ public class ListChangesFromSource extends SAVCommand {
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //If there is no source (we are in the trunk)
-        if (wcProps.getSourcePath() == null) {
+        if (wcProps.getSourceRoot() == null) {
             String errorMessage = "Error: No source path found (you are probably in the TRUNK).";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
 
         //Create the source URL
-        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePathPlusSubpath());
+        SVNURL sourceURL = wcInfo.getRepositoryURL(wcProps.getSourcePath());
 
         //Diff [source:HEAD, branch:HEAD] to see what has changes
         logStart("Get Diff Client");

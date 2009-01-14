@@ -123,12 +123,8 @@ public class WorkingCopyInfo {
         return url;
     }
 
-    public void println(PrintStream out, boolean forceWriteRootDir) {
-        // print out the path to the root of the working copy unless it's the current directory
-        if (forceWriteRootDir || !_rootDir.equals(new File("").getAbsoluteFile())) {
-            out.println(_rootDir + ":");
-        }
-        // print out metadata information about the working copy
+    public void println(PrintStream out) {
+        out.println(_rootDir + ":");
         out.println(_metadataProperties);
     }
 }

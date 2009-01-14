@@ -138,6 +138,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
+                WC1 + ":" + EOL +
                 "---------------------------------------------" + EOL +
                 "Branch Name:           workspace" + EOL +
                 "---------------------------------------------" + EOL +

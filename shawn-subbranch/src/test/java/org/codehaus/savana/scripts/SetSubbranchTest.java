@@ -6,6 +6,7 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,17 +27,18 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // setup initial data
         addFile(new File(WC1, "animal/mammal/dog/german_shephard.txt"), "bark");
-        addFile(new File(WC1, "animal/reptile/alligator"), "bite");
-        addFile(new File(WC1, "plant/tree/oak"), "leaf");
+        addFile(new File(WC1, "animal/reptile/alligator"), "teeth");
+        addFile(new File(WC1, "plant/tree/maple"), "syrup");
         SVN.getCommitClient().doCommit(new File[]{WC1},
                 false, "trunk - initial data", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
 
         // setup initial workspaces
         cd(WC1);
         savana(CreateUserBranch.class, "user-root");
-        savana(CreateUserBranch.class, "user-animal", "animal");
-        savana(CreateUserBranch.class, "user-animal2", "animal");
+        savana(SetBranch.class, "trunk");
         savana(CreateUserBranch.class, "user-dog", "animal/mammal/dog");
+        savana(CreateUserBranch.class, "user-animal", "animal", "--force");
+        savana(CreateUserBranch.class, "user-animal2", "animal");
         savana(CreateUserBranch.class, "user-plant", "plant");
 
         //
@@ -65,8 +67,8 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Can't switch to a branch that's not a child or parent of the current directory." +
-                            "\nCurrent Directory: " + new File(WC1, "animal") +
-                            "\nBranch Root:       " + new File(WC1, "plant") + EOL, e.getErr());
+                         "\nCurrent Directory: " + new File(WC1, "animal") +
+                         "\nBranch Root:       " + new File(WC1, "plant") + EOL, e.getErr());
         }
 
         // set /==trunk and /animal==user-animal
@@ -80,8 +82,8 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Can't switch to a directory outside of the working copy." +
-                        "\nWorking Copy Root: <project>/animal" +
-                        "\nBranch Root:       <project>/plant" + EOL, e.getErr());
+                         "\nWorking Copy Root: <project>/animal" +
+                         "\nBranch Root:       <project>/plant" + EOL, e.getErr());
         }
 
         // from / with /==trunk and /animal==user-animal, ok to switch to branch rooted at /plant
@@ -92,63 +94,111 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
         cd(new File(WC1, "animal"));
         try {
             savana(SetBranch.class, "user-root");
+            assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a branch with a root above the working copy." +
-                            "\nWorking Copy Root: <project>/animal" +
-                            "\nBranch Root:       <project>/" + EOL, e.getErr());
+            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+                         "\nWorking Copy Root: <project>/animal" +
+                         "\nBranch Root:       <project>/" + EOL, e.getErr());
         }
 
         // ...but it is OK to switch to trunk from /animal, since it realigns the subdir with its parent
         cd(new File(WC1, "animal"));
         savana(SetBranch.class, "trunk");
 
-        // setup nested workspaces /=trunk, /animal=user-animal, /animal/mammal/dog=user-dog
-        savana(SetBranch.class, "user-animal");
+        // switch to a workspace a couple levels deep: /=trunk, /animal/mammal/dog=user-dog
         savana(SetBranch.class, "user-dog");
 
-        // from /animal/mammal/dog, not allowed to switch all the way back to trunk
+        // from /animal/mammal/dog, not allowed to switch to a different top-level user branch
         cd(new File(WC1, "animal/mammal/dog"));
         try {
-            savana(SetBranch.class, "trunk");
+            savana(SetBranch.class, "user-root");
+            assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a branch with a root above the working copy." +
-                            "\nWorking Copy Root: <project>/animal/mammal/dog" +
-                            "\nBranch Root:       <project>/" + EOL, e.getErr());
+            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+                         "\nWorking Copy Root: <project>/animal/mammal/dog" +
+                         "\nBranch Root:       <project>/" + EOL, e.getErr());
         }
-        // from /animal/mammal/dog, not allowed to switch parent to a different branch
+        // from /animal/mammal/dog, not allowed to switch parent to another user branch
         try {
             savana(SetBranch.class, "user-animal2");
+            assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a branch with a root above the working copy." +
-                            "\nWorking Copy Root: <project>/animal/mammal/dog" +
-                            "\nBranch Root:       <project>/animal" + EOL, e.getErr());
+            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+                         "\nWorking Copy Root: <project>/animal/mammal/dog" +
+                         "\nBranch Root:       <project>/animal" + EOL, e.getErr());
         }
-        // from /animal/mammal/dog, may switch back to match the parent
-        savana(SetBranch.class, "user-animal");
-        // ... and now it's ok to switch to user-animal2
-        savana(SetBranch.class, "user-animal2");
-
-        // create a new subdirectory and promote it using the 'user-animal2' workspace
-        addFile(new File(WC1, "animal/mammal/cat/siamese.txt"), "meow");
-        SVN.getCommitClient().doCommit(new File[]{WC1},
-                false, "user branch commit - added cat", null, null, false, false, SVNDepth.INFINITY);
-        savana(Promote.class, "-m", "trunk - added cat");
-
-        // create a user branch scoped to the new directory
-        savana(CreateUserBranch.class, "user-cat", "../cat");
-
-        // switch back to the user-animal workspace which doesn't have a cat directory
-        savana(SetBranch.class, "user-animal", "--force");
-        // from here, we can't switch to the 'user-cat' workspace since the cat subdirectory doesn't exist in user-animal
-        cd(new File(WC1, "animal/mammal"));
+        // from /animal, not allowed to switch the root while there are switched subbranches
+        cd(new File(WC1, "animal"));
         try {
-            savana(SetBranch.class, "user-cat");
+            savana(SetBranch.class, "user-root");
+            assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Branch root must be a versioned directory.\nPath: " + new File(WC1, "animal/mammal/cat") + EOL, e.getErr());
+            assertEquals("svn: ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root.\n" +
+                         "Run 'sav info -R' to find nested workspaces or retry with --force" + EOL, e.getErr());
+        }
+        // ... but it's ok if the user passes --force
+        savana(SetBranch.class, "user-root", "--force");
+
+        // not allowed to nest user branches
+        try {
+            savana(SetBranch.class, "user-dog");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: ERROR: Can't switch to a subbranch that's not based on the working copy." +
+                         "\nBranch Source: " + projectName + "/trunk" +
+                         "\nWorking Copy:  " + projectName + "/branches/user/user-root" + EOL, e.getErr());
+        }
+
+        // reset back to trunk and muck up the 'animal' subdirectory locally
+        cd(WC1);
+        savana(SetBranch.class, "trunk");
+
+        // can't switch to a subbranch if its root dir is deleted
+        FileUtils.deleteDirectory(new File(WC1, "animal/mammal"));
+        try {
+            savana(SetBranch.class, "user-dog");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: 'animal/mammal/dog' is not a working copy" + EOL, e.getErr());
+        }
+        // can't switch to a subbranch if its root dir is missing
+        FileUtils.deleteDirectory(new File(WC1, "animal"));
+        try {
+            savana(SetBranch.class, "user-animal");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: ERROR: Branch root directory may not have a status of missing." +
+                         "\nPath: " + new File(WC1, "animal") + EOL, e.getErr());
+        }
+        // ...or it exists but isn't versioned...
+        new File(WC1, "animal").mkdir();
+        try {
+            savana(SetBranch.class, "user-animal");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: Directory 'animal/.svn' containing working copy admin area is missing" + EOL, e.getErr());
+        }
+        new File(WC1, "animal").delete();
+        // ...or it exists but is deleted in the working copy (restore via 'svn update' then 'svn delete')
+        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
+        SVN.getWCClient().doDelete(new File(WC1, "animal"), false, true, false);
+        assertTrue(new File(WC1, "animal").exists());
+        new File(WC1, "animal").mkdir();
+        try {
+            savana(SetBranch.class, "user-animal");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: ERROR: Branch root directory may not have a status of deleted." +
+                         "\nPath: " + new File(WC1, "animal") + EOL, e.getErr());
         }
     }
 

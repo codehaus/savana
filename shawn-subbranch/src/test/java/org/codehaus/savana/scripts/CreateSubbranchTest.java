@@ -34,6 +34,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
+                WC1 + ":" + EOL +
                 "---------------------------------------------" + EOL +
                 "Branch Name:           trunk" + EOL +
                 "---------------------------------------------" + EOL +
@@ -48,6 +49,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         File WC1_src = new File(WC1, "src");
         cd(WC1_src);
         assertEquals(
+                WC1_src + ":" + EOL +
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src" + EOL +
                 "Branch Subpath:        src" + EOL +
@@ -115,6 +117,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
+                WC1_src + ":" + EOL +
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src" + EOL +
                 "Branch Subpath:        src" + EOL +
@@ -154,10 +157,20 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         // create a second user branch.  verify that it's created off the trunk and the subpath is set correctly
         File WC1_src_text = new File(WC1_src, "text");
         cd(WC1_src_text);
+        try {
+            savana(CreateUserBranch.class, "user1-src-text", ".");
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: ERROR: Cannot create a user branch in a subdirectory of another user branch." +
+                         "\nSwitch to 'trunk' or a release branch before creating the new branch." + EOL, e.getErr());
+        }
+        savana(SetBranch.class, "trunk");
         savana(CreateUserBranch.class, "user1-src-text", ".");
         long branchPointRev2 = rev;
 
         assertEquals(
+                WC1_src_text + ":" + EOL +
                 "---------------------------------------------" + EOL +
                 "Branch Name:           user1-src-text" + EOL +
                 "Branch Subpath:        src/text" + EOL +
@@ -175,31 +188,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                      "------------------------------------------------------------------------------" + EOL +
                      "user1-src              trunk         " + pad(branchPointRev1, 14) + pad(lastMergeRev1, 14) + "src" + EOL +
                      "user1-src-text         trunk         " + pad(branchPointRev2, 14) + pad(branchPointRev2, 14) + "src/text",
-                     savana(ListUserBranches.class));
-
-        // try to promote 'user1-src'.  it should fail because the text subdirectory is switched to a different branch
-        cd(WC1_src);
-        try {
-            savana(Promote.class, "-m", "trunk - changed animals.txt");
-            assertTrue("we expected an exception to be thrown", false);
-
-        } catch (SavanaScriptsTestException e) {
-            // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
-                         "\nRun 'sav info -R' to find nested workspaces" + EOL, e.getErr());
-        }
-
-        // verify that RevertToSource won't revert files in a switched branch
-        try {
-            savana(RevertToSource.class, "text/animals.txt");
-            assertTrue("we expected an exception to be thrown", false);
-
-        } catch (SavanaScriptsTestException e) {
-            // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't revert a file that is switched relative to the working copy.\n" +
-                         "Expected Path URL: " + REPO_URL.appendPath("createsubbranchtest/branches/user/user1-src/text/animals.txt", false) + "\n" +
-                         "Switched URL:      " + REPO_URL.appendPath("createsubbranchtest/branches/user/user1-src-text/animals.txt", false) + EOL, e.getErr());
-        }
+                savana(ListUserBranches.class));
 
         // recursively list workspace info
         cd(WC1);
@@ -214,23 +203,12 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 "Branch Point Revision: none\n" +
                 "Last Merge Revision:   none\n" +
                 "\n" +
-                WC1_src + ":\n" +
-                "---------------------------------------------\n" +
-                "Branch Name:           user1-src\n" +
-                "---------------------------------------------\n" +
-                "Project Name:          createsubbranchtest\n" +
-                "Branch Subpath:        src\n" +
-                "Branch Type:           user branch\n" +
-                "Source:                trunk\n" +
-                "Branch Point Revision: " + branchPointRev1 + "\n" +
-                "Last Merge Revision:   " + lastMergeRev1 + "\n" +
-                "\n" +
                 WC1_src_text + ":\n" +
                 "---------------------------------------------\n" +
                 "Branch Name:           user1-src-text\n" +
+                "Branch Subpath:        src/text\n" +
                 "---------------------------------------------\n" +
                 "Project Name:          createsubbranchtest\n" +
-                "Branch Subpath:        src/text\n" +
                 "Branch Type:           user branch\n" +
                 "Source:                trunk\n" +
                 "Branch Point Revision: " + branchPointRev2 + "\n" +
@@ -238,11 +216,25 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
 
         // switch from user1-src-text to user1-src
-        cd(WC1_src_text);
-        savana(SetBranch.class, "user1-src");
+        cd(WC1_src);
+        savana(SetBranch.class, "user1-src", "--force");
 
-        // now we can promote
+        // promote animals.txt
         savana(Promote.class, "-m", "trunk - changed animals.txt");
+
+        // recursively list workspace info.  promote should have left us in the trunk
+        cd(WC1);
+        assertEquals(
+                WC1 + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           trunk\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          createsubbranchtest\n" +
+                "Branch Type:           trunk\n" +
+                "Source:                none\n" +
+                "Branch Point Revision: none\n" +
+                "Last Merge Revision:   none",
+                savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
     }
 
     private String pad(long rev, int n) {

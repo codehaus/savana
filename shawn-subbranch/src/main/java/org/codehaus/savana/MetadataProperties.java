@@ -92,10 +92,10 @@ public class MetadataProperties {
     /**
      * The path within the repository where the source of this branch lives (eg. 'myproject/trunk').
      * This will be the same as the source workspace's 'branchPath' value.  To get the path from which
-     * this branch was actually copied from, see {@link #getSourcePathPlusSubpath()}.  This will be
+     * this branch was actually copied from, see {@link #getSourcePath()}.  This will be
      * null for the 'trunk' branch.
      */
-    private String _sourcePath;
+    private String _sourceRoot;
 
     /**
      * The subdirectory within the source branch from which this branch was copied.  For top-level
@@ -177,9 +177,15 @@ public class MetadataProperties {
             _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps);
         }
 
-        SVNPropertyValue sourcePathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_PATH);
-        if (sourcePathProps != null) {
-            _sourcePath = SVNPropertyValue.getPropertyAsString(sourcePathProps);
+        SVNPropertyValue sourceRootProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_ROOT);
+        if (sourceRootProps != null) {
+            _sourceRoot = SVNPropertyValue.getPropertyAsString(sourceRootProps);
+        } else {
+            // before subbranches were allowed, SOURCE_ROOT was called SOURCE_PATH
+            sourceRootProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE);
+            if (sourceRootProps != null) {
+                _sourceRoot = SVNPropertyValue.getPropertyAsString(sourceRootProps);
+            }
         }
 
         SVNPropertyValue sourceSubpathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_SUBPATH);
@@ -266,33 +272,33 @@ public class MetadataProperties {
     }
 
     public String getSourceName() {
-        return (_sourcePath != null) ? SVNPathUtil.tail(_sourcePath) : null;
+        return (_sourceRoot != null) ? SVNPathUtil.tail(_sourceRoot) : null;
     }
 
-    public String getSourcePath() {
-        return _sourcePath;
+    public String getSourceRoot() {
+        return _sourceRoot;
     }
 
     public String getSourceSubpath() {
         return _sourceSubpath;
     }
 
-    public String getSourcePathPlusSubpath() {
-        return SVNPathUtil.append(_sourcePath, _sourceSubpath);
+    public String getSourcePath() {
+        return SVNPathUtil.append(_sourceRoot, _sourceSubpath);
     }
 
     public String getSourceMetadataFilePath() {
-        return SVNPathUtil.append(_sourcePath, _metadataFileName);
+        return SVNPathUtil.append(_sourceRoot, _metadataFileName);
     }
 
     public BranchType getSourceBranchType() throws SVNException {
-        if (_sourcePath == null) {
+        if (_sourceRoot == null) {
             return null;
         }
-        String relativeSourcePath = PathUtil.getPathTail(_sourcePath, _projectRoot);
-        if (relativeSourcePath.equals(_trunkPath)) {
+        String relativePath = PathUtil.getPathTail(_sourceRoot, _projectRoot);
+        if (relativePath.equals(_trunkPath)) {
             return BranchType.TRUNK;
-        } else if (SVNPathUtil.removeTail(relativeSourcePath).equals(_releaseBranchesPath)) {
+        } else if (SVNPathUtil.removeTail(relativePath).equals(_releaseBranchesPath)) {
             return BranchType.RELEASE_BRANCH;
         } else {
             return BranchType.USER_BRANCH;
