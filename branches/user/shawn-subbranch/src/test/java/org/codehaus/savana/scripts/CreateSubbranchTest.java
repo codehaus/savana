@@ -90,7 +90,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        PathUtil.normalizePath(WC1),
+                        toSvnkitAbsolutePath(WC1),
                         branchPointRev1),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
 
@@ -150,7 +150,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        PathUtil.normalizePath(WC1),
+                        toSvnkitAbsolutePath(WC1),
                         lastMergeRev1),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
 
@@ -235,6 +235,15 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 "Branch Point Revision: none\n" +
                 "Last Merge Revision:   none",
                 savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
+    }
+
+    /** Returns the absolute path of a file in the way that matches svnkit. */
+    private String toSvnkitAbsolutePath(File file) {
+        String path = PathUtil.normalizePath(file);
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return path;
     }
 
     private String pad(long rev, int n) {

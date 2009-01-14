@@ -84,7 +84,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        PathUtil.normalizePath(WC1),
+                        toSvnkitAbsolutePath(WC1),
                         branchPointRev),
                 savana(DiffChangesFromSource.class).replace("\r", ""));
 
@@ -165,6 +165,15 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // read the file, and check that our change has been made
         assertTrue(FileUtils.readFileToString(animalsFile, "UTF-8").contains("mongoose"));
+    }
+
+    /** Returns the absolute path of a file in the way that matches svnkit. */
+    private String toSvnkitAbsolutePath(File file) {
+        String path = PathUtil.normalizePath(file);
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return path;
     }
 
     private String pad(long rev, int n) {
