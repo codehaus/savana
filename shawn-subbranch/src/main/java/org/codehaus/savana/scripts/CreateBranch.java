@@ -264,7 +264,7 @@ public class CreateBranch extends SAVCommand {
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_ROOT, SVNPropertyValue.create(sourceRoot));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE, null);
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_SUBPATH, SVNPropertyValue.create(sourceSubpath));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_SUBPATH, sourceSubpath.length() > 0 ? SVNPropertyValue.create(sourceSubpath) : null);
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             logEnd("Create metadata file");

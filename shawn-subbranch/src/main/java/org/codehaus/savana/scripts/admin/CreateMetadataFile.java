@@ -212,7 +212,7 @@ public class CreateMetadataFile extends SAVCommand {
         //If we aren't on the trunk...
         if (branchType != BranchType.TRUNK) {
             doSetProperty(wcClient, metadataFile, MetadataFile.PROP_SOURCE_ROOT, SVNPropertyValue.create(sourceRoot));
-            doSetProperty(wcClient, metadataFile, MetadataFile.PROP_SOURCE_SUBPATH, SVNPropertyValue.create(""));
+            doSetProperty(wcClient, metadataFile, MetadataFile.PROP_SOURCE_SUBPATH, null);
             doSetProperty(wcClient, metadataFile, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(branchPointRevision));
             doSetProperty(wcClient, metadataFile, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(branchPointRevision));
         }
