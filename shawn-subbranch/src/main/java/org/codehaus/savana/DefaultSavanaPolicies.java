@@ -64,7 +64,7 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         logger.fine("Validating log message against pattern: " + pattern);
 
         // check the log message against the required pattern
-        if (!Pattern.matches(pattern, logMessage)) {
+        if (!Pattern.compile(pattern, Pattern.DOTALL).matcher(logMessage).matches()) {
             // get the error message template and expand variables
             String error = _properties.getProperty(prefix + "error", DEFAULT_LOG_MESSAGE_ERROR);
             error = replaceBranchKeywords(metadataProperties, error);
