@@ -58,7 +58,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertReleaseBranchPromoteFails("branch admin");  // branch admin is NOT allowed in Savana!  Savana doesn't have any commands for doing branch administration.
 
         // test valid promotion commit messages
-        assertReleaseBranchPromoteSucceeds("b3.3.x - #14211 - fixed a bug");
+        assertReleaseBranchPromoteSucceeds("b3.3.x\n#14211 - fixed a bug\nreviews by sam");
         assertReleaseBranchPromoteSucceeds("b3.3.x");
 
         // don't delete the user branch since we'll use it for the next sequence...
@@ -78,8 +78,12 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         // test valid promotion commit messages
         assertUserBranchPromoteSucceeds("user branch commit");
+        assertUserBranchPromoteSucceeds("user branch commit\nmade changes\npassed tests");
         assertUserBranchPromoteSucceeds("user branch");
+        assertUserBranchPromoteSucceeds("user branch. made changes, passed tests");
+        assertUserBranchPromoteSucceeds("user branch\r\nmade changes\r\npassed tests");
         assertUserBranchPromoteSucceeds("user1 - fix");
+        assertUserBranchPromoteSucceeds("user1\nfix\npassed tests");
 
         savana(DeleteUserBranch.class, "user1");
 

@@ -195,13 +195,13 @@ The requirements depend on the first words of the commit comment:
                 return 1
 
     # verify that the commit comment matches the required regular expression based on the type of the workspace
-    if ws_type == WS_TRUNK and not(re.match(RE_LOGMSG_TRUNK % ws_name, comment)):
+    if ws_type == WS_TRUNK and not(re.match(RE_LOGMSG_TRUNK % ws_name, comment, re.DOTALL)):
         sys.stderr.write(ER_LOGMSG_TRUNK % (ws_name, comment))
         return 1
-    if ws_type == WS_RELEASE and not(re.match(RE_LOGMSG_RELEASE % ws_name, comment)):
+    if ws_type == WS_RELEASE and not(re.match(RE_LOGMSG_RELEASE % ws_name, comment, re.DOTALL)):
         sys.stderr.write(ER_LOGMSG_RELEASE % (ws_name, comment))
         return 1
-    if ws_type == WS_USER and not(re.match(RE_LOGMSG_USER % ws_name, comment)):
+    if ws_type == WS_USER and not(re.match(RE_LOGMSG_USER % ws_name, comment, re.DOTALL)):
         sys.stderr.write(ER_LOGMSG_USER % (ws_name, comment))
         return 1
 

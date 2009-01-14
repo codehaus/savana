@@ -107,7 +107,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         // check in the change
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "user branch commit - renamed autos.txt to cars.txt", null, null, false, false, SVNDepth.INFINITY);
+                new File[]{WC1}, false, "user branch commit\r\nrenamed autos.txt to cars.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // check that we're still in the "workspace" branch, and that the revision has updated
         assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
