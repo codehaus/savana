@@ -122,7 +122,7 @@ public class SetBranch extends SAVCommand {
         //Get the root path for the working copy and the branch
         logStart("Get branch tree root paths");
         String wcRootPath = getBranchTreeRootPath(wcProps);
-        String branchRootPath = getBranchTreeRootPath(wcProps);
+        String branchRootPath = getBranchTreeRootPath(branchProps);
         logEnd("Get branch tree root paths");
 
         //Make sure that we are switching to a branch that has the same root as the working copy

@@ -36,6 +36,10 @@ Enforces several restrictions on changesets:
    except that any user workspace can be modified if the commit comment starts
    with the text 'user branch' such as 'user branch commit' and 'user branch sync'.
 
+3. The .savana/.svnscripts file may not be modified in a trunk or release branch
+   after it is created.  This prevents users from copying user branch settings
+   into the trunk by accident.   
+
 All restrictions can be bypassed by using a commit comment that starts with
 the text 'branch admin'.
 """

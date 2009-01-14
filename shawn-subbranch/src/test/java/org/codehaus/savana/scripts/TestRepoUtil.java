@@ -39,7 +39,7 @@ public abstract class TestRepoUtil {
         //
         // Note: subversion 1.4 repos appear not to store timestamps--see the source for
         // org.tmatesoft.svn.core.internal.wc.admin.SVNAdminArea14#INAPPLICABLE_PROPERTIES
-        // which includes SVNProperty.WORKING_SIZE).  So sleeping is only disabled w/1.5+.
+        // which includes SVNProperty.WORKING_SIZE.  So sleeping is only disabled w/1.5+.
         if (!TestSvnUtil.REPO_PRE15) {
             SVNFileUtil.setSleepForTimestamp(false);
         }

@@ -328,11 +328,11 @@ public class MetadataProperties {
         PrintWriter out = new PrintWriter(buf);
         out.println("---------------------------------------------");
         out.println("Branch Name:           " + getBranchName());
-        out.println("---------------------------------------------");
-        out.println("Project Name:          " + _projectName);
         if (_sourceSubpath.length() > 0) {
             out.println("Branch Subpath:        " + _sourceSubpath);
         }
+        out.println("---------------------------------------------");
+        out.println("Project Name:          " + _projectName);
         out.println("Branch Type:           " + _branchType.getKeyword().toLowerCase());
         out.println("Source:                " + ((getSourceName() != null) ? getSourceName() : "none"));
         out.println("Branch Point Revision: " + ((_branchPointRevision != null) ? _branchPointRevision : "none"));

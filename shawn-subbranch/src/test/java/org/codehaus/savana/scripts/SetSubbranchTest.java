@@ -84,7 +84,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
                         "\nBranch Root:       <project>/plant" + EOL, e.getErr());
         }
 
-        // from / with /==trunk and /animal==user-animal, ok to branch rooted at /plant is fine
+        // from / with /==trunk and /animal==user-animal, ok to switch to branch rooted at /plant
         cd(WC1);
         savana(SetBranch.class, "user-plant");
 

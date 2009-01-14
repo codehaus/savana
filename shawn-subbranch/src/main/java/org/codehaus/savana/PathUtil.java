@@ -68,7 +68,7 @@ public class PathUtil {
     }
 
     public static String getPathTail(String path, String prefixToRemove) throws SVNException {
-        // assumption: path and prefix don't have leading or trailing '/' characters 
+        // assumption: path and prefix don't have trailing '/' characters 
         if (!isSubpath(path, prefixToRemove)) {
             String errorMessage = "ERROR: Path does not start with the expected prefix: " + path + " : " + prefixToRemove + "/";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, errorMessage), SVNLogType.CLIENT);
@@ -84,7 +84,7 @@ public class PathUtil {
 
     /** Returns true if the specified path is a subdirectory of the prefix, inclusive. */
     public static boolean isSubpath(String path, String prefix) {
-        // assumption: path and prefix don't have leading or trailing '/' characters
+        // assumption: path and prefix don't have trailing '/' characters
         return "".equals(prefix) || path.equals(prefix) || path.startsWith(prefix + "/");
     }
 
@@ -95,7 +95,7 @@ public class PathUtil {
         return isSubpath(path1, path2) || isSubpath(path2, path1); 
     }
 
-    private static String normalizePath(File file) {
+    public static String normalizePath(File file) {
         return file.getPath().replace(File.separatorChar, '/');
     }
 }

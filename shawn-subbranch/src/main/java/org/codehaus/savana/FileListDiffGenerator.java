@@ -87,7 +87,9 @@ public class FileListDiffGenerator extends DefaultSVNDiffGenerator {
         } else if (file1 != null && file2 == null) {
             _deletedFilePaths.add(path);
             _changedFilePaths.remove(path);
-        } else if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
+        }
+
+        if (!_addedFilePaths.contains(path) && !_deletedFilePaths.contains(path)) {
             _changedFilePaths.add(path);
         }
     }
