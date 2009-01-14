@@ -165,7 +165,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: 'animal/mammal/dog' is not a working copy" + EOL, e.getErr());
+            assertEquals("svn: '" + new File("animal/mammal/dog") + "' is not a working copy" + EOL, e.getErr());
         }
         // can't switch to a subbranch if its root dir is missing
         FileUtils.deleteDirectory(new File(WC1, "animal"));
@@ -184,7 +184,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Directory 'animal/.svn' containing working copy admin area is missing" + EOL, e.getErr());
+            assertEquals("svn: Directory '" + new File("animal/.svn") + "' containing working copy admin area is missing" + EOL, e.getErr());
         }
         new File(WC1, "animal").delete();
         // ...or it exists but is deleted in the working copy (restore via 'svn update' then 'svn delete')
