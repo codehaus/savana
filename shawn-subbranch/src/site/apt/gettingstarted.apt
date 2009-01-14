@@ -43,12 +43,11 @@ Getting Started with Savana
 
 +--
 %> cd myproj
-%> sav bootstrap myproj myproj/trunk TRUNK
+%> sav bootstrap myproj TRUNK
 +--
 
-  This command will create a file named <<.savana>> in the current working copy, and will check
-  it in to SVN automatically (possibly prompting you for your SVN username/password in the
-  process).  Now, you can test out the power of Savana by creating a user branch:
+  This command will create a file named <<.savana>> in the current working copy.  Check it
+  in using 'svn commit', and now you can test out the power of Savana by creating a user branch:
 
 +--
 %> sav cub test
@@ -107,7 +106,7 @@ Branch is up to date.
   And finally, let's push our changes up to the trunk:
 
 +--
-%> sav promote "added dummy file"
+%> sav promote -m "added dummy file"
  U   .savana
 A    dummy.txt
 
