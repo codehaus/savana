@@ -47,9 +47,9 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Properties;
 
@@ -227,7 +227,7 @@ public class MetadataProperties {
     private ISavanaPolicies parsePolicies(String policiesString) throws SVNException {
         Properties properties = new Properties();
         try {
-            properties.load(new StringReader(policiesString));
+            properties.load(new ByteArrayInputStream(policiesString.getBytes("UTF-8")));
         } catch (Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
                     "Error parsing Savana policy properties: " + e), SVNLogType.CLIENT);
