@@ -31,6 +31,7 @@
 package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.Version;
+import org.codehaus.savana.WCUtil;
 import org.tmatesoft.svn.cli.svn.SVNCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -59,6 +60,8 @@ public abstract class SAVCommand extends SVNCommand {
             log("COMMAND BEGIN: " + getSVNEnvironment().getCommandLineString());
             log("Current directory: " + new File("").getAbsolutePath());
 
+            configureWorkingCopyFormat();
+
             doRun();
 
             log("COMMAND FINISHED: " + getSVNEnvironment().getCommandLineString());
@@ -83,6 +86,16 @@ public abstract class SAVCommand extends SVNCommand {
         return "org.codehaus.savana.scripts.commands";
     }
 
+    private void configureWorkingCopyFormat() throws SVNException {
+        // assume all Savana commands from within a Subversion working copy.  configure SVNKit
+        // to use the same Subversion file formats as the version used for the current directory.
+        File currentDirectory = new File("").getAbsoluteFile();
+        int workingCopyFormat = WCUtil.getWorkingCopyFormatVersion(currentDirectory);
+
+        log("Current subversion file format: " + workingCopyFormat);
+        WCUtil.setSupportedWorkingCopyFormatVersion(workingCopyFormat);
+    }
+    
     public void logStart(String message) {
         log("Start: " + message);
     }

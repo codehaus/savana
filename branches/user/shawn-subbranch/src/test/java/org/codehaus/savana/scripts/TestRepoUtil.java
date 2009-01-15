@@ -3,6 +3,7 @@ package org.codehaus.savana.scripts;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.codehaus.savana.BranchType;
+import org.codehaus.savana.WCUtil;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
@@ -11,8 +12,6 @@ import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
-import org.tmatesoft.svn.core.internal.wc.admin.ISVNAdminAreaFactorySelector;
-import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -20,10 +19,8 @@ import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
 public abstract class TestRepoUtil {
@@ -63,20 +60,10 @@ public abstract class TestRepoUtil {
 
         FSRepositoryFactory.setup();
 
-        // configure SVNKit to use file formats that match the installed version of subversion
-        SVNAdminAreaFactory.setSelector(new ISVNAdminAreaFactorySelector() {
-            public Collection getEnabledFactories(File path, Collection factories, boolean writeAccess) {
-                Collection<SVNAdminAreaFactory> enabledFactories = new TreeSet<SVNAdminAreaFactory>();
-                for (SVNAdminAreaFactory factory : (Collection<SVNAdminAreaFactory>) factories) {
-                    if (factory.getSupportedVersion() == TestSvnUtil.WC_FORMAT) {
-                        enabledFactories.add(factory);
-                    }
-                }
-                return enabledFactories;
-            }
-        });
+        // configure SVNKit to use file formats that match the installed version of the subversion client
+        WCUtil.setSupportedWorkingCopyFormatVersion(TestSvnUtil.WC_FORMAT);
 
-        // create the repository
+        // create the repository using file formats that match the installed version of the subversion server
         File repoDir = TestDirUtil.createTempDir(nextRepositoryName());
         SVNAdminClient adminClient = SVN.getAdminClient();
         SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true,
