@@ -88,7 +88,7 @@ public abstract class TestRepoUtil {
                 if (!svnHookFile.isHidden() && !svnHookFile.getName().endsWith(".properties")) {
                     File repoHookFile = new File(new File(repoDir, "hooks"), svnHookFile.getName());
                     FileUtils.copyFile(svnHookFile, repoHookFile, false);
-                    repoHookFile.setExecutable(true);
+                    SVNFileUtil.setExecutable(repoHookFile, true);
                 }
             }
         }
