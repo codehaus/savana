@@ -32,6 +32,7 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -39,11 +40,16 @@ import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
+import org.tmatesoft.svn.core.wc.SVNInfo;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -102,6 +108,37 @@ public class DeleteBranch extends SAVCommand {
         }
         logEnd("Check if branch exists");
 
+        //Get the metadata properties for the branch
+        logStart("Get metadata properties");
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
+        MetadataProperties branchProps = new MetadataProperties(repository, branchMetadataFilePath, -1);
+        logEnd("Get metadata properties");
+
+        //Check if the user is switched to the branch we're about to delete.  If they are, don't
+        //delete the branch since 'svn up' with a switched subdirectory pointing at a deleted
+        //branch can fail with unfriendly error messages.
+        logStart("Check if working copy is set to branch");
+        // find the likely location of the branch in the working copy
+        File wcBranchRootDir = adjustPath(wcInfo.getRootDir(), wcProps.getSourceSubpath(), branchProps.getSourceSubpath());
+        // find the path in the repository that the working copy directory is pointing to
+        String wcBranchPath;
+        try {
+            SVNWCClient wcClient = env.getClientManager().getWCClient();
+            SVNInfo wcBranchInfo = wcClient.doInfo(wcBranchRootDir, SVNRevision.WORKING);
+            wcBranchPath = PathUtil.getPathTail(wcBranchInfo.getURL(), wcBranchInfo.getRepositoryRootURL());
+        } catch (SVNException e) {
+            //The wcBranchRootDir isn't a valid versioned directory so it's not part of the branch we will delete
+            wcBranchPath = null;
+        }
+        // if the working copy is pointing to the branch to delete, fail.
+        if (branchPath.equals(wcBranchPath)) {
+            String errorMessage =
+                    "ERROR: Use 'sav setbranch' to switch away from the branch before deleting it." +
+                    "\nBranch Path: " + wcBranchRootDir;
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        logEnd("Check if working copy is set to branch");
+
         //Perform delete
         logStart("Get Commit Client");
         SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
@@ -124,5 +161,18 @@ public class DeleteBranch extends SAVCommand {
             message = branchName + " - deleting branch";
         }
         return message;
+    }
+
+    /** Start from 'dir', walk up the directory hierarchy along 'pathUp', then walk down along 'pathDown'. */
+    private File adjustPath(File dir, String pathUp, String pathDown) throws SVNException {
+        String commonPrefix = SVNPathUtil.getCommonPathAncestor(pathUp, pathDown);
+        pathUp = PathUtil.getPathTail(pathUp, commonPrefix);
+        pathDown = PathUtil.getPathTail(pathDown, commonPrefix);
+
+        String dirPath = PathUtil.normalizePath(dir);
+        if (!dirPath.endsWith(pathUp)) {
+            return null;
+        }
+        return new File(StringUtils.removeEnd(dirPath, pathUp), pathDown);
     }
 }

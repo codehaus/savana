@@ -3,13 +3,10 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
 import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Test all the subbranch-specific error conditions that can be encountered by SetBranch.
@@ -21,16 +18,9 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     public void testUserSubbranches() throws Exception {
-        // setup a test project with a working directory and import the 'test-project' files
+        // setup a test project with a working directory and import the 'test-subbranch' files
         String projectName = getClass().getSimpleName().toLowerCase();
-        File WC1 = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, null);
-
-        // setup initial data
-        addFile(new File(WC1, "animal/mammal/dog/german_shephard.txt"), "bark");
-        addFile(new File(WC1, "animal/reptile/alligator"), "teeth");
-        addFile(new File(WC1, "plant/tree/maple"), "syrup");
-        SVN.getCommitClient().doCommit(new File[]{WC1},
-                false, "trunk - initial data", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
+        File WC1 = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-subbranch");
 
         // setup initial workspaces
         cd(WC1);
@@ -200,12 +190,5 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertEquals("svn: ERROR: Branch root directory may not have a status of deleted." +
                          "\nPath: " + new File(WC1, "animal") + EOL, e.getErr());
         }
-    }
-
-    private void addFile(File file, String data) throws SVNException, IOException {
-        file.getParentFile().mkdirs();
-        FileUtils.writeStringToFile(file, data);
-        SVNWCClient wcClient = SVN.getWCClient();
-        wcClient.doAdd(file, false, false, true, SVNDepth.INFINITY, false, true);
     }
 }

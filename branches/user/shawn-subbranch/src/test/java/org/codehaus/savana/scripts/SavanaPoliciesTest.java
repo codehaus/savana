@@ -40,6 +40,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertTrunkPromoteSucceeds("trunk - #14211 - fixed a bug");
         assertTrunkPromoteSucceeds("trunk");
 
+        savana(SetBranch.class, "trunk");
         savana(DeleteUserBranch.class, "user1");
 
 
@@ -85,13 +86,13 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertUserBranchPromoteSucceeds("user1 - fix");
         assertUserBranchPromoteSucceeds("user1\nfix\npassed tests");
 
+        savana(SetBranch.class, "trunk", "--changeRoot");
         savana(DeleteUserBranch.class, "user1");
 
 
         //
         // Remove the policy info and verify that it's ignored
         //
-        savana(SetBranch.class, "trunk", "--changeRoot");
 
         // in user branch, remove the policy subversion property from the metadata file
         savana(CreateUserBranch.class, "user1");
