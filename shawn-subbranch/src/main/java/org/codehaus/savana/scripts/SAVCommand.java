@@ -87,7 +87,7 @@ public abstract class SAVCommand extends SVNCommand {
     }
 
     private void configureWorkingCopyFormat() throws SVNException {
-        // assume all Savana commands from within a Subversion working copy.  configure SVNKit
+        // assume all Savana commands are run from within a Subversion working copy.  configure SVNKit
         // to use the same Subversion file formats as the version used for the current directory.
         File currentDirectory = new File("").getAbsoluteFile();
         int workingCopyFormat = WCUtil.getWorkingCopyFormatVersion(currentDirectory);
