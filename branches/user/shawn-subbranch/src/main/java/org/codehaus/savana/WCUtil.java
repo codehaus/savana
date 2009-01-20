@@ -48,7 +48,7 @@ public class WCUtil {
      * Returns the format of the subversion working copy admin area.  See
      * {@link org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory#WC_FORMAT_15}.
      */
-    public static int getWorkingCopyFormatVersion(final File versionedDir) throws SVNException {
+    public static int getWorkingCopyFormatVersion(File versionedDir) throws SVNException {
         SVNWCAccess wcAccess = SVNWCAccess.newInstance(null);
         try {
             SVNAdminArea adminArea = wcAccess.open(versionedDir, false, false, false, 0, Level.FINEST);
