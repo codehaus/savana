@@ -35,19 +35,20 @@ import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 public class FilteredStatusHandler implements ISVNStatusHandler, ISVNEventHandler {
-    private final Collection<String> _entries;
+    private final List<File> _entries;
     private final SVNStatusType _status;
 
     public FilteredStatusHandler(SVNStatusType status) {
         _status = status;
-        _entries = new ArrayList<String>();
+        _entries = new ArrayList<File>();
     }
 
-    public Collection<String> getEntries() {
+    public List<File> getEntries() {
         return _entries;
     }
 
@@ -61,7 +62,7 @@ public class FilteredStatusHandler implements ISVNStatusHandler, ISVNEventHandle
 
         //Collect information about entries with specified status
         if ((contentsStatus == _status) || (propertiesStatus == _status)) {
-            _entries.add(status.getURL().getPath());
+            _entries.add(status.getFile());
         }
     }
 
