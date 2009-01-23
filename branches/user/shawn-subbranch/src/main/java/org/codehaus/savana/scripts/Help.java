@@ -80,6 +80,11 @@ public class Help extends SAVCommand {
         return new ArrayList();
     }
 
+    @Override
+    protected boolean getWorkingCopyFormatFromCurrentDirectory() {
+        return false;  // "sav help" doesn't need to be run from a subversion-managed directory
+    }
+
     public void doRun() throws SVNException {
         SVNCommandEnvironment env = getSVNEnvironment();
         if (!env.getArguments().isEmpty()) {
