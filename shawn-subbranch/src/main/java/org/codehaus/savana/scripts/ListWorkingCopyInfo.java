@@ -64,6 +64,11 @@ public class ListWorkingCopyInfo extends SAVCommand {
         return options;
     }
 
+    @Override
+    protected boolean getWorkingCopyFormatFromCurrentDirectory() {
+        return false; // set the working copy format separately for each target
+    }
+
     public void doRun() throws SVNException {
         SAVCommandEnvironment env = getSVNEnvironment();
 
@@ -76,6 +81,9 @@ public class ListWorkingCopyInfo extends SAVCommand {
         boolean first = true;
         for (String target : targets) {
             File targetDir = PathUtil.getValidatedAbsoluteFile(target);
+
+            //Allow running "sav info" on multiple directories that may be from a mix of old and new versions of svn
+            configureWorkingCopyFormat(targetDir);
 
             //Print a blank line between workspaces
             if (first) {

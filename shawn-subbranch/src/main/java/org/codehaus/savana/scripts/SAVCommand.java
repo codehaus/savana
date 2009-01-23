@@ -60,7 +60,11 @@ public abstract class SAVCommand extends SVNCommand {
             log("COMMAND BEGIN: " + getSVNEnvironment().getCommandLineString());
             log("Current directory: " + new File("").getAbsolutePath());
 
-            configureWorkingCopyFormat();
+            if (getWorkingCopyFormatFromCurrentDirectory()) {
+                // assume all Savana commands are run from within a Subversion working copy.  configure SVNKit
+                // to use the same Subversion file formats as the version used for the current directory.
+                configureWorkingCopyFormat(new File("").getAbsoluteFile());
+            }
 
             doRun();
 
@@ -86,11 +90,13 @@ public abstract class SAVCommand extends SVNCommand {
         return "org.codehaus.savana.scripts.commands";
     }
 
-    private void configureWorkingCopyFormat() throws SVNException {
-        // assume all Savana commands are run from within a Subversion working copy.  configure SVNKit
-        // to use the same Subversion file formats as the version used for the current directory.
-        File currentDirectory = new File("").getAbsoluteFile();
-        int workingCopyFormat = WCUtil.getWorkingCopyFormatVersion(currentDirectory);
+    protected boolean getWorkingCopyFormatFromCurrentDirectory() {
+        return true;
+    }
+
+    protected void configureWorkingCopyFormat(File file) throws SVNException {
+        File directory = file.isFile() ? file.getParentFile() : file;
+        int workingCopyFormat = WCUtil.getWorkingCopyFormatVersion(directory);
 
         log("Current subversion file format: " + workingCopyFormat);
         WCUtil.setSupportedWorkingCopyFormatVersion(workingCopyFormat);
