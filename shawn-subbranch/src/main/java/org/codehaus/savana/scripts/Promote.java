@@ -35,6 +35,7 @@ import org.codehaus.savana.FilteredStatusHandler;
 import org.codehaus.savana.LocalChangeStatusHandler;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNCommitInfo;
@@ -61,6 +62,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class Promote extends SAVCommand {
@@ -215,8 +217,10 @@ public class Promote extends SAVCommand {
         if (!filteredStatusHandler.getEntries().isEmpty()) {
             StringBuilder errorMessageBuilder = new StringBuilder();
             errorMessageBuilder.append(MessageFormat.format("ERROR: Cannot promote branch {0} while there are replaced files:", wcProps.getBranchName()));
-            for (String entryName : filteredStatusHandler.getEntries()) {
-                errorMessageBuilder.append("\n- ").append(entryName);
+            List<File> entries = filteredStatusHandler.getEntries();
+            Collections.sort(entries);
+            for (File file : entries) {
+                errorMessageBuilder.append("\n- ").append(SVNCommandUtil.getLocalPath(env.getRelativePath(file)));
             }
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CLIENT_NOT_READY_TO_MERGE, errorMessageBuilder.toString()), SVNLogType.CLIENT);
         }

@@ -34,6 +34,8 @@ import org.codehaus.savana.BranchType;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.SVNCommandUtil;
+import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -45,13 +47,17 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
+import org.tmatesoft.svn.core.wc.SVNEvent;
+import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class Synchronize extends SAVCommand {
@@ -114,7 +120,8 @@ public class Synchronize extends SAVCommand {
             logStart("Do merge");
             SVNDiffClient diffClient = env.getClientManager().getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-            diffClient.setEventHandler(new SVNNotifyPrinter(env));
+            SkipTrackingNotifyPrinter notifyPrinter = new SkipTrackingNotifyPrinter(env);
+            diffClient.setEventHandler(notifyPrinter);
             diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
                     wcInfo.getRootDir(), SVNDepth.INFINITY, true, false, false, false);
             logEnd("Do merge");
@@ -125,8 +132,46 @@ public class Synchronize extends SAVCommand {
                     SVNPropertyValue.create(Long.toString(latestRevision.getNumber())),
                     false, SVNDepth.EMPTY, null, null);
             logEnd("Update last merge revision");
+
+            //Warn skipped files for extra emphasis
+            if (!notifyPrinter.getSkippedFiles().isEmpty()) {
+                logStart("Warn skipped files");
+                env.getOut().println();
+                env.getOut().println("WARNING: The following files were not synchronized!  They have changes in " + wcProps.getSourceName());
+                env.getOut().println("but have been deleted in the local user branch.  Merge the changes manually:");
+                List<File> skippedFiles = notifyPrinter.getSkippedFiles();
+                Collections.sort(skippedFiles);
+                for (File file : skippedFiles) {
+                    env.getOut().println("- " + SVNCommandUtil.getLocalPath(env.getRelativePath(file)));
+                }
+                logEnd("Warn skipped files");
+            }
         } else {
             env.getOut().println("Branch is up to date.");
+        }
+    }
+
+    /**
+     * Extends the standard SVNNotifyPrinter and keeps a list of skipped files.
+     */
+    private static class SkipTrackingNotifyPrinter extends SVNNotifyPrinter {
+        private final List<File> _skippedFiles = new ArrayList<File>();
+
+        private SkipTrackingNotifyPrinter(SVNCommandEnvironment env) {
+            super(env);
+        }
+
+        public List<File> getSkippedFiles() {
+            return _skippedFiles;
+        }
+
+        @Override
+        public void handleEvent(SVNEvent event, double progress) throws SVNException {
+            super.handleEvent(event, progress);
+
+            if (event.getAction() == SVNEventAction.SKIP) {
+                _skippedFiles.add(event.getFile());
+            }
         }
     }
 }

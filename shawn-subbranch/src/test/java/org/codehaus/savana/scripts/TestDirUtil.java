@@ -1,6 +1,7 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
+import org.codehaus.savana.PathUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,5 +46,17 @@ public abstract class TestDirUtil {
             }
         }
         return dir;
+    }
+
+    /**
+     * Returns the absolute path of a file in the way that matches svnkit.
+     */
+    public static String toSvnkitAbsolutePath(File file) {
+        String path = PathUtil.normalizePath(file);
+        // on Windows, path will look like "C:/abc" but SVNKit will have "/C:/abc" 
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return path;
     }
 }
