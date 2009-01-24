@@ -37,6 +37,7 @@
 package org.codehaus.savana;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,16 +45,24 @@ import java.util.Properties;
 
 public class Version {
 
-    public static final String VERSION = getVersion();
+    public static final String VERSION;
 
-    public static final String SVNKIT_VERSION =
-            org.tmatesoft.svn.util.Version.getMajorVersion() + "." +
-            org.tmatesoft.svn.util.Version.getMinorVersion() + "." +
-            org.tmatesoft.svn.util.Version.getMicroVersion();
+    public static final int VERSION_MAJOR;
+    public static final int VERSION_MINOR;
+    public static final long VERSION_REVISION;
 
-    private static String getVersion() {
+    public static final String SVNKIT_VERSION;
+
+    static {
+        // the maven build creates a "version.properties" file in the classpath
         InputStream in = Version.class.getClassLoader().getResourceAsStream("org/codehaus/savana/version.properties");
-        if (in != null) {
+        if (in == null) {
+            // IDE or some other non-maven build process
+            VERSION_MAJOR = 0;
+            VERSION_MINOR = 0;
+            VERSION_REVISION = 0;
+            VERSION = "UNKNOWN";
+        } else {
             Properties props = new Properties();
             try {
                 props.load(in);
@@ -62,8 +71,18 @@ public class Version {
             } finally {
                 IOUtils.closeQuietly(in);
             }
-            return props.getProperty("savana.version") + " (revision " + props.getProperty("savana.revision") + ")";
+            String versionString = props.getProperty("savana.version");
+            String revisionString = props.getProperty("savana.revision");
+            String majorMinorString = StringUtils.removeEnd(versionString, "-SNAPSHOT");
+            VERSION_MAJOR = Integer.parseInt(StringUtils.substringBefore(majorMinorString, "."));
+            VERSION_MINOR = Integer.parseInt(StringUtils.substringAfter(majorMinorString, "."));
+            VERSION_REVISION = Long.parseLong(revisionString);
+            VERSION = VERSION_MAJOR + "." + VERSION_MINOR + " (revision " + VERSION_REVISION + ")";
         }
-        return "UNKNOWN";
+
+        SVNKIT_VERSION =
+                org.tmatesoft.svn.util.Version.getMajorVersion() + "." +
+                org.tmatesoft.svn.util.Version.getMinorVersion() + "." +
+                org.tmatesoft.svn.util.Version.getMicroVersion();
     }
 }

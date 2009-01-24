@@ -157,6 +157,11 @@ public class MetadataProperties {
     }
 
     private void init(SVNProperties properties) throws SVNException {
+        SVNPropertyValue savanaPoliciesProps = properties.getSVNPropertyValue(MetadataFile.PROP_SAVANA_POLICIES);
+        if (savanaPoliciesProps != null) {
+            _savanaPolicies = parsePolicies(SVNPropertyValue.getPropertyAsString(savanaPoliciesProps));
+        }
+
         SVNPropertyValue projectNameProps = properties.getSVNPropertyValue(MetadataFile.PROP_PROJECT_NAME);
         if (projectNameProps != null) {
             _projectName = _projectRoot = SVNPropertyValue.getPropertyAsString(projectNameProps);
@@ -217,33 +222,34 @@ public class MetadataProperties {
         if (lastMergeRevisionProps != null) {
             _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps)));
         }
-
-        SVNPropertyValue savanaPoliciesProps = properties.getSVNPropertyValue(MetadataFile.PROP_SAVANA_POLICIES);
-        if (savanaPoliciesProps != null) {
-            _savanaPolicies = parsePolicies(SVNPropertyValue.getPropertyAsString(savanaPoliciesProps));
-        }
     }
 
     private ISavanaPolicies parsePolicies(String policiesString) throws SVNException {
+        //The policies string contains a Java Properties object, saved using Properties.store()
         Properties properties = new Properties();
         try {
-            properties.load(new ByteArrayInputStream(policiesString.getBytes("UTF-8")));
+            // use Properties.load(InputStream) instead of Properties.load(Reader) for JDK 1.5 compatibility
+            properties.load(new ByteArrayInputStream(policiesString.getBytes("ISO-8859-1")));
         } catch (Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
                     "Error parsing Savana policy properties: " + e), SVNLogType.CLIENT);
         }
-        String className = properties.getProperty("class");
-        if (className == null) {
-            return null;
-        }
-        ISavanaPolicies savanaPolicies = null;
+
+        //Instantiate the policies implementation
+        String className = properties.getProperty(ISavanaPolicies.CLASS_KEY, DefaultSavanaPolicies.class.getName());
+        ISavanaPolicies savanaPolicies;
         try {
             savanaPolicies = (ISavanaPolicies) Class.forName(className).newInstance();
         } catch(Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
                     "Error creating Savana policy class instance: " + className, null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
+            return null; // unreachable
         }
         savanaPolicies.initialize(properties);
+        
+        //Verify that Savana is new enough
+        savanaPolicies.validateSavanaVersion();
+
         return savanaPolicies;
     }
 

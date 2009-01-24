@@ -45,7 +45,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public abstract class SAVCommand extends SVNCommand {
-    protected static final Logger _sLog = Logger.getLogger("savana-info");
+    public static final Logger _sLog = Logger.getLogger("savana-info");
 
     protected SAVCommand(String name, String[] aliases) {
         super(name, aliases);
