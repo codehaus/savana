@@ -99,11 +99,16 @@ public class Synchronize extends SAVCommand {
         }
         logEnd("Check for user branch");
 
+        //Get metadata properties on the source to check the Savana Policies on the source
+        logStart("Get metadata for the source branch");
+        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+        new MetadataProperties(repository, wcProps.getSourceMetadataFilePath(), -1);
+        logEnd("Get metadata for the source branch");
+
         //Find the revision for the HEAD of the repository
         //Use this version from here on.  If we were to use the keyword HEAD, the revision that it maps to could change
         //That would give us unpredictable results about which versions are being used.
         logStart("Get latest revision");
-        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
         SVNRevision latestRevision = SVNRevision.create(repository.getLatestRevision());
         logEnd("Get latest revision");
 

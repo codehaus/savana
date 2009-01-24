@@ -10,18 +10,17 @@ import org.tmatesoft.svn.core.SVNURL;
 import java.io.File;
 import java.util.logging.Logger;
 
-public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
-    private static final Logger log = Logger.getLogger(SavanaPoliciesTest.class.getName());
+public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
+    private static final Logger log = Logger.getLogger(LogMessagePoliciesTest.class.getName());
 
     private static final String EOL = System.getProperty("line.separator");
 
-    private static final String PROJECT_NAME = "savanapoliciestest";
-
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
-    public void testSavanaPoliciesPresent() throws Exception {
+    public void testLogMessagePolicies() throws Exception {
         // setup a test project with a working directory and import the 'test-project' files
-        File WC = TestRepoUtil.setupProjectWithWC(REPO_URL, PROJECT_NAME, true, true, "test-project");
+        String projectName = getClass().getSimpleName().toLowerCase();
+        File WC = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-project");
 
         //
         // Promote to TRUNK
@@ -115,7 +114,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
             assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The changeset may not modify Savana metadata files in the trunk or in a release branch:" + EOL +
-                    "  workspace: trunk" + EOL + "  metadata file: " + PROJECT_NAME + "/trunk/.savana" + EOL, e.getMessage());
+                    "  workspace: trunk" + EOL + "  metadata file: " + projectName + "/trunk/.savana" + EOL, e.getMessage());
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
@@ -181,7 +180,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
     private void assertUserBranchPromoteFails(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
         try {
-            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
+            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
             assertTrue("we expected an exception to be thrown", false);
 
         } catch (SVNException e) {
@@ -193,6 +192,6 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
     private void assertUserBranchPromoteSucceeds(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
-        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
+        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
     }
 }
