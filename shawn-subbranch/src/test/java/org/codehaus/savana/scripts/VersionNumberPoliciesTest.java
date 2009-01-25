@@ -1,25 +1,23 @@
 package org.codehaus.savana.scripts;
 
-import org.tmatesoft.svn.core.SVNURL;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.savana.MetadataFile;
+import org.codehaus.savana.PolicySavanaVersion;
+import org.codehaus.savana.Version;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.codehaus.savana.PolicySavanaVersion;
-import org.codehaus.savana.MetadataFile;
-import org.codehaus.savana.Version;
+import org.tmatesoft.svn.core.SVNURL;
 
-import java.io.File;
-import java.io.InputStream;
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -30,6 +28,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         long major = Version.VERSION_MAJOR;
         long minor = Version.VERSION_MINOR;
+        long patch = Version.VERSION_PATCH;
         long revision = Version.VERSION_REVISION;
 
         // default required minimum should work
@@ -38,16 +37,22 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
         // test version numbers that should work
         assertMinimumRequiredVersionSucceeds(WC);
         assertMinimumRequiredVersionSucceeds(WC, 1, 0, 0);
-        assertMinimumRequiredVersionSucceeds(WC, 0, 9, 8, 7);
-        assertMinimumRequiredVersionSucceeds(WC, major, minor, revision);
+        assertMinimumRequiredVersionSucceeds(WC, 0, 9, 8, 7, 6);
+        assertMinimumRequiredVersionSucceeds(WC, major, minor, patch, revision - 1);
+        assertMinimumRequiredVersionSucceeds(WC, major, minor, patch, revision);
+        assertMinimumRequiredVersionSucceeds(WC, major, minor, patch - 1);
+        assertMinimumRequiredVersionSucceeds(WC, major, minor, patch);
         assertMinimumRequiredVersionSucceeds(WC, major, minor);
+        assertMinimumRequiredVersionSucceeds(WC, major, minor - 1);
         assertMinimumRequiredVersionSucceeds(WC, major);
+        assertMinimumRequiredVersionSucceeds(WC, major - 1);
 
         // test version numbers that should fail
         assertMinimumRequiredVersionFails(WC, 99);
-        assertMinimumRequiredVersionFails(WC, (major + 1), 0, 0);
-        assertMinimumRequiredVersionFails(WC, major, (minor + 1), 0);
-        assertMinimumRequiredVersionFails(WC, major, minor, (revision + 1));
+        assertMinimumRequiredVersionFails(WC, major + 1, 0, 0);
+        assertMinimumRequiredVersionFails(WC, major, minor + 1, 0);
+        assertMinimumRequiredVersionFails(WC, major, minor, patch + 1);
+        assertMinimumRequiredVersionFails(WC, major, minor, patch, revision + 1);
     }
 
     public void testBranchOpsCheckVersionNumber() throws Exception {
@@ -75,7 +80,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Savana is version " + Version.VERSION + " but the project requires a\n" +
-                         "minimum version of 9.8 (revision 7654).  Please upgrade Savana." + EOL, e.getErr());
+                         "minimum version of 9.8 (revision 7654).  Please upgrade Savana.\n", e.getErr());
         }
     }
 
@@ -98,7 +103,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
                     versionNumbers[0] + "." + versionNumbers[1] + " (revision " + versionNumbers[2] + ")" :
                     StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
             assertEquals("svn: ERROR: Savana is version " + Version.VERSION + " but the project requires a\n" +
-                         "minimum version of " + versionString + ".  Please upgrade Savana." + EOL, e.getErr());
+                         "minimum version of " + versionString + ".  Please upgrade Savana.\n", e.getErr());
         }
     }
 

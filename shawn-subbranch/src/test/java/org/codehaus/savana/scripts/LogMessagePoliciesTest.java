@@ -13,8 +13,6 @@ import java.util.logging.Logger;
 public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(LogMessagePoliciesTest.class.getName());
 
-    private static final String EOL = System.getProperty("line.separator");
-
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     public void testLogMessagePolicies() throws Exception {
@@ -115,7 +113,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The changeset may not modify Savana metadata files in the trunk or in a release branch:" +
                     "\n  workspace: trunk\n  metadata file: " + projectName + "/trunk/.savana",
-                    e.getMessage().trim().replace("\r", ""));
+                    e.getMessage().trim());
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
@@ -135,7 +133,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The subversion commit comment must start with the name of the modified workspace:" +
                     "\n  workspace: trunk\n  commit comment: blah blah blah",
-                    e.getErr().trim().replace("\r", ""));
+                    e.getErr().trim());
         }
     }
 
@@ -147,7 +145,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: trunk\n  commit comment: " + logMessage + EOL, e.getErr());
+                    "  workspace: trunk\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
 
@@ -167,7 +165,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: b3.3.x\n  commit comment: " + logMessage + EOL, e.getErr());
+                    "  workspace: b3.3.x\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
 

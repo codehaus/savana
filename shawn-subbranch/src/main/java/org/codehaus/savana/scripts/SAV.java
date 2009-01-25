@@ -36,7 +36,6 @@ import org.tmatesoft.svn.cli.AbstractSVNCommandEnvironment;
 import org.tmatesoft.svn.cli.AbstractSVNLauncher;
 import org.tmatesoft.svn.cli.SVNCommandLine;
 import org.tmatesoft.svn.cli.svn.SVNOption;
-import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -90,9 +89,6 @@ public class SAV extends AbstractSVNLauncher {
 
     @Override
     protected void registerOptions() {
-        //Never upgrade the working copy format from one version of svn to another.  Use other apps to do so (for example: 'svn update').
-        SVNAdminAreaFactory.setUpgradeEnabled(false);
-
         //Options shared with svn/jsvn
         SVNCommandLine.registerOption(SVNOption.VERSION);
         SVNCommandLine.registerOption(SVNOption.QUIET);

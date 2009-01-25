@@ -1,8 +1,8 @@
 package org.codehaus.savana.scripts;
 
+import org.apache.commons.io.FileUtils;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -17,8 +17,6 @@ import java.text.MessageFormat;
  *   results that effectively throw away changes.
  */
 public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -78,7 +76,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                         trunkUrl.toString(),
                         TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev),
-                savana(DiffChangesFromSource.class).replace("\r", ""));
+                savana(DiffChangesFromSource.class));
 
         // in WC1 (user branch), sync animals.txt with the parent
         savana(Synchronize.class);
@@ -121,7 +119,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Cannot promote branch user1 while there are replaced files:\n" +
                          "- " + new File("src/text/animals.txt") + "\n" +
-                         "- " + new File("src/text/autos.txt") + EOL, e.getErr());
+                         "- " + new File("src/text/autos.txt") + "\n", e.getErr());
         }
 
         // get back to the user branch

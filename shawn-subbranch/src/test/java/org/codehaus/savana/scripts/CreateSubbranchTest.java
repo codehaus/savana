@@ -2,7 +2,6 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.savana.PathUtil;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -15,8 +14,6 @@ import java.text.MessageFormat;
  * Verifies that basic operations work correctly on those user branches. 
  */
 public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -34,14 +31,14 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
-                WC1 + ":" + EOL +
-                "---------------------------------------------" + EOL +
-                "Branch Name:           trunk" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           trunk" + EOL +
-                "Source:                none" + EOL +
-                "Branch Point Revision: none" + EOL +
+                WC1 + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           trunk\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           trunk\n" +
+                "Source:                none\n" +
+                "Branch Point Revision: none\n" +
                 "Last Merge Revision:   none",
                 savana(ListWorkingCopyInfo.class));
 
@@ -49,15 +46,15 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         File WC1_src = new File(WC1, "src");
         cd(WC1_src);
         assertEquals(
-                WC1_src + ":" + EOL +
-                "---------------------------------------------" + EOL +
-                "Branch Name:           user1-src" + EOL +
-                "Branch Subpath:        src" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           user branch" + EOL +
-                "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev1 + EOL +
+                WC1_src + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           user1-src\n" +
+                "Branch Subpath:        src\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev1 + "\n" +
                 "Last Merge Revision:   " + branchPointRev1,
                 savana(ListWorkingCopyInfo.class));
 
@@ -70,8 +67,8 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         rev++;
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals("Modified Files:" + EOL +
-                     "-------------------------------------------------" + EOL +
+        assertEquals("Modified Files:\n" +
+                     "-------------------------------------------------\n" +
                      "text/animals.txt",
                 savana(ListChangesFromSource.class));
 
@@ -92,7 +89,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         trunkUrl.toString(),
                         TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev1),
-                savana(DiffChangesFromSource.class).replace("\r", ""));
+                savana(DiffChangesFromSource.class));
 
         // assert that sync is a no-op
         assertEquals("Branch is up to date.", savana(Synchronize.class));
@@ -117,21 +114,21 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
-                WC1_src + ":" + EOL +
-                "---------------------------------------------" + EOL +
-                "Branch Name:           user1-src" + EOL +
-                "Branch Subpath:        src" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           user branch" + EOL +
-                "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev1 + EOL +
+                WC1_src + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           user1-src\n" +
+                "Branch Subpath:        src\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev1 + "\n" +
                 "Last Merge Revision:   " + lastMergeRev1,
                 savana(ListWorkingCopyInfo.class));
 
         // list the changes from the trunk, and check that the output is what we expect (sync merged in all changes)
-        assertEquals("Modified Files:" + EOL +
-                     "-------------------------------------------------" + EOL +
+        assertEquals("Modified Files:\n" +
+                     "-------------------------------------------------\n" +
                      "text/animals.txt",
                 savana(ListChangesFromSource.class));
 
@@ -152,7 +149,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         trunkUrl.toString(),
                         TestDirUtil.toSvnkitAbsolutePath(WC1),
                         lastMergeRev1),
-                savana(DiffChangesFromSource.class).replace("\r", ""));
+                savana(DiffChangesFromSource.class));
 
         // create a second user branch.  verify that it's created off the trunk and the subpath is set correctly
         File WC1_src_text = new File(WC1_src, "text");
@@ -163,30 +160,30 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Cannot create a user branch in a subdirectory of another user branch." +
-                         "\nSwitch to 'trunk' or a release branch before creating the new branch." + EOL, e.getErr());
+                         "\nSwitch to 'trunk' or a release branch before creating the new branch.\n", e.getErr());
         }
         savana(SetBranch.class, "trunk");
         savana(CreateUserBranch.class, "user1-src-text", ".");
         long branchPointRev2 = rev;
 
         assertEquals(
-                WC1_src_text + ":" + EOL +
-                "---------------------------------------------" + EOL +
-                "Branch Name:           user1-src-text" + EOL +
-                "Branch Subpath:        src/text" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           user branch" + EOL +
-                "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev2 + EOL +
+                WC1_src_text + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           user1-src-text\n" +
+                "Branch Subpath:        src/text\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev2 + "\n" +
                 "Last Merge Revision:   " + branchPointRev2,
                 savana(ListWorkingCopyInfo.class));
 
         // list the two user branches - there should be just the one
-        assertEquals("------------------------------------------------------------------------------" + EOL +
-                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath" + EOL +
-                     "------------------------------------------------------------------------------" + EOL +
-                     "user1-src              trunk         " + pad(branchPointRev1, 14) + pad(lastMergeRev1, 14) + "src" + EOL +
+        assertEquals("------------------------------------------------------------------------------\n" +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath\n" +
+                     "------------------------------------------------------------------------------\n" +
+                     "user1-src              trunk         " + pad(branchPointRev1, 14) + pad(lastMergeRev1, 14) + "src\n" +
                      "user1-src-text         trunk         " + pad(branchPointRev2, 14) + pad(branchPointRev2, 14) + "src/text",
                 savana(ListUserBranches.class));
 
@@ -213,7 +210,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 "Source:                trunk\n" +
                 "Branch Point Revision: " + branchPointRev2 + "\n" +
                 "Last Merge Revision:   " + branchPointRev2,
-                savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
+                savana(ListWorkingCopyInfo.class, "--recursive"));
 
         // switch from user1-src-text to user1-src
         cd(WC1_src);
@@ -234,7 +231,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 "Source:                none\n" +
                 "Branch Point Revision: none\n" +
                 "Last Merge Revision:   none",
-                savana(ListWorkingCopyInfo.class, "--recursive").replace("\r", ""));
+                savana(ListWorkingCopyInfo.class, "--recursive"));
     }
 
     private String pad(long rev, int n) {

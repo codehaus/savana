@@ -11,8 +11,6 @@ import java.util.logging.Logger;
 public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(MultipleWorkspacesTest.class.getName());
 
-    private static final String EOL = System.getProperty("line.separator");
-    
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     /**
@@ -48,7 +46,7 @@ public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
         // create the bands list in working copy 2, add it, and commit it
         log.info("adding new file src/text/bands.txt");
         File wc2_bandsFile = new File(WC2, "src/text/bands.txt");
-        FileUtils.writeStringToFile(wc2_bandsFile, "Beatles" + EOL + "Pink Floyd" + EOL + "Who", "UTF-8");
+        FileUtils.writeStringToFile(wc2_bandsFile, "Beatles\nPink Floyd\nWho", "UTF-8");
         SVN.getWCClient().doAdd(wc2_bandsFile, false, false, true, SVNDepth.INFINITY, false, false);
         log.info("committing change");
         SVN.getCommitClient().doCommit(
@@ -60,7 +58,7 @@ public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
         log.info("append 'tequila' to src/text/drinks.txt");
         File wc1_drinksFile = new File(WC1, "src/text/drinks.txt");
         String drinks = FileUtils.readFileToString(wc1_drinksFile, "UTF-8");
-        FileUtils.writeStringToFile(wc1_drinksFile, drinks + EOL + "tequila", "UTF-8");
+        FileUtils.writeStringToFile(wc1_drinksFile, drinks + "\ntequila", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "user branch commit - added tequila to drinks.txt", null, null, false, false, SVNDepth.INFINITY);
@@ -73,7 +71,7 @@ public class MultipleWorkspacesTest extends AbstractSavanaScriptsTestCase {
         log.info("editing src/text/animals.txt in trunk");
         File wc1_animalsFile = new File(WC1, "src/text/animals.txt");
         String animals = FileUtils.readFileToString(wc1_animalsFile, "UTF-8");
-        FileUtils.writeStringToFile(wc1_animalsFile, animals + EOL + "leopard", "UTF-8");
+        FileUtils.writeStringToFile(wc1_animalsFile, animals + "\nleopard", "UTF-8");
         log.info("committing change");
         SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "trunk - added leopard to animals.txt", null, null, false, false, SVNDepth.INFINITY);

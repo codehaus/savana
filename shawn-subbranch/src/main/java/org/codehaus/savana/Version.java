@@ -49,6 +49,7 @@ public class Version {
 
     public static final int VERSION_MAJOR;
     public static final int VERSION_MINOR;
+    public static final int VERSION_PATCH;
     public static final long VERSION_REVISION;
 
     public static final String SVNKIT_VERSION;
@@ -58,9 +59,8 @@ public class Version {
         InputStream in = Version.class.getClassLoader().getResourceAsStream("org/codehaus/savana/version.properties");
         if (in == null) {
             // IDE or some other non-maven build process
-            VERSION_MAJOR = 0;
-            VERSION_MINOR = 0;
-            VERSION_REVISION = 0;
+            VERSION_MAJOR = VERSION_MINOR = VERSION_PATCH = 0;
+            VERSION_REVISION = 0L;
             VERSION = "UNKNOWN";
         } else {
             Properties props = new Properties();
@@ -73,11 +73,14 @@ public class Version {
             }
             String versionString = props.getProperty("savana.version");
             String revisionString = props.getProperty("savana.revision");
-            String majorMinorString = StringUtils.removeEnd(versionString, "-SNAPSHOT");
-            VERSION_MAJOR = Integer.parseInt(StringUtils.substringBefore(majorMinorString, "."));
-            VERSION_MINOR = Integer.parseInt(StringUtils.substringAfter(majorMinorString, "."));
+            String[] versionFields = StringUtils.split(StringUtils.removeEnd(versionString, "-SNAPSHOT"), ".");
+            VERSION_MAJOR = Integer.parseInt(versionFields[0]);
+            VERSION_MINOR = Integer.parseInt(versionFields[1]);
+            VERSION_PATCH = (versionFields.length > 2) ? Integer.parseInt(versionFields[2]) : 0; // patch is optional
             VERSION_REVISION = Long.parseLong(revisionString);
-            VERSION = VERSION_MAJOR + "." + VERSION_MINOR + " (revision " + VERSION_REVISION + ")";
+            VERSION = VERSION_MAJOR + "." + VERSION_MINOR +
+                      (VERSION_PATCH != 0 ? "." + VERSION_PATCH : "") +
+                      " (revision " + VERSION_REVISION + ")";
         }
 
         SVNKIT_VERSION =

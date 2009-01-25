@@ -12,8 +12,6 @@ import java.io.File;
  */
 public class PromoteOutOfDateTest extends AbstractSavanaScriptsTestCase {
 
-    private static final String EOL = System.getProperty("line.separator");
-
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
     public void testUserSubbranches() throws Exception {
@@ -46,7 +44,7 @@ public class PromoteOutOfDateTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Cannot promote while the working copy is out-of-date." +
-                         "\nRun 'svn update' to update the working copy" + EOL, e.getErr());
+                         "\nRun 'svn update' to update the working copy\n", e.getErr());
         }
 
         // update then try the promote again.  it should succeed this time.

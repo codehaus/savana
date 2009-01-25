@@ -2,7 +2,6 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
@@ -14,8 +13,6 @@ import java.util.logging.Logger;
 
 public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(BasicWorkspaceSessionTest.class.getName());
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -47,9 +44,9 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         savana(CreateUserBranch.class, "workspace");
 
         // list the user branches - there should be just the one
-        assertEquals("------------------------------------------------------------------------------" + EOL +
-                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath" + EOL +
-                     "------------------------------------------------------------------------------" + EOL +
+        assertEquals("------------------------------------------------------------------------------\n" +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath\n" +
+                     "------------------------------------------------------------------------------\n" +
                      "workspace              trunk         " + pad(branchPointRev, 14) + branchPointRev,
                      savana(ListUserBranches.class));
 
@@ -86,15 +83,15 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                         trunkUrl.toString(),
                         TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev),
-                savana(DiffChangesFromSource.class).replace("\r", ""));
+                savana(DiffChangesFromSource.class));
 
         // check that we're still in the "workspace" branch, and that the revision has updated
         assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals("Modified Files:" + EOL +
-                     "-------------------------------------------------" + EOL +
+        assertEquals("Modified Files:\n" +
+                     "-------------------------------------------------\n" +
                      "src/text/animals.txt",
                 savana(ListChangesFromSource.class));
 
@@ -115,16 +112,16 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // list the changes from the trunk, and check that the output is what we expect
         assertEquals(
-                "Added Files:" + EOL +
-                "-------------------------------------------------" + EOL +
-                "src/text/cars.txt" + EOL +
-                "" + EOL +
-                "Modified Files:" + EOL +
-                "-------------------------------------------------" + EOL +
-                "src/text/animals.txt" + EOL +
-                "" + EOL +
-                "Deleted Files:" + EOL +
-                "-------------------------------------------------" + EOL +
+                "Added Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/cars.txt\n" +
+                "\n" +
+                "Modified Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/animals.txt\n" +
+                "\n" +
+                "Deleted Files:\n" +
+                "-------------------------------------------------\n" +
                 "src/text/autos.txt",
                 savana(ListChangesFromSource.class));
 
@@ -138,14 +135,14 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
-                WC1 + ":" + EOL +
-                "---------------------------------------------" + EOL +
-                "Branch Name:           workspace" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           user branch" + EOL +
-                "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev + EOL +
+                WC1 + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           workspace\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev + "\n" +
                 "Last Merge Revision:   " + branchPointRev,
                 savana(ListWorkingCopyInfo.class));
 
