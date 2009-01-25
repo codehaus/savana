@@ -72,7 +72,8 @@ public abstract class TestRepoUtil {
         // install savana preferred subversion hooks into the test repository
         if (installHooks) {
             for (File svnHookFile : TestDirUtil.SVN_HOOKS_DIR.listFiles()) {
-                if (!svnHookFile.isHidden() && !svnHookFile.getName().endsWith(".properties")) {
+                if (svnHookFile.isFile() && !svnHookFile.isHidden() &&
+                        !svnHookFile.getName().endsWith(".properties")) {
                     File repoHookFile = new File(new File(repoDir, "hooks"), svnHookFile.getName());
                     FileUtils.copyFile(svnHookFile, repoHookFile, false);
                     SVNFileUtil.setExecutable(repoHookFile, true);
