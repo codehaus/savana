@@ -47,13 +47,13 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
         // in WC1 (user branch), sync
         cd(WC1);
         assertEquals(
-                "Skipped missing target: 'src/text/autos.txt'\n" +
-                "Skipped missing target: 'src/text/animals.txt'\n" +
+                "Skipped missing target: '" + new File("src/text/autos.txt") + "'\n" +
+                "Skipped missing target: '" + new File("src/text/animals.txt") + "'\n" +
                 "\n" +
                 "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
                 "but have been deleted in the local user branch.  Merge the changes manually:\n" +
-                "- src/text/animals.txt\n" +
-                "- src/text/autos.txt",
+                "- " + new File("src/text/animals.txt") + "\n" +
+                "- " + new File("src/text/autos.txt"),
                 savana(Synchronize.class).replace("\r", ""));
 
         assertEquals(

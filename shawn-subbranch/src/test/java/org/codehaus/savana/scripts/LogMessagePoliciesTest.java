@@ -113,8 +113,9 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SVNException e) {
             assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:" + EOL +
-                    "  workspace: trunk" + EOL + "  metadata file: " + projectName + "/trunk/.savana" + EOL, e.getMessage());
+                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:" +
+                    "\n  workspace: trunk\n  metadata file: " + projectName + "/trunk/.savana",
+                    e.getMessage().trim().replace("\r", ""));
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
@@ -130,10 +131,11 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Commit failed (details follow):" + EOL +
+            assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The subversion commit comment must start with the name of the modified workspace:" + EOL +
-                    "  workspace: trunk" + EOL + "  commit comment: blah blah blah", e.getErr().trim());
+                    "The subversion commit comment must start with the name of the modified workspace:" +
+                    "\n  workspace: trunk\n  commit comment: blah blah blah",
+                    e.getErr().trim().replace("\r", ""));
         }
     }
 
