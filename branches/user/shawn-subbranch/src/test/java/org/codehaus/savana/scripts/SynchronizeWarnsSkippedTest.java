@@ -54,7 +54,7 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
                 "but have been deleted in the local user branch.  Merge the changes manually:\n" +
                 "- " + new File("src/text/animals.txt") + "\n" +
                 "- " + new File("src/text/autos.txt"),
-                savana(Synchronize.class).replace("\r", ""));
+                savana(Synchronize.class));
 
         assertEquals(
                 "Modified Files:\n" +
@@ -64,6 +64,6 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
                 "Deleted Files:\n" +
                 "-------------------------------------------------\n" +
                 "src/text/animals.txt",
-                savana(ListChangesFromSource.class).replace("\r", ""));
+                savana(ListChangesFromSource.class));
     }
 }

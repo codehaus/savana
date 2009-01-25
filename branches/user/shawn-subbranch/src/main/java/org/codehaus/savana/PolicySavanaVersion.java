@@ -1,7 +1,7 @@
 package org.codehaus.savana;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.scripts.SAVCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -40,11 +40,12 @@ public class PolicySavanaVersion {
         long[] actualVersionNumbers = new long[] {
                 Version.VERSION_MAJOR,
                 Version.VERSION_MINOR,
+                Version.VERSION_PATCH,
                 Version.VERSION_REVISION,
         };
 
         // if Savana wasn't built via maven (maybe via an IDE etc.) log a warning
-        if (compare(new long[]{0, 0, 0}, actualVersionNumbers) == 0) {
+        if (compare(new long[]{0, 0, 0, 0}, actualVersionNumbers) == 0) {
             SAVCommand._sLog.warning("Unable to verify that Savana is version " + versionString +
                                      " or newer because the Savana version is unknown.");
             return;

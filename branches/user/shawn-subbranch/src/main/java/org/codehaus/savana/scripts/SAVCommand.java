@@ -37,6 +37,7 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
@@ -61,10 +62,13 @@ public abstract class SAVCommand extends SVNCommand {
             log("Current directory: " + new File("").getAbsolutePath());
 
             if (getWorkingCopyFormatFromCurrentDirectory()) {
-                // assume all Savana commands are run from within a Subversion working copy.  configure SVNKit
+                // assume this Savana command is run from within a Subversion working copy.  configure SVNKit
                 // to use the same Subversion file formats as the version used for the current directory.
                 configureWorkingCopyFormat(new File("").getAbsoluteFile());
             }
+            //Never upgrade the working copy format from one version of svn to another.
+            //Use other apps to do so (for example: 'svn update').
+            SVNAdminAreaFactory.setUpgradeEnabled(false);
 
             doRun();
 

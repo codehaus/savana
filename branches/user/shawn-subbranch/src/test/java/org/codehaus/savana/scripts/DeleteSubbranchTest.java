@@ -1,15 +1,13 @@
 package org.codehaus.savana.scripts;
 
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
 
 public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -24,9 +22,9 @@ public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
         cd(WC1);
         long rootRev = createUserBranch("user-root", ".");
 
-        assertEquals("------------------------------------------------------------------------------" + EOL +
-                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath" + EOL +
-                     "------------------------------------------------------------------------------" + EOL +
+        assertEquals("------------------------------------------------------------------------------\n" +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath\n" +
+                     "------------------------------------------------------------------------------\n" +
                      "user-root              trunk         " + pad(rootRev, 14) + pad(rootRev, 0),
                 savana(ListUserBranches.class));
 
@@ -45,11 +43,11 @@ public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
         long dogRev = createUserBranch("user-dog", "animal/mammal/dog");
         long plantRev = createUserBranch("user-plant", "plant");
 
-        assertEquals("------------------------------------------------------------------------------" + EOL +
-                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath" + EOL +
-                     "------------------------------------------------------------------------------" + EOL +
-                     "user-canine            trunk         " + pad(canineRev, 14) + pad(canineRev, 14) + "animal/mammal/dog" + EOL +
-                     "user-dog               trunk         " + pad(dogRev, 14) + pad(dogRev, 14) + "animal/mammal/dog" + EOL +
+        assertEquals("------------------------------------------------------------------------------\n" +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath\n" +
+                     "------------------------------------------------------------------------------\n" +
+                     "user-canine            trunk         " + pad(canineRev, 14) + pad(canineRev, 14) + "animal/mammal/dog\n" +
+                     "user-dog               trunk         " + pad(dogRev, 14) + pad(dogRev, 14) + "animal/mammal/dog\n" +
                      "user-plant             trunk         " + pad(plantRev, 14) + pad(plantRev, 14) + "plant",
                 savana(ListUserBranches.class));
 
@@ -90,7 +88,7 @@ public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: ERROR: Use 'sav setbranch' to switch away from the branch before deleting it." +
-                         "\nBranch Path: " + branchDir + EOL, e.getErr());
+                         "\nBranch Path: " + branchDir + "\n", e.getErr());
         }
     }
 
