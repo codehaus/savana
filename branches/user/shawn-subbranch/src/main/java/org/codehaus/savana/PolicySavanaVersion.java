@@ -51,8 +51,8 @@ public class PolicySavanaVersion {
             return;
         }
 
-        // compare the major/minor/revision version number
-        if (compare(requiredVersionNumbers, actualVersionNumbers) > 0) {
+        // compare the major/minor/patch/revision version number
+        if (compare(actualVersionNumbers, requiredVersionNumbers) < 0) {
             String error = String.format(
                     "ERROR: Savana is version %s but the project requires a\n" +
                     "minimum version of %s.  Please upgrade Savana.",
@@ -62,8 +62,8 @@ public class PolicySavanaVersion {
     }
 
     private long[] parseRequiredVersionNumbers(String versionString) throws SVNException {
-        // the version number should be "<major>.<minor>.<revision>" such as "1.2.4567"
-        // it doesn't need all three fields--just "<major>" or "<major>.<minor>" is ok too.
+        // the version number should be "<major>.<minor>.<patch>.<revision>" such as "1.2.0.4567"
+        // it doesn't need all four fields--just "<major>.<minor>" or "<major>.<minor>.<patch>" etc. is ok too.
         String[] versionFields = StringUtils.split(versionString, ".");
         long[] versionNumbers = new long[versionFields.length];
         try {
@@ -81,10 +81,12 @@ public class PolicySavanaVersion {
         return StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
     }
 
-    private int compare(long[] expected, long[] actual) {
-        // note: we don't care if expected.length < actual.length
-        for (int i = 0; i < expected.length; i++) {
-            int result = Long.signum(expected[i] - actual[i]);
+    /** Dictionary sort on array values, returns negative, 0 or positive. */
+    private int compare(long[] a, long[] b) {
+        for (int i = 0; i < Math.max(a.length, b.length); i++) {
+            long an = (i < a.length) ? a[i] : 0;
+            long bn = (i < b.length) ? b[i] : 0;
+            int result = Long.signum(an - bn);
             if (result != 0) {
                 return result;
             }
