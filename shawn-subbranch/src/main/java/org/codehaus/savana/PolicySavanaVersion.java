@@ -56,7 +56,7 @@ public class PolicySavanaVersion {
             String error = String.format(
                     "ERROR: Savana is version %s but the project requires a\n" +
                     "minimum version of %s.  Please upgrade Savana.",
-                    Version.VERSION, formatVersionString(requiredVersionNumbers));
+                    Version.VERSION_SHORT, formatVersionString(requiredVersionNumbers));
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN, error), SVNLogType.CLIENT);
         }
     }
@@ -78,14 +78,7 @@ public class PolicySavanaVersion {
     }
 
     private String formatVersionString(long[] versionNumbers) {
-        if (versionNumbers.length == 3) {
-            // standard savana version format
-            return String.format("%d.%d (revision %d)", versionNumbers[0], versionNumbers[1], versionNumbers[2]);
-        } else {
-            // either less than 3 version numbers, or some unknown (future?) version
-            // number format.  format the version number as "a.b.c.d"...
-            return StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
-        }
+        return StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
     }
 
     private int compare(long[] expected, long[] actual) {

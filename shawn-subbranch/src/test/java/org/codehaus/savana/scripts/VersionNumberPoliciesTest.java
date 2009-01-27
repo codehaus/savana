@@ -66,7 +66,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
         savana(CreateUserBranch.class, "user1");
 
         // WC2 (trunk): set the minimum required version to the next version
-        setMinimumRequiredVersionPolicy(WC2, 9, 8, 7654);
+        setMinimumRequiredVersionPolicy(WC2, 9, 8, 7, 6543);
         SVN.getCommitClient().doCommit(new File[]{WC2}, false, "branch admin - update minimum required version", null, null, false, false, SVNDepth.INFINITY);
 
         // WC1 (user branch): sav info should work since the working copy doesn't see the new policies
@@ -79,8 +79,8 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Savana is version " + Version.VERSION + " but the project requires a\n" +
-                         "minimum version of 9.8 (revision 7654).  Please upgrade Savana.\n", e.getErr());
+            assertEquals("svn: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
+                         "minimum version of 9.8.7.6543.  Please upgrade Savana.\n", e.getErr());
         }
     }
 
@@ -99,10 +99,8 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            String versionString = versionNumbers.length == 3 ?
-                    versionNumbers[0] + "." + versionNumbers[1] + " (revision " + versionNumbers[2] + ")" :
-                    StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
-            assertEquals("svn: ERROR: Savana is version " + Version.VERSION + " but the project requires a\n" +
+            String versionString = StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
+            assertEquals("svn: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
                          "minimum version of " + versionString + ".  Please upgrade Savana.\n", e.getErr());
         }
     }

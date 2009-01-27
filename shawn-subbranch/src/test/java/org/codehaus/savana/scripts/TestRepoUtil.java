@@ -9,12 +9,14 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
@@ -44,13 +46,25 @@ public abstract class TestRepoUtil {
 
     public static File SUBVERSION_CONFIG_DIR = TestDirUtil.createTempDir("subversion-config");
 
-    public static final SVNClientManager SVN = SVNClientManager.newInstance(
-            new DefaultSVNOptions(SUBVERSION_CONFIG_DIR, true), "savana-user", "");
+    public static final SVNClientManager SVN = createClientManager();
 
     /**
      * Create a repository that most test cases can share.
      */
     public static final SVNURL DEFAULT_REPO = newRepositoryNoCheckedExceptions(true);
+
+    /**
+     * Create a SVNClientManager that test cases can use to interact with SVNKit directly.
+     */
+    private static SVNClientManager createClientManager() {
+        DefaultSVNOptions options = new DefaultSVNOptions(SUBVERSION_CONFIG_DIR, true);
+        options.setInteractiveConflictResolution(false);
+
+        ISVNAuthenticationManager authManager =
+                SVNWCUtil.createDefaultAuthenticationManager(SUBVERSION_CONFIG_DIR, "savana-user", "", true);
+
+        return SVNClientManager.newInstance(options, authManager);
+    }
 
     /**
      * Create a new test subversion repository.

@@ -51,6 +51,13 @@ public class MetadataFile extends File {
     public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
     public static final String PROP_SAVANA_POLICIES = "SAVANA_POLICIES";
 
+    /** Properties that should not be merged into a user branch if they change in the source. */
+    public static final String[] PROPS_DO_NOT_SYNC = {
+            PROP_BRANCH_PATH, PROP_BRANCH_TYPE,
+            PROP_SOURCE_ROOT, PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE, PROP_SOURCE_SUBPATH,
+            PROP_BRANCH_POINT_REVISION, PROP_LAST_MERGE_REVISION,
+    };
+
     public MetadataFile(File parent, String child) {
         super(parent, child);
     }

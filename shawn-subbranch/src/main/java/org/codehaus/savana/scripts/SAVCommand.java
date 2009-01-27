@@ -57,7 +57,7 @@ public abstract class SAVCommand extends SVNCommand {
     @Override
     public final void run() throws SVNException {
         try {
-            log("Savana version: " + Version.VERSION + " (SVNKit version " + Version.SVNKIT_VERSION + ")");
+            log("Savana version: " + Version.VERSION_LONG + " (SVNKit version " + Version.SVNKIT_VERSION + ")");
             log("COMMAND BEGIN: " + getSVNEnvironment().getCommandLineString());
             log("Current directory: " + new File("").getAbsolutePath());
 

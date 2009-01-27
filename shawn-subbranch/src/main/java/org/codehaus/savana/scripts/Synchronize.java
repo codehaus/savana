@@ -30,6 +30,7 @@
  */
 package org.codehaus.savana.scripts;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.MetadataProperties;
@@ -41,11 +42,16 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
+import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
+import org.tmatesoft.svn.core.wc.SVNConflictChoice;
+import org.tmatesoft.svn.core.wc.SVNConflictDescription;
+import org.tmatesoft.svn.core.wc.SVNConflictResult;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
@@ -123,6 +129,7 @@ public class Synchronize extends SAVCommand {
 
             //Merge in differences from [source:LastMergeRevision, source:LatestRevision] into the working copy
             logStart("Do merge");
+            env.setConflictHandler(new SynchronizeConflictHandler(env.getConflictHandler(), wcInfo.getMetadataFile()));
             SVNDiffClient diffClient = env.getClientManager().getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
             SkipTrackingNotifyPrinter notifyPrinter = new SkipTrackingNotifyPrinter(env);
@@ -176,6 +183,40 @@ public class Synchronize extends SAVCommand {
 
             if (event.getAction() == SVNEventAction.SKIP) {
                 _skippedFiles.add(event.getFile());
+            }
+        }
+    }
+
+    /**
+     * Subversion and SVNKit appear to find spurious conflicts on metadata properties: when one property
+     * changes (eg. SAVANA_POLICIES) then conflicts are found on other properties that are different
+     * between the source and user branches even when they're not changed in the source branch.  Work
+     * around the issue by automatically resolving those conflicts in favor of the working copy.
+     */
+    private static class SynchronizeConflictHandler implements ISVNConflictHandler {
+        private final ISVNConflictHandler _defaultHandler;
+        private final File _metadataFile;
+
+        private SynchronizeConflictHandler(ISVNConflictHandler defaultHandler, File metadataFile) {
+            _defaultHandler = defaultHandler;
+            _metadataFile = metadataFile;
+        }
+
+        public SVNConflictResult handleConflict(SVNConflictDescription conflictDescription) throws SVNException {
+            // ignore changes on branch-specific properties in the Savana metadata file
+            if (conflictDescription.getNodeKind() == SVNNodeKind.FILE && conflictDescription.isPropertyConflict() &&
+                    ArrayUtils.contains(MetadataFile.PROPS_DO_NOT_SYNC, conflictDescription.getPropertyName()) &&
+                    conflictDescription.getMergeFiles().getWCFile().equals(_metadataFile)) {
+                return new SVNConflictResult(SVNConflictChoice.MINE_FULL, null);
+            }
+
+            // not one of the special .svnscripts properties.  fall back to the default
+            if (_defaultHandler != null) {
+                // usually this prompts the user for Postpone, Edit, etc.
+                return _defaultHandler.handleConflict(conflictDescription);
+            } else {
+                // probably a non-interactive sync.  always postpone.
+                return new SVNConflictResult(SVNConflictChoice.POSTPONE, null);
             }
         }
     }
