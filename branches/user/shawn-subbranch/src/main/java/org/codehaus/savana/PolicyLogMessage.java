@@ -4,6 +4,7 @@ import org.codehaus.savana.scripts.SAVCommand;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.wc.SVNCommitUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -38,6 +39,9 @@ public class PolicyLogMessage {
         pattern = replaceBranchKeywords(metadataProperties, pattern);
 
         SAVCommand._sLog.fine("Validating log message against pattern: " + pattern);
+
+        // normalize end-of-line characters etc.
+        logMessage = SVNCommitUtil.validateCommitMessage(logMessage);
 
         // check the log message against the required pattern
         if (!Pattern.compile(pattern, Pattern.DOTALL).matcher(logMessage).matches()) {

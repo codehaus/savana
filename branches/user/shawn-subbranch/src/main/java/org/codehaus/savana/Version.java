@@ -45,7 +45,8 @@ import java.util.Properties;
 
 public class Version {
 
-    public static final String VERSION;
+    public static final String VERSION_SHORT;  // eg. "1.2.0.4567"
+    public static final String VERSION_LONG;   // eg. "1.2 (revision 4567)"
 
     public static final int VERSION_MAJOR;
     public static final int VERSION_MINOR;
@@ -61,7 +62,7 @@ public class Version {
             // IDE or some other non-maven build process
             VERSION_MAJOR = VERSION_MINOR = VERSION_PATCH = 0;
             VERSION_REVISION = 0L;
-            VERSION = "UNKNOWN";
+            VERSION_SHORT = VERSION_LONG = "UNKNOWN";
         } else {
             Properties props = new Properties();
             try {
@@ -78,7 +79,8 @@ public class Version {
             VERSION_MINOR = Integer.parseInt(versionFields[1]);
             VERSION_PATCH = (versionFields.length > 2) ? Integer.parseInt(versionFields[2]) : 0; // patch is optional
             VERSION_REVISION = Long.parseLong(revisionString);
-            VERSION = VERSION_MAJOR + "." + VERSION_MINOR +
+            VERSION_SHORT = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_PATCH + "." + VERSION_REVISION;  
+            VERSION_LONG = VERSION_MAJOR + "." + VERSION_MINOR +
                       (VERSION_PATCH != 0 ? "." + VERSION_PATCH : "") +
                       " (revision " + VERSION_REVISION + ")";
         }

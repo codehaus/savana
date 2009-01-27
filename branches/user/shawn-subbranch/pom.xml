@@ -46,8 +46,8 @@ will apply to all Software in this distribution.
             <!--
             The following dependencies:
                GROUPID          ARTIFACTID      VERSIONS
-               org.tmatesoft    svnkit          1.2.1.5297
-               org.tmatesoft    svnkit-cli      1.2.1.5297
+               org.tmatesoft    svnkit          1.2.2.5405-savana-patch
+               org.tmatesoft    svnkit-cli      1.2.2.5405
                com.sun.jna      jna             3.0.9
                com.trilead      trilead-ssh2    build213-svnkit-1.2-patch
             are not available through any public repo, so we have included them here
@@ -57,8 +57,8 @@ will apply to all Software in this distribution.
             the source distribution, and remove this repository declaration.  The lib
             files are from http://www.svnkit.com/org.tmatesoft.svn_1.2.1.maven.zip.
             Sources can be installed to the local repository using these commands:
-               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit/1.2.1.5297/svnkit-1.2.1.5297-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit/1.2.1.5297/svnkit-1.2.1.5297.pom -Dclassifier=sources
-               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit-cli/1.2.1.5297/svnkit-cli-1.2.1.5297-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit-cli/1.2.1.5297/svnkit-cli-1.2.1.5297.pom -Dclassifier=sources
+               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit/1.2.2.5405-savana-patch/svnkit-1.2.2.5405-savana-patch-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit/1.2.2.5405-savana-patch/svnkit-1.2.2.5405-savana-patch.pom -Dclassifier=sources
+               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit-cli/1.2.2.5405/svnkit-cli-1.2.2.5405-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit-cli/1.2.2.5405/svnkit-cli-1.2.2.5405.pom -Dclassifier=sources
                mvn install:install-file -Dfile=lib/com/sun/jna/jna/3.0.9/jna-3.0.9-sources.jar -DpomFile=lib/com/sun/jna/jna/3.0.9/jna-3.0.9.pom -Dclassifier=sources
                mvn install:install-file -Dfile=lib/com/trilead/trilead-ssh2/build213-svnkit-1.2-patch/trilead-ssh2-build213-svnkit-1.2-patch-sources.jar -DpomFile=lib/com/trilead/trilead-ssh2/build213-svnkit-1.2-patch/trilead-ssh2-build213-svnkit-1.2-patch.pom -Dclassifier=sources
             -->
@@ -71,13 +71,13 @@ will apply to all Software in this distribution.
         <dependency>
             <groupId>org.tmatesoft.svnkit</groupId>
             <artifactId>svnkit</artifactId>
-            <version>1.2.1.5297</version>
+            <version>1.2.2.5405-savana-patch</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.tmatesoft.svnkit</groupId>
             <artifactId>svnkit-cli</artifactId>
-            <version>1.2.1.5297</version>
+            <version>1.2.2.5405</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

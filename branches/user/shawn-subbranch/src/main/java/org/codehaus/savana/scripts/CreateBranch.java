@@ -267,6 +267,7 @@ public class CreateBranch extends SAVCommand {
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_SUBPATH, sourceSubpath.length() > 0 ? SVNPropertyValue.create(sourceSubpath) : null);
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
+            // if new properties are added where the value in the source branch and user branch are different, add them to MetadataFile.PROPS_DO_NOT_SYNC. 
             logEnd("Create metadata file");
 
             //Close and commit all of the edits

@@ -35,11 +35,18 @@ import org.tmatesoft.svn.cli.AbstractSVNOption;
 import org.tmatesoft.svn.cli.SVNCommandLine;
 import org.tmatesoft.svn.cli.SVNOptionValue;
 import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
+import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
@@ -80,6 +87,26 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
         } else {
             super.initOption(optionValue);
         }
+    }
+
+    public ISVNConflictHandler getConflictHandler() throws SVNException {
+        DefaultSVNOptions options = getOptions();
+        //The SVNKit DefaultSVNOptions class doesn't expose a getter for the
+        //conflict handler, so use reflection to retrieve the value. 
+        try {
+            Field field = options.getClass().getDeclaredField("myConflictResolver");
+            field.setAccessible(true);
+            return (ISVNConflictHandler) field.get(options);
+        } catch (Exception e) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.UNKNOWN,
+                    "Incompatible change in DefaultSVNOptions: missing myConflictResolver field",
+                    null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
+            return null; // for the compiler
+        }
+    }
+
+    public void setConflictHandler(ISVNConflictHandler conflictHandler) {
+        getOptions().setConflictHandler(conflictHandler);
     }
 
     /** Returns the SVNCommandLine object formatted as a plausible command-line string, for debugging. */
