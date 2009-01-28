@@ -36,6 +36,10 @@ Enforces several restrictions on changesets:
    except that any user workspace can be modified if the commit comment starts
    with the text 'user branch' such as 'user branch commit' and 'user branch sync'.
 
+3. The .savana/.svnscripts file may not be modified in a trunk or release branch
+   after it is created.  This prevents users from copying user branch settings
+   into the trunk by accident.   
+
 All restrictions can be bypassed by using a commit comment that starts with
 the text 'branch admin'.
 """
@@ -48,15 +52,25 @@ import subprocess
 IGNORE_PATH_PREFIXES = []
 
 # define regular expressions for each of the branch types, with a group with the branch name
-RE_TRUNK = r"^[^/]+/(trunk)/"
+RE_TRUNK =   r"^[^/]+/(trunk)/"
 RE_RELEASE = r"^[^/]+/branches/([^/]+)/"
-RE_USER = r"^[^/]+/branches/user/([^/]+)/"
+RE_USER =    r"^[^/]+/branches/user/([^/]+)/"
+
+# define regular expressions for the expected commit messages for each commit ("branch admin" is handled separately)
+RE_LOGMSG_TRUNK =   r"^%s(\s.*|)$"
+RE_LOGMSG_RELEASE = r"^%s(\s.*|)$"
+RE_LOGMSG_USER =    r"^(user branch.*|%s(\s.*|))$"
+
+# define the error messages when the commit messages don't match the expected patterns
+ER_LOGMSG_TRUNK =   "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_RELEASE = "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_USER =    "The subversion commit comment must start with \"user branch\" or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
 
 # define constants for the types of workspaces
-WS_TRUNK = "trunk"
+WS_TRUNK =   "trunk"
 WS_RELEASE = "release branch"
-WS_USER = "user branch"
-WS_FILE = "file"
+WS_USER =    "user branch"
+WS_FILE =    "file"
 
 METADATA_FILES = ['.savana', '.svnscripts']
 
@@ -180,15 +194,15 @@ The requirements depend on the first words of the commit comment:
                     "in a release branch:\n  workspace: %s\n  metadata file: %s\n" % (ws_name, file))
                 return 1
 
-    # verify that the commit comment starts with the name of the modified workspace or is an acceptable user branch comment.
-    expected_name = re.split("\s", comment)[0]         # first word
-    if ws_name != expected_name and not(ws_type == WS_USER and comment.startswith("user branch")):
-        if ws_type == WS_USER:
-            sys.stderr.write("The subversion commit comment must start with \"user branch\" "
-                "or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
-        else:
-            sys.stderr.write("The subversion commit comment must start with the name of the "
-                "modified workspace:\n  workspace: %s\n  commit comment: %s\n" % (ws_name, comment))
+    # verify that the commit comment matches the required regular expression based on the type of the workspace
+    if ws_type == WS_TRUNK and not(re.match(RE_LOGMSG_TRUNK % ws_name, comment, re.DOTALL)):
+        sys.stderr.write(ER_LOGMSG_TRUNK % (ws_name, comment))
+        return 1
+    if ws_type == WS_RELEASE and not(re.match(RE_LOGMSG_RELEASE % ws_name, comment, re.DOTALL)):
+        sys.stderr.write(ER_LOGMSG_RELEASE % (ws_name, comment))
+        return 1
+    if ws_type == WS_USER and not(re.match(RE_LOGMSG_USER % ws_name, comment, re.DOTALL)):
+        sys.stderr.write(ER_LOGMSG_USER % (ws_name, comment))
         return 1
 
     return 0

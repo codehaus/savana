@@ -42,6 +42,7 @@ import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
+import java.io.PrintStream;
 
 public class WorkingCopyInfo {
     private File _rootDir;
@@ -56,6 +57,7 @@ public class WorkingCopyInfo {
 
     public WorkingCopyInfo(SVNClientManager clientManager, File currentDirectory)
             throws SVNException {
+        currentDirectory = currentDirectory.getAbsoluteFile();
         while (currentDirectory != null) {
             MetadataFile metadataFile = new MetadataFile(currentDirectory, MetadataFile.METADATA_FILE_NAME);
             if (!metadataFile.exists()) {
@@ -89,8 +91,7 @@ public class WorkingCopyInfo {
         String branchPath = _metadataProperties.getBranchPath();
         SVNWCClient wcClient = clientManager.getWCClient();
         SVNInfo info = wcClient.doInfo(_metadataFile.getParentFile(), SVNRevision.WORKING);
-        String pathUrl = info.getURL().toString();
-        String actualPath = PathUtil.getPathTail(pathUrl, info.getRepositoryRootURL().toString());
+        String actualPath = PathUtil.getPathTail(info.getURL(), info.getRepositoryRootURL());
         if (!actualPath.equals(branchPath)) {
             String errorMessage = "ERROR: The working copy does not match the repository location. [actualPath: " + actualPath + "] [branchPath: " + branchPath + "]";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.WC_INVALID_OP_ON_CWD, errorMessage), SVNLogType.CLIENT);
@@ -122,7 +123,8 @@ public class WorkingCopyInfo {
         return url;
     }
 
-    public String toString() {
-        return _metadataProperties.toString();
+    public void println(PrintStream out) {
+        out.println(_rootDir + ":");
+        out.println(_metadataProperties);
     }
 }

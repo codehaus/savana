@@ -84,8 +84,8 @@ public class ListBranches extends SAVCommand {
 
         //Find the source of the branch
         String branchesRootPath = _userBranch ?
-                                  wcProps.getUserBranchPath(null) :
-                                  wcProps.getReleaseBranchPath(null);
+                wcProps.getUserBranchPath(null) :
+                wcProps.getReleaseBranchPath(null);
         SVNURL branchesRootURL = wcInfo.getRepositoryURL(branchesRootPath);
 
         //Make sure the branch exists
@@ -103,7 +103,7 @@ public class ListBranches extends SAVCommand {
         logStart("List branches");
         ListDirEntryHandler listDirEntryHandler = new ListDirEntryHandler(branchesRootURL);
         env.getClientManager().getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
-                                                     SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
+                SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
         logEnd("List branches");
 
         logStart("Get branch names");
@@ -128,14 +128,15 @@ public class ListBranches extends SAVCommand {
         if (branchNames.isEmpty()) {
             env.getOut().println("No branches were found.");
         } else {
-            env.getOut().println("--------------------------------------------------------------");
+            env.getOut().println("------------------------------------------------------------------------------");
             env.getOut().println(
-                    pad("Branch Name", 20) +
-                    pad("Source", 15) +
-                    pad("Branch-Point", 15) +
-                    pad("Last-Merge", 0));
+                    pad("Branch Name", 22) + " " +
+                    pad("Source", 13) + " " +
+                    pad("Branch-Point", 13) + " " +
+                    pad("Last-Merge", 13) + " " +
+                    pad("Subpath", 0));
 
-            env.getOut().println("--------------------------------------------------------------");
+            env.getOut().println("------------------------------------------------------------------------------");
 
             String userBranchesPath = wcProps.getUserBranchPath(null);
             String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
@@ -148,7 +149,7 @@ public class ListBranches extends SAVCommand {
                 }
 
                 //Get the metadata file
-                String metadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+                String metadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
                 MetadataProperties metadataFileProperties;
                 try {
                     metadataFileProperties = new MetadataProperties(repository, metadataFilePath, -1);
@@ -159,15 +160,15 @@ public class ListBranches extends SAVCommand {
                 }
 
                 //Print the branch information
-                String sourcePath = metadataFileProperties.getSourcePath();
                 SVNRevision branchPointRevision = metadataFileProperties.getBranchPointRevision();
                 SVNRevision lastMergeRevision = metadataFileProperties.getLastMergeRevision();
 
                 env.getOut().println(
-                        pad(branchName, 20) +
-                        pad(SVNPathUtil.tail(sourcePath), 15) +
-                        pad(branchPointRevision != null ? branchPointRevision.toString() : "", 15) +
-                        pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 0));
+                        pad(branchName, 22) + " " +
+                        pad(metadataFileProperties.getSourceName(), 13) + " " +
+                        pad(branchPointRevision != null ? branchPointRevision.toString() : "", 13) + " " +
+                        pad(lastMergeRevision != null ? lastMergeRevision.toString() : "", 13) + " " +
+                        pad(metadataFileProperties.getSourceSubpath(), 0));
             }
         }
         logEnd("Print branch info");

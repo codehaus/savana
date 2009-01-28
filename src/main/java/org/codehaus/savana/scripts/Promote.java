@@ -35,6 +35,7 @@ import org.codehaus.savana.FilteredStatusHandler;
 import org.codehaus.savana.LocalChangeStatusHandler;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNCommitInfo;
@@ -43,7 +44,6 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
@@ -62,6 +62,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class Promote extends SAVCommand {
@@ -115,12 +116,23 @@ public class Promote extends SAVCommand {
         LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
-                false, true, false, false, statusHandler, null);
+                true, true, false, false, statusHandler, null);
         if (statusHandler.isChanged()) {
-            //TODO: Just list the changes here rather than making the user run 'svn status'
             String errorMessage =
                     "ERROR: Cannot promote while the working copy has local changes." +
                             "\nRun 'svn status' to find changes";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        if (statusHandler.isSwitched()) {
+            String errorMessage =
+                    "ERROR: Cannot promote while a subdirectory or file is switched relative to the root." +
+                            "\nRun 'sav info -R' to find nested workspaces";
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+        }
+        if (statusHandler.isOutOfDate()) {
+            String errorMessage =
+                    "ERROR: Cannot promote while the working copy is out-of-date." +
+                            "\nRun 'svn update' to update the working copy";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
         logEnd("Check for local changes");
@@ -153,8 +165,7 @@ public class Promote extends SAVCommand {
 
         //Get metadata properties on the source so we can get its savana policies object
         logStart("Get metadata for the source branch");
-        String sourceMetadataPath = SVNPathUtil.append(wcProps.getSourcePath(), wcInfo.getMetadataFile().getName());
-        MetadataProperties sourceProps = new MetadataProperties(repository, sourceMetadataPath, sourceInfo.getRevision().getNumber());
+        MetadataProperties sourceProps = new MetadataProperties(repository, wcProps.getSourceMetadataFilePath(), sourceInfo.getRevision().getNumber());
         logEnd("Get metadata for the source branch");
 
         //Get the commit message (may launch an external editor).  We don't want to diff branches yet, so pass a dummy string as the commit item.
@@ -167,7 +178,7 @@ public class Promote extends SAVCommand {
         //Validate the commit comment against the branch name before we make any changes
         if (sourceProps.getSavanaPolicies() != null) {
             logStart("Validate commit comment");
-            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps, _sLog);
+            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps);
             logEnd("Validate commit comment");
         }
 
@@ -192,6 +203,10 @@ public class Promote extends SAVCommand {
         logStart("Revert metadata file");
         //Revert the changes to the metadata file
         wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+        //Delete a subbranch metadata file
+        if (wcProps.getSourceSubpath().length() > 0) {
+            wcInfo.getMetadataFile().delete();
+        }
         logEnd("Revert metadata file");
 
         //Don't allow the promote if there are replaced files
@@ -202,8 +217,10 @@ public class Promote extends SAVCommand {
         if (!filteredStatusHandler.getEntries().isEmpty()) {
             StringBuilder errorMessageBuilder = new StringBuilder();
             errorMessageBuilder.append(MessageFormat.format("ERROR: Cannot promote branch {0} while there are replaced files:", wcProps.getBranchName()));
-            for (String entryName : filteredStatusHandler.getEntries()) {
-                errorMessageBuilder.append("\n- ").append(entryName);
+            List<File> entries = filteredStatusHandler.getEntries();
+            Collections.sort(entries);
+            for (File file : entries) {
+                errorMessageBuilder.append("\n- ").append(SVNCommandUtil.getLocalPath(env.getRelativePath(file)));
             }
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CLIENT_NOT_READY_TO_MERGE, errorMessageBuilder.toString()), SVNLogType.CLIENT);
         }
@@ -224,7 +241,7 @@ public class Promote extends SAVCommand {
         //Print the new working copy info
         wcInfo = new WorkingCopyInfo(env.getClientManager());
         env.getOut().println("");
-        env.getOut().println(wcInfo);
+        wcInfo.println(env.getOut());
         env.getOut().println("");
         env.getOut().println("Promotion Changeset:   [" + commitInfo.getNewRevision() + "]");
     }

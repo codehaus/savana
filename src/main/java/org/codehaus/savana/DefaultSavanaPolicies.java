@@ -28,21 +28,11 @@
  */
 package org.codehaus.savana;
 
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.util.SVNLogType;
 
 import java.util.Properties;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 public class DefaultSavanaPolicies implements ISavanaPolicies {
-
-    private static final String DEFAULT_LOG_MESSAGE_ERROR =
-            "Commit message does not match the required message pattern: @pattern" +
-                    "\n  workspace: @branchName\n  commit comment: @logMessage";
 
     private Properties _properties;
 
@@ -50,50 +40,11 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         _properties = properties;
     }
 
-    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties, Logger logger) throws SVNException {
-        // each branch type has its own regular expression that messages must match
-        String prefix = "logmessage." + metadataProperties.getBranchType().name().toLowerCase() + ".";
-
-        // get the regular expression to match against the log message (if any) and expand variables
-        String pattern = _properties.getProperty(prefix + "pattern");
-        if (pattern == null) {
-            return;  // nothing to validate, anything goes
-        }
-        pattern = replaceBranchKeywords(metadataProperties, pattern);
-
-        logger.fine("Validating log message against pattern: " + pattern);
-
-        // check the log message against the required pattern
-        if (!Pattern.matches(pattern, logMessage)) {
-            // get the error message template and expand variables
-            String error = _properties.getProperty(prefix + "error", DEFAULT_LOG_MESSAGE_ERROR);
-            error = replaceBranchKeywords(metadataProperties, error);
-            error = replace(error, "@pattern", pattern);
-            error = replace(error, "@logMessage", logMessage);
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_BAD_LOG_MESSAGE, error), SVNLogType.CLIENT);
-        }
+    public void validateSavanaVersion() throws SVNException {
+        new PolicySavanaVersion(_properties).validateSavanaVersion();
     }
 
-    private String replaceBranchKeywords(MetadataProperties metadataProperties, String template) {
-        template = replace(template, "@projectName", metadataProperties.getProjectName());
-        template = replace(template, "@branchName", metadataProperties.getBranchName());
-        template = replace(template, "@branchType", metadataProperties.getBranchType());
-        template = replace(template, "@sourceBranchName", metadataProperties.getSourceName());
-        template = replace(template, "@sourceBranchType", metadataProperties.getSourceBranchType());
-        return template;
-    }
-
-    private String replace(String template, String key, BranchType branchType) {
-        if (branchType != null) {
-            template = replace(template, key, branchType.getKeyword().toLowerCase());
-        }
-        return template;
-    }
-
-    private String replace(String template, String key, String value) {
-        if (value != null) {
-            template = template.replaceAll("\\Q" + key + "\\E\\b", value); // important part is \\b to enforce ends on a word boundary
-        }
-        return template;
+    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException {
+        new PolicyLogMessage(_properties).validateLogMessage(logMessage, metadataProperties);
     }
 }

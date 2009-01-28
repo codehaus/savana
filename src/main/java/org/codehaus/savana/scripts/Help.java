@@ -80,6 +80,11 @@ public class Help extends SAVCommand {
         return new ArrayList();
     }
 
+    @Override
+    protected boolean getWorkingCopyFormatFromCurrentDirectory() {
+        return false;  // "sav help" doesn't need to be run from a subversion-managed directory
+    }
+
     public void doRun() throws SVNException {
         SVNCommandEnvironment env = getSVNEnvironment();
         if (!env.getArguments().isEmpty()) {
@@ -96,13 +101,13 @@ public class Help extends SAVCommand {
 
         } else if (env.isVersion()) {
             if (env.isQuiet()) {
-                env.getOut().println(Version.VERSION);
+                env.getOut().println(Version.VERSION_SHORT);
             } else {
-                env.getOut().println(String.format(VERSION_HELP_BODY, env.getProgramName(), Version.VERSION, Version.SVNKIT_VERSION));
+                env.getOut().println(String.format(VERSION_HELP_BODY, env.getProgramName(), Version.VERSION_LONG, Version.SVNKIT_VERSION));
             }
 
         } else if (env.getArguments().isEmpty()) {
-            String helpHeader = String.format(GENERIC_HELP_HEADER, Version.VERSION);
+            String helpHeader = String.format(GENERIC_HELP_HEADER, Version.VERSION_LONG);
             String help = SVNCommandUtil.getGenericHelp(getEnvironment().getProgramName(), helpHeader, GENERIC_HELP_FOOTER, null);
             env.getOut().print(help);
 

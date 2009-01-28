@@ -31,11 +31,14 @@ package org.codehaus.savana;
 import org.tmatesoft.svn.core.SVNException;
 
 import java.util.Properties;
-import java.util.logging.Logger;
 
 public interface ISavanaPolicies {
 
+    static final String CLASS_KEY = "class";
+
     void initialize(Properties properties) throws SVNException;
 
-    void validateLogMessage(String logMessage, MetadataProperties metadataProperties, Logger logger) throws SVNException;
+    void validateSavanaVersion() throws SVNException;
+
+    void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException;
 }

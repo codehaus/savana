@@ -1,7 +1,6 @@
 package org.codehaus.savana.scripts;
 
 public class ListChangesFromTrunkTest extends AbstractSavanaScriptsTestCase {
-    private static final String EOL = System.getProperty("line.separator");
 
     /**
      * tests the case where "list changes from source" is run in trunk.
@@ -23,7 +22,7 @@ public class ListChangesFromTrunkTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Error: No source path found (you are probably in the TRUNK)." + EOL, e.getErr());
+            assertEquals("svn: Error: No source path found (you are probably in the TRUNK).\n", e.getErr());
         }
     }
 

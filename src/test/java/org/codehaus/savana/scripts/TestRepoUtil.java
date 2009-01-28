@@ -3,40 +3,68 @@ package org.codehaus.savana.scripts;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.codehaus.savana.BranchType;
+import org.codehaus.savana.WCUtil;
 import org.codehaus.savana.scripts.admin.CreateMetadataFile;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
-import org.tmatesoft.svn.core.internal.wc.admin.ISVNAdminAreaFactorySelector;
-import org.tmatesoft.svn.core.internal.wc.admin.SVNAdminAreaFactory;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.core.wc.admin.SVNAdminClient;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
 public abstract class TestRepoUtil {
     private static final Logger _sLog = Logger.getLogger(TestRepoUtil.class.getName());
 
+    static {
+        // Internally SVNKit sleeps for about a second after most update operations
+        // to make sure timestamps are distinct--the 'svn status' operation relies
+        // on timestamps to detect changes where the file size stays the same, and
+        // it uses per-second resolution.  As long as the test cases don't generate
+        // changes where file sizes stay the same, we should be able to disable the
+        // sleeps and run tests at full speed, about a 10x improvement.
+        //
+        // Note: subversion 1.4 repos appear not to store timestamps--see the source for
+        // org.tmatesoft.svn.core.internal.wc.admin.SVNAdminArea14#INAPPLICABLE_PROPERTIES
+        // which includes SVNProperty.WORKING_SIZE.  So sleeping is only disabled w/1.5+.
+        if (!TestSvnUtil.REPO_PRE15) {
+            SVNFileUtil.setSleepForTimestamp(false);
+        }
+    }
+
     public static File SUBVERSION_CONFIG_DIR = TestDirUtil.createTempDir("subversion-config");
 
-    public static final SVNClientManager SVN = SVNClientManager.newInstance(
-            new DefaultSVNOptions(SUBVERSION_CONFIG_DIR, true), "savana-user", "");
+    public static final SVNClientManager SVN = createClientManager();
 
     /**
      * Create a repository that most test cases can share.
      */
     public static final SVNURL DEFAULT_REPO = newRepositoryNoCheckedExceptions(true);
+
+    /**
+     * Create a SVNClientManager that test cases can use to interact with SVNKit directly.
+     */
+    private static SVNClientManager createClientManager() {
+        DefaultSVNOptions options = new DefaultSVNOptions(SUBVERSION_CONFIG_DIR, true);
+        options.setInteractiveConflictResolution(false);
+
+        ISVNAuthenticationManager authManager =
+                SVNWCUtil.createDefaultAuthenticationManager(SUBVERSION_CONFIG_DIR, "savana-user", "", true);
+
+        return SVNClientManager.newInstance(options, authManager);
+    }
 
     /**
      * Create a new test subversion repository.
@@ -46,20 +74,10 @@ public abstract class TestRepoUtil {
 
         FSRepositoryFactory.setup();
 
-        // configure SVNKit to use file formats that match the installed version of subversion   
-        SVNAdminAreaFactory.setSelector(new ISVNAdminAreaFactorySelector() {
-            public Collection getEnabledFactories(File path, Collection factories, boolean writeAccess) {
-                Collection<SVNAdminAreaFactory> enabledFactories = new TreeSet<SVNAdminAreaFactory>();
-                for (SVNAdminAreaFactory factory : (Collection<SVNAdminAreaFactory>) factories) {
-                    if (factory.getSupportedVersion() == TestSvnUtil.WC_FORMAT) {
-                        enabledFactories.add(factory);
-                    }
-                }
-                return enabledFactories;
-            }
-        });
+        // configure SVNKit to use file formats that match the installed version of the subversion client
+        WCUtil.setSupportedWorkingCopyFormatVersion(TestSvnUtil.WC_FORMAT);
 
-        // create the repository
+        // create the repository using file formats that match the installed version of the subversion server
         File repoDir = TestDirUtil.createTempDir(nextRepositoryName());
         SVNAdminClient adminClient = SVN.getAdminClient();
         SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true,
@@ -68,10 +86,11 @@ public abstract class TestRepoUtil {
         // install savana preferred subversion hooks into the test repository
         if (installHooks) {
             for (File svnHookFile : TestDirUtil.SVN_HOOKS_DIR.listFiles()) {
-                if (!svnHookFile.isHidden() && !svnHookFile.getName().endsWith(".properties")) {
+                if (svnHookFile.isFile() && !svnHookFile.isHidden() &&
+                        !svnHookFile.getName().endsWith(".properties")) {
                     File repoHookFile = new File(new File(repoDir, "hooks"), svnHookFile.getName());
                     FileUtils.copyFile(svnHookFile, repoHookFile, false);
-                    repoHookFile.setExecutable(true);
+                    SVNFileUtil.setExecutable(repoHookFile, true);
                 }
             }
         }
@@ -134,6 +153,9 @@ public abstract class TestRepoUtil {
             SVN.getCommitClient().doCommit(new File[] {wc}, false,
                     "trunk - initial setup of savana", null, null, false, false, SVNDepth.INFINITY);
         }
+
+        // get the workspace up-to-date
+        SVN.getUpdateClient().doUpdate(wc, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 
         return wc;
     }

@@ -10,20 +10,15 @@ import org.tmatesoft.svn.core.SVNURL;
 import java.io.File;
 import java.util.logging.Logger;
 
-/**
- */
-public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
-    private static final Logger log = Logger.getLogger(SavanaPoliciesTest.class.getName());
-
-    private static final String EOL = System.getProperty("line.separator");
-
-    private static final String PROJECT_NAME = "savanapoliciestest";
+public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
+    private static final Logger log = Logger.getLogger(LogMessagePoliciesTest.class.getName());
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
-    public void testSavanaPoliciesPresent() throws Exception {
+    public void testLogMessagePolicies() throws Exception {
         // setup a test project with a working directory and import the 'test-project' files
-        File WC = TestRepoUtil.setupProjectWithWC(REPO_URL, PROJECT_NAME, true, true, "test-project");
+        String projectName = getClass().getSimpleName().toLowerCase();
+        File WC = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-project");
 
         //
         // Promote to TRUNK
@@ -42,6 +37,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertTrunkPromoteSucceeds("trunk - #14211 - fixed a bug");
         assertTrunkPromoteSucceeds("trunk");
 
+        savana(SetBranch.class, "trunk");
         savana(DeleteUserBranch.class, "user1");
 
 
@@ -60,7 +56,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         assertReleaseBranchPromoteFails("branch admin");  // branch admin is NOT allowed in Savana!  Savana doesn't have any commands for doing branch administration.
 
         // test valid promotion commit messages
-        assertReleaseBranchPromoteSucceeds("b3.3.x - #14211 - fixed a bug");
+        assertReleaseBranchPromoteSucceeds("b3.3.x\n#14211 - fixed a bug\nreviews by sam");
         assertReleaseBranchPromoteSucceeds("b3.3.x");
 
         // don't delete the user branch since we'll use it for the next sequence...
@@ -80,16 +76,20 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         // test valid promotion commit messages
         assertUserBranchPromoteSucceeds("user branch commit");
+        assertUserBranchPromoteSucceeds("user branch commit\nmade changes\npassed tests");
         assertUserBranchPromoteSucceeds("user branch");
+        assertUserBranchPromoteSucceeds("user branch. made changes, passed tests");
+        assertUserBranchPromoteSucceeds("user branch\r\nmade changes\r\npassed tests");
         assertUserBranchPromoteSucceeds("user1 - fix");
+        assertUserBranchPromoteSucceeds("user1\nfix\npassed tests");
 
+        savana(SetBranch.class, "trunk", "--changeRoot");
         savana(DeleteUserBranch.class, "user1");
 
 
         //
         // Remove the policy info and verify that it's ignored
         //
-        savana(SetBranch.class, "trunk", "--changeRoot");
 
         // in user branch, remove the policy subversion property from the metadata file
         savana(CreateUserBranch.class, "user1");
@@ -111,8 +111,9 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SVNException e) {
             assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:" + EOL +
-                    "  workspace: trunk" + EOL + "  metadata file: " + PROJECT_NAME + "/trunk/.savana" + EOL, e.getMessage());
+                    "The changeset may not modify Savana metadata files in the trunk or in a release branch:" +
+                    "\n  workspace: trunk\n  metadata file: " + projectName + "/trunk/.savana",
+                    e.getMessage().replace(System.getProperty("line.separator"), "\n").trim());
         }
         // try again as branch admin
         SVN.getCommitClient().doCommit(new File[]{WC}, false, "branch admin - remove savana policies", null, null, false, false, SVNDepth.INFINITY);
@@ -128,10 +129,11 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Commit failed (details follow):" + EOL +
+            assertEquals("svn: Commit failed (details follow):\n" +
                     "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
-                    "The subversion commit comment must start with the name of the modified workspace:" + EOL +
-                    "  workspace: trunk" + EOL + "  commit comment: blah blah blah", e.getErr().trim());
+                    "The subversion commit comment must start with the name of the modified workspace:" +
+                    "\n  workspace: trunk\n  commit comment: blah blah blah",
+                    e.getErr().trim());
         }
     }
 
@@ -143,7 +145,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: trunk\n  commit comment: " + logMessage + EOL, e.getErr());
+                    "  workspace: trunk\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
 
@@ -163,7 +165,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
-                    "  workspace: b3.3.x\n  commit comment: " + logMessage + EOL, e.getErr());
+                    "  workspace: b3.3.x\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
 
@@ -178,7 +180,7 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
     private void assertUserBranchPromoteFails(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
         try {
-            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
+            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
             assertTrue("we expected an exception to be thrown", false);
 
         } catch (SVNException e) {
@@ -190,6 +192,6 @@ public class SavanaPoliciesTest extends AbstractSavanaScriptsTestCase {
 
     private void assertUserBranchPromoteSucceeds(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
-        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, log);
+        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
     }
 }

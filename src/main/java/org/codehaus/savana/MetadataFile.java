@@ -38,9 +38,11 @@ public class MetadataFile extends File {
 
     public static final String PROP_PROJECT_ROOT = "PROJECT_ROOT";
     public static final String PROP_PROJECT_NAME = "PROJECT_NAME";
-    public static final String PROP_SOURCE_PATH = "SOURCE_PATH";
     public static final String PROP_BRANCH_PATH = "BRANCH_PATH";
     public static final String PROP_BRANCH_TYPE = "BRANCH_TYPE";
+    public static final String PROP_SOURCE_ROOT = "SOURCE_ROOT";
+    public static final String PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE = "SOURCE_PATH";
+    public static final String PROP_SOURCE_SUBPATH = "SOURCE_SUBPATH";
     public static final String PROP_BRANCH_POINT_REVISION = "BRANCH_POINT_REVISION";
     public static final String PROP_LAST_MERGE_REVISION = "LAST_MERGE_REVISION";
 
@@ -48,6 +50,13 @@ public class MetadataFile extends File {
     public static final String PROP_RELEASE_BRANCHES_PATH = "BRANCHES_PATH";
     public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
     public static final String PROP_SAVANA_POLICIES = "SAVANA_POLICIES";
+
+    /** Properties that should not be merged into a user branch if they change in the source. */
+    public static final String[] PROPS_DO_NOT_SYNC = {
+            PROP_BRANCH_PATH, PROP_BRANCH_TYPE,
+            PROP_SOURCE_ROOT, PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE, PROP_SOURCE_SUBPATH,
+            PROP_BRANCH_POINT_REVISION, PROP_LAST_MERGE_REVISION,
+    };
 
     public MetadataFile(File parent, String child) {
         super(parent, child);

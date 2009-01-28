@@ -1,6 +1,7 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
@@ -12,8 +13,6 @@ import java.util.logging.Logger;
 
 public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
     private static final Logger log = Logger.getLogger(BasicWorkspaceSessionTest.class.getName());
-
-    private static final String EOL = System.getProperty("line.separator");
 
     private SVNURL REPO_URL = TestRepoUtil.DEFAULT_REPO;
 
@@ -45,10 +44,10 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         savana(CreateUserBranch.class, "workspace");
 
         // list the user branches - there should be just the one
-        assertEquals("--------------------------------------------------------------" + EOL +
-                     "Branch Name         Source         Branch-Point   Last-Merge" + EOL +
-                     "--------------------------------------------------------------" + EOL +
-                     "workspace           trunk          " + branchPointRev + "              " + branchPointRev,
+        assertEquals("------------------------------------------------------------------------------\n" +
+                     "Branch Name            Source        Branch-Point  Last-Merge    Subpath\n" +
+                     "------------------------------------------------------------------------------\n" +
+                     "workspace              trunk         " + pad(branchPointRev, 14) + branchPointRev,
                      savana(ListUserBranches.class));
 
         // check that we've changed into the "workspace" branch, and that the revision has updated
@@ -82,21 +81,18 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                         " dragon\n" +
                         "\\ No newline at end of file",
                         trunkUrl.toString(),
-                        toSvnkitAbsolutePath(WC1),
+                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev),
-                savana(DiffChangesFromSource.class).replace("\r", ""));
+                savana(DiffChangesFromSource.class));
 
         // check that we're still in the "workspace" branch, and that the revision has updated
         assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals(
-                MessageFormat.format(
-                        "Modified Files:" + EOL +
-                        "-------------------------------------------------" + EOL +
-                        "src/text/animals.txt",
-                        branchPointRev),
+        assertEquals("Modified Files:\n" +
+                     "-------------------------------------------------\n" +
+                     "src/text/animals.txt",
                 savana(ListChangesFromSource.class));
 
         // move the file "autos.txt" to "cars.txt"
@@ -108,27 +104,26 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         // check in the change
         log.info("committing change");
         SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "user branch commit - renamed autos.txt to cars.txt", null, null, false, false, SVNDepth.INFINITY);
+                new File[]{WC1}, false, "user branch commit\r\nrenamed autos.txt to cars.txt", null, null, false, false, SVNDepth.INFINITY);
 
         // check that we're still in the "workspace" branch, and that the revision has updated
         assertEquals("workspace", new WorkingCopyInfo(SVN).getMetadataProperties().getBranchName());
         assertEquals(++rev, SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.FILES, false, false));
 
         // list the changes from the trunk, and check that the output is what we expect
-        assertEquals(MessageFormat.format(
-                "Added Files:" + EOL +
-                "-------------------------------------------------" + EOL +
-                "src/text/cars.txt" + EOL +
-                "" + EOL +
-                "Modified Files:" + EOL +
-                "-------------------------------------------------" + EOL +
-                "src/text/animals.txt" + EOL +
-                "" + EOL +
-                "Deleted Files:" + EOL +
-                "-------------------------------------------------" + EOL +
+        assertEquals(
+                "Added Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/cars.txt\n" +
+                "\n" +
+                "Modified Files:\n" +
+                "-------------------------------------------------\n" +
+                "src/text/animals.txt\n" +
+                "\n" +
+                "Deleted Files:\n" +
+                "-------------------------------------------------\n" +
                 "src/text/autos.txt",
-                branchPointRev),
-                     savana(ListChangesFromSource.class));
+                savana(ListChangesFromSource.class));
 
         // sync from trunk (should be a no-op since there aren't any changes to sync)
         log.info("syncing from trunk");
@@ -140,13 +135,14 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
 
         // list the working copy info and check it
         assertEquals(
-                "---------------------------------------------" + EOL +
-                "Branch Name:           workspace" + EOL +
-                "---------------------------------------------" + EOL +
-                "Project Name:          " + projectName + EOL +
-                "Branch Type:           user branch" + EOL +
-                "Source:                trunk" + EOL +
-                "Branch Point Revision: " + branchPointRev + "" + EOL +
+                WC1 + ":\n" +
+                "---------------------------------------------\n" +
+                "Branch Name:           workspace\n" +
+                "---------------------------------------------\n" +
+                "Project Name:          " + projectName + "\n" +
+                "Branch Type:           user branch\n" +
+                "Source:                trunk\n" +
+                "Branch Point Revision: " + branchPointRev + "\n" +
                 "Last Merge Revision:   " + branchPointRev,
                 savana(ListWorkingCopyInfo.class));
 
@@ -168,12 +164,7 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
         assertTrue(FileUtils.readFileToString(animalsFile, "UTF-8").contains("mongoose"));
     }
 
-    /** Returns the absolute path of a file in the way that matches svnkit. */
-    private String toSvnkitAbsolutePath(File file) {
-        String path = file.getAbsolutePath().replace(File.separatorChar, '/');
-        if (!path.startsWith("/")) {
-            path = "/" + path;
-        }
-        return path;
+    private String pad(long rev, int n) {
+        return StringUtils.rightPad(Long.toString(rev), n);
     }
 }

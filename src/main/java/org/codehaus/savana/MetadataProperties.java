@@ -47,13 +47,18 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Properties;
 
 public class MetadataProperties {
+
+    /**
+     * The name of the Savana metadata filename.  For example: '.savana' or '.svnscripts'.
+     */
+    private String _metadataFileName;
 
     /**
      * User-friendly name of the project.  For example: 'myproject'.
@@ -85,10 +90,18 @@ public class MetadataProperties {
     private String _branchPath;
 
     /**
-     * Path within the repository from which this branch was derived (eg. 'myproject/trunk').  This will
-     * be null for the 'trunk' branch.
+     * The path within the repository where the source of this branch lives (eg. 'myproject/trunk').
+     * This will be the same as the source workspace's 'branchPath' value.  To get the path from which
+     * this branch was actually copied from, see {@link #getSourcePath()}.  This will be
+     * null for the 'trunk' branch.
      */
-    private String _sourcePath;
+    private String _sourceRoot;
+
+    /**
+     * The subdirectory within the source branch from which this branch was copied.  For top-level
+     * branches, including all trunk and release branches, this will be the empty string.
+     */
+    private String _sourceSubpath = "";
 
     /**
      * Path underneath the project root of the project trunk branch.
@@ -125,6 +138,7 @@ public class MetadataProperties {
      * Creates a MetadataProperties from a file in a remote repository.
      */
     public MetadataProperties(SVNRepository repository, String metadataFilePath, long revision) throws SVNException {
+        _metadataFileName = SVNPathUtil.tail(metadataFilePath);
         SVNProperties properties = new SVNProperties();
         // note: SVNRepository.getFile() is *much* faster than SVNWCClient.doGetProperty(SVNURL...).  ListBranches is 2x faster using getFile().
         repository.getFile(metadataFilePath, revision, properties, null);
@@ -135,6 +149,7 @@ public class MetadataProperties {
      * Creates a MetadataProperties from a metadata file on the local file system.
      */
     public MetadataProperties(SVNClientManager clientManager, File metadataFile) throws SVNException {
+        _metadataFileName = metadataFile.getName();
         SVNProperties properties = new SVNProperties();
         SVNWCClient wcClient = clientManager.getWCClient();
         wcClient.doGetProperty(metadataFile, null, SVNRevision.WORKING, SVNRevision.WORKING, SVNDepth.EMPTY, new PropertyHandler(properties), null);
@@ -142,6 +157,11 @@ public class MetadataProperties {
     }
 
     private void init(SVNProperties properties) throws SVNException {
+        SVNPropertyValue savanaPoliciesProps = properties.getSVNPropertyValue(MetadataFile.PROP_SAVANA_POLICIES);
+        if (savanaPoliciesProps != null) {
+            _savanaPolicies = parsePolicies(SVNPropertyValue.getPropertyAsString(savanaPoliciesProps));
+        }
+
         SVNPropertyValue projectNameProps = properties.getSVNPropertyValue(MetadataFile.PROP_PROJECT_NAME);
         if (projectNameProps != null) {
             _projectName = _projectRoot = SVNPropertyValue.getPropertyAsString(projectNameProps);
@@ -162,9 +182,20 @@ public class MetadataProperties {
             _branchPath = SVNPropertyValue.getPropertyAsString(branchPathProps);
         }
 
-        SVNPropertyValue sourcePathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_PATH);
-        if (sourcePathProps != null) {
-            _sourcePath = SVNPropertyValue.getPropertyAsString(sourcePathProps);
+        SVNPropertyValue sourceRootProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_ROOT);
+        if (sourceRootProps != null) {
+            _sourceRoot = SVNPropertyValue.getPropertyAsString(sourceRootProps);
+        } else {
+            // before subbranches were allowed, SOURCE_ROOT was called SOURCE_PATH
+            sourceRootProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE);
+            if (sourceRootProps != null) {
+                _sourceRoot = SVNPropertyValue.getPropertyAsString(sourceRootProps);
+            }
+        }
+
+        SVNPropertyValue sourceSubpathProps = properties.getSVNPropertyValue(MetadataFile.PROP_SOURCE_SUBPATH);
+        if (sourceSubpathProps != null) {
+            _sourceSubpath = SVNPropertyValue.getPropertyAsString(sourceSubpathProps);
         }
 
         SVNPropertyValue trunkPathProps = properties.getSVNPropertyValue(MetadataFile.PROP_TRUNK_PATH);
@@ -191,34 +222,39 @@ public class MetadataProperties {
         if (lastMergeRevisionProps != null) {
             _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps)));
         }
-
-        SVNPropertyValue savanaPoliciesProps = properties.getSVNPropertyValue(MetadataFile.PROP_SAVANA_POLICIES);
-        if (savanaPoliciesProps != null) {
-            _savanaPolicies = parsePolicies(SVNPropertyValue.getPropertyAsString(savanaPoliciesProps));
-        }
     }
 
     private ISavanaPolicies parsePolicies(String policiesString) throws SVNException {
+        //The policies string contains a Java Properties object, saved using Properties.store()
         Properties properties = new Properties();
         try {
-            properties.load(new StringReader(policiesString));
+            // use Properties.load(InputStream) instead of Properties.load(Reader) for JDK 1.5 compatibility
+            properties.load(new ByteArrayInputStream(policiesString.getBytes("ISO-8859-1")));
         } catch (Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
                     "Error parsing Savana policy properties: " + e), SVNLogType.CLIENT);
         }
-        String className = properties.getProperty("class");
-        if (className == null) {
-            return null;
-        }
-        ISavanaPolicies savanaPolicies = null;
+
+        //Instantiate the policies implementation
+        String className = properties.getProperty(ISavanaPolicies.CLASS_KEY, DefaultSavanaPolicies.class.getName());
+        ISavanaPolicies savanaPolicies;
         try {
             savanaPolicies = (ISavanaPolicies) Class.forName(className).newInstance();
         } catch(Exception e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.BAD_PROPERTY_VALUE,
                     "Error creating Savana policy class instance: " + className, null, SVNErrorMessage.TYPE_ERROR, e), SVNLogType.CLIENT);
+            return null; // unreachable
         }
         savanaPolicies.initialize(properties);
+        
+        //Verify that Savana is new enough
+        savanaPolicies.validateSavanaVersion();
+
         return savanaPolicies;
+    }
+
+    public String getMetadataFileName() {
+        return _metadataFileName;
     }
 
     public String getProjectName() {
@@ -229,46 +265,50 @@ public class MetadataProperties {
         return _projectRoot;
     }
 
-    public BranchType getBranchType() {
-        return _branchType;
+    public String getBranchName() {
+        return (_branchPath != null) ? SVNPathUtil.tail(_branchPath) : null;
     }
 
     public String getBranchPath() {
         return _branchPath;
     }
 
-    public String getBranchName() {
-        return (_branchPath != null) ? SVNPathUtil.tail(_branchPath) : null;
-    }
-
-    public String getSourcePath() {
-        return _sourcePath;
+    public BranchType getBranchType() {
+        return _branchType;
     }
 
     public String getSourceName() {
-        return (_sourcePath != null) ? SVNPathUtil.tail(_sourcePath) : null;
+        return (_sourceRoot != null) ? SVNPathUtil.tail(_sourceRoot) : null;
     }
 
-    public BranchType getSourceBranchType() {
-        if (_sourcePath == null) {
+    public String getSourceRoot() {
+        return _sourceRoot;
+    }
+
+    public String getSourceSubpath() {
+        return _sourceSubpath;
+    }
+
+    public String getSourcePath() {
+        return SVNPathUtil.append(_sourceRoot, _sourceSubpath);
+    }
+
+    public String getSourceMetadataFilePath() {
+        return SVNPathUtil.append(_sourceRoot, _metadataFileName);
+    }
+
+    public BranchType getSourceBranchType() throws SVNException {
+        if (_sourceRoot == null) {
             return null;
         }
-        String sourcePath = PathUtil.getPathTail(_sourcePath, _projectRoot);
-        if (sourcePath.equals(_trunkPath)) {
+        String relativePath = PathUtil.getPathTail(_sourceRoot, _projectRoot);
+        if (relativePath.equals(_trunkPath)) {
             return BranchType.TRUNK;
-        } else if (SVNPathUtil.removeTail(sourcePath).equals(_releaseBranchesPath)) {
+        } else if (SVNPathUtil.removeTail(relativePath).equals(_releaseBranchesPath)) {
             return BranchType.RELEASE_BRANCH;
         } else {
             return BranchType.USER_BRANCH;
         }
-    }
-
-    public String getBranchTreeRootPath() {
-        //Return the path that is the source of all branches from this point.
-        // * For a user branch, that's just the real source of the user branch.
-        // * Since release branches are like a trunk for user branches made off of them, we want to return the path of the release branch.
-        // * For the trunk, there is no source path, so we want to return the branch path (which is trunk)
-        return _branchType == BranchType.USER_BRANCH ? _sourcePath : _branchPath;
     }
 
     public String getTrunkPath() {
@@ -300,6 +340,9 @@ public class MetadataProperties {
         PrintWriter out = new PrintWriter(buf);
         out.println("---------------------------------------------");
         out.println("Branch Name:           " + getBranchName());
+        if (_sourceSubpath.length() > 0) {
+            out.println("Branch Subpath:        " + _sourceSubpath);
+        }
         out.println("---------------------------------------------");
         out.println("Project Name:          " + _projectName);
         out.println("Branch Type:           " + _branchType.getKeyword().toLowerCase());
