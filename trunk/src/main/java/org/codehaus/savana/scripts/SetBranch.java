@@ -33,6 +33,7 @@ package org.codehaus.savana.scripts;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.LocalChangeStatusHandler;
 import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
@@ -46,7 +47,9 @@ import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusClient;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc.SVNUpdateClient;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -87,26 +90,9 @@ public class SetBranch extends SAVCommand {
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
-        //Make sure all changes are committed first
-        if (!env.isForce()) {
-            logStart("Check for local changes");
-            LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
-            SVNStatusClient statusClient = env.getClientManager().getStatusClient();
-            statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
-                    SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
-            if (statusHandler.isChanged()) {
-                //TODO: Just list the changes here rather than making the user run 'svn status'
-                String errorMessage =
-                        "ERROR: Cannot switch branches while the working copy has local changes." +
-                        "\nRun 'svn status' to find changes";
-                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
-            }
-            logEnd("Check for local changes");
-        }
-
         String branchPath = BranchType.TRUNK.getKeyword().equalsIgnoreCase(branchName) ?
-                            wcProps.getTrunkPath() :
-                            wcProps.getUserBranchPath(branchName);
+                wcProps.getTrunkPath() :
+                wcProps.getUserBranchPath(branchName);
 
         //If the path doesn't exist
         logStart("Check for the path");
@@ -129,14 +115,14 @@ public class SetBranch extends SAVCommand {
 
         //Get the metadata properties for the branch
         logStart("Get metadata properties");
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
         MetadataProperties branchProps = new MetadataProperties(repository, branchMetadataFilePath, -1);
         logEnd("Get metadata properties");
 
         //Get the root path for the working copy and the branch
         logStart("Get branch tree root paths");
-        String wcRootPath = wcProps.getBranchTreeRootPath();
-        String branchRootPath = branchProps.getBranchTreeRootPath();
+        String wcRootPath = getBranchTreeRootPath(wcProps);
+        String branchRootPath = getBranchTreeRootPath(branchProps);
         logEnd("Get branch tree root paths");
 
         //Make sure that we are switching to a branch that has the same root as the working copy
@@ -158,6 +144,113 @@ public class SetBranch extends SAVCommand {
         }
         logEnd("Check switch type");
 
+        //If the new branch is a subpath inside the working copy or vice versa, move the root directory.
+        logStart("Get switch target directory");
+        File branchRootDir = wcInfo.getRootDir();
+        if (!wcProps.getSourceSubpath().equals(branchProps.getSourceSubpath())) {
+            if (PathUtil.isSubpath(branchProps.getSourceSubpath(), wcProps.getSourceSubpath())) {
+                //Example:
+                //  current wc branch is rooted at:  /
+                //  new target branch is rooted at:  /child
+                //Change branchRootDir from '/' to '/child'.  We'll switch the 'child' directory to the new
+                //branch, leaving it switched relative to the '/' directory.
+                String relativeSubpath = PathUtil.getPathTail(branchProps.getSourceSubpath(), wcProps.getSourceSubpath());
+                branchRootDir = new File(branchRootDir, relativeSubpath);
+
+                //Prevent nesting one user workspace inside another.  Nesting user branches creates usability
+                //headaches: for example, what happens to the working copy when the nested branch is promoted?
+                if (!branchProps.getSourceRoot().equals(wcProps.getBranchPath())) {
+                    String errorMessage =
+                            "ERROR: Can't switch to a subbranch that's not based on the working copy." +
+                            "\nBranch Source: " + branchProps.getSourceRoot() +
+                            "\nWorking Copy:  " + wcProps.getBranchPath();
+                    SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+                }
+
+                //Don't allow switching a sibling of the current working directory (must be a parent or child or self)
+                File currentDirectory = new File("").getAbsoluteFile();
+                if (!PathUtil.isAncestorOrDescendentOrSelf(branchRootDir, currentDirectory)) {
+                    String errorMessage =
+                            "ERROR: Can't switch to a branch that's not a child or parent of the current directory." +
+                            "\nCurrent Directory: " + currentDirectory +
+                            "\nBranch Root:       " + branchRootDir;
+                    SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+                }
+
+            } else if (PathUtil.isSubpath(wcProps.getSourceSubpath(), branchProps.getSourceSubpath())) {
+                //Example:
+                //  current wc branch is rooted at:  /child
+                //  new target branch is rooted at:  /
+                //Leave branchRootDir at '/child' so we'll only switch the child subdirectory.
+                //Adjust the branchPath from the root of the target branch to its child subdirectory.
+                String relativeSubpath = PathUtil.getPathTail(wcProps.getSourceSubpath(), branchProps.getSourceSubpath());
+                branchPath = SVNPathUtil.append(branchPath, relativeSubpath);
+
+                //This is only really useful for aligning the '/child' subdirectory to be the same
+                //workspace as its parent (eg. set the child back to 'trunk').
+                WorkingCopyInfo parentInfo;
+                try {
+                    parentInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir.getParentFile());
+                } catch (SVNException e) {
+                    parentInfo = null;
+                }
+                if (parentInfo == null || !branchRootDir.equals(new File(parentInfo.getRootDir(), relativeSubpath)) ||
+                    !parentInfo.getMetadataProperties().getBranchPath().equals(branchProps.getBranchPath())) {
+                    String errorMessage =
+                            "ERROR: Can't switch a subbranch to a top-level branch other than " + branchProps.getSourceName() + "." +
+                            "\nWorking Copy Root: <project>/" + wcProps.getSourceSubpath() +
+                            "\nBranch Root:       <project>/" + branchProps.getSourceSubpath();
+                    SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+                }
+
+            } else {
+                //Throw an error if the source subpath and working copy subpath aren't related.
+                String errorMessage =
+                        "ERROR: Can't switch to a directory outside of the working copy." +
+                        "\nWorking Copy Root: <project>/" + wcProps.getSourceSubpath() +
+                        "\nBranch Root:       <project>/" + branchProps.getSourceSubpath();
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+        }
+        logEnd("Get switch target directory");
+
+        //Validate branchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll 'svn switch' it later
+        logStart("Validating working copy directory status");
+        SVNStatusClient statusClient = env.getClientManager().getStatusClient();
+        SVNStatus branchRootDirStatus = statusClient.doStatus(branchRootDir, false);
+        if (branchRootDirStatus == null || branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Branch root must be a versioned directory.\nPath: " + branchRootDir), SVNLogType.CLIENT);
+        }
+        SVNStatusType branchRootDirStatusType = branchRootDirStatus.getContentsStatus();
+        if (branchRootDirStatusType != SVNStatusType.STATUS_NORMAL && branchRootDirStatusType != SVNStatusType.STATUS_MODIFIED) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Branch root directory may not have a status of " +
+                    branchRootDirStatusType + ".\nPath: " + branchRootDir), SVNLogType.CLIENT);
+        }
+        logEnd("Validating working copy directory status");
+
+        //Make sure all changes are committed before we run the switch
+        if (!env.isForce()) {
+            logStart("Check for local changes");
+            LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
+            statusClient.doStatus(branchRootDir, SVNRevision.UNDEFINED,
+                    SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
+            if (statusHandler.isChanged()) {
+                String errorMessage =
+                        "ERROR: Cannot switch branches while the working copy has local changes." +
+                        "\nRun 'svn status' to find changes or retry with --force";
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+            if (statusHandler.isSwitched()) {
+                String errorMessage =
+                        "ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root." +
+                        "\nRun 'sav info -R' to find nested workspaces or retry with --force";
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+            logEnd("Check for local changes");
+        }
+
         //Create the branch URL
         SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
 
@@ -167,25 +260,34 @@ public class SetBranch extends SAVCommand {
         updateClient.setEventHandler(new SVNNotifyPrinter(env));
         logEnd("Get update client");
         logStart("Do switch");
-        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
+        updateClient.doSwitch(branchRootDir, branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
                 SVNDepth.INFINITY, false, false);
         logEnd("Do switch");
 
         //Even if we are forcing the setbranch while there are uncommitted changes
         //Changes to the metadata file should never be ported from one branch to another
-        if (env.isForce()) {
+        File branchMetadataFile = new File(branchRootDir, wcProps.getMetadataFileName());
+        if (env.isForce() && branchMetadataFile.exists()) {
             //Revert any changes to the metadata file'
             logStart("Revert metadata file");
             SVNWCClient wcClient = env.getClientManager().getWCClient();
-            wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+            wcClient.doRevert(new File[] {branchMetadataFile}, SVNDepth.EMPTY, null);
             logEnd("Revert metadata file");
         }
 
         //Print out information about the new branch
         logStart("Print working copy info");
-        wcInfo = new WorkingCopyInfo(env.getClientManager());
+        wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);
         env.getOut().println("");
-        env.getOut().println(wcInfo);
+        wcInfo.println(env.getOut());
         logEnd("Print working copy info");
+    }
+
+    private String getBranchTreeRootPath(MetadataProperties props) {
+        //Return the path that is the source of all branches from this point.
+        // * For a user branch, that's just the real source of the user branch.
+        // * Since release branches are like a trunk for user branches made off of them, we want to return the path of the release branch.
+        // * For the trunk, there is no source root, so we want to return the branch path (which is trunk)
+        return props.getBranchType() == BranchType.USER_BRANCH ? props.getSourceRoot() : props.getBranchPath();
     }
 }

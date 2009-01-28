@@ -46,8 +46,9 @@ public abstract class TestSavanaUtil {
         savana.run(args);
 
         //Throw an exception if the script failed or printed anything to stderr.
-        String out = bufOut.toString();
-        String err = bufErr.toString();
+        //Normalize to unix-style eol so test cases see the same thing on *nix and Windows.
+        String out = bufOut.toString().replace(System.getProperty("line.separator"), "\n");
+        String err = bufErr.toString().replace(System.getProperty("line.separator"), "\n");
         if (!success[0] || err.length() > 0) {
             throw new SavanaScriptsTestException(out, err);
         }

@@ -73,7 +73,7 @@ public class ListChangesFromSource extends SAVCommand {
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
 
         //If there is no source (we are in the trunk)
-        if (wcProps.getSourcePath() == null) {
+        if (wcProps.getSourceRoot() == null) {
             String errorMessage = "Error: No source path found (you are probably in the TRUNK).";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }

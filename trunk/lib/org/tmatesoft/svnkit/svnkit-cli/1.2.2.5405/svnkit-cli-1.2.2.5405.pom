@@ -3,7 +3,7 @@
   <groupId>org.tmatesoft.svnkit</groupId>
   <artifactId>svnkit-cli</artifactId>
   <packaging>jar</packaging>
-  <version>1.2.1.5297</version>
+  <version>1.2.2.5405</version>
   <name>SVNKit CLI</name>
   <description>Command-line utilities for SVNKit, a pure Java Subversion library</description>
   <url>http://svnkit.com/</url>
@@ -19,7 +19,7 @@
     <dependency>
       <groupId>org.tmatesoft.svnkit</groupId>
       <artifactId>svnkit</artifactId>
-      <version>1.2.1.5297</version>
+      <version>1.2.2.5405-savana-patch</version>
     </dependency>
   </dependencies>
 </project>

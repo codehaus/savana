@@ -33,6 +33,6 @@ package org.codehaus.savana.scripts;
 public class CreateReleaseBranch extends CreateBranch {
 
     public CreateReleaseBranch() {
-        super("createreleasebranch", new String[]{"crb"}, false);
+        super("createreleasebranch", new String[]{"crb"}, false, false);
     }
 }

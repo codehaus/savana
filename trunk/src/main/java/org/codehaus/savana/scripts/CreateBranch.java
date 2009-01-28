@@ -52,7 +52,9 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusClient;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc.SVNUpdateClient;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -66,10 +68,12 @@ import java.util.List;
 public class CreateBranch extends SAVCommand {
 
     private final boolean _userBranch;
+    private final boolean _allowSubbranches;
 
-    public CreateBranch(String name, String[] aliases, boolean userBranch) {
+    public CreateBranch(String name, String[] aliases, boolean userBranch, boolean allowSubbranches) {
         super(name, aliases);
         _userBranch = userBranch;
+        _allowSubbranches = allowSubbranches;
     }
 
     @Override
@@ -93,20 +97,51 @@ public class CreateBranch extends SAVCommand {
         if (targets.isEmpty()) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
         }
-        if (targets.size() > 1) {
+        if (targets.size() > (_allowSubbranches ? 2 : 1)) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR), SVNLogType.CLIENT);
         }
         String branchName = targets.get(0);
+        boolean subpathSpecified = targets.size() > 1;
+        File startingDirectory = PathUtil.getValidatedAbsoluteFile(subpathSpecified ? targets.get(1) : "");
 
         //Validate the branch name doesn't have illegal characters
         if (StringUtils.containsAny(branchName, "/\\")) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR,
-                    "ERROR: Branch name may not contain slash characters: " + branchName), SVNLogType.CLIENT);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Branch name argument may not contain slash characters: " + branchName), SVNLogType.CLIENT);
         }
 
         //Get information about the current workspace from the metadata file
-        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager());
+        WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), startingDirectory);
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
+
+        //If creating a subbranch, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
+        File branchRootDir = subpathSpecified ? startingDirectory : wcInfo.getRootDir();
+        String relativeSubpathFromWC = PathUtil.getPathTail(branchRootDir, wcInfo.getRootDir());
+
+        //Prevent creating subbranches inside another user branch.  Nesting user branches creates usability
+        //headaches: for example, what happens to the working copy when the nested branch is promoted?
+        if (relativeSubpathFromWC.length() > 0 && wcProps.getBranchType() == BranchType.USER_BRANCH) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Cannot create a user branch in a subdirectory of another user branch." +
+                    "\nSwitch to 'trunk' or a release branch before creating the new branch."), SVNLogType.CLIENT);
+        }
+
+        //Validate branchRootDir exists in the working copy and isn't marked deleted, added, etc. since we'll
+        //'svn switch' it later.  The user may not bypass this check using --force.
+        logStart("Validating working copy directory status");
+        SVNStatusClient statusClient = env.getClientManager().getStatusClient();
+        SVNStatus branchRootDirStatus = statusClient.doStatus(branchRootDir, false);
+        if (branchRootDirStatus == null || branchRootDirStatus.getKind() != SVNNodeKind.DIR) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: New branch root must be a versioned directory.\nPath: " + branchRootDir), SVNLogType.CLIENT);
+        }
+        SVNStatusType branchRootDirStatusType = branchRootDirStatus.getContentsStatus();
+        if (branchRootDirStatusType != SVNStatusType.STATUS_NORMAL && branchRootDirStatusType != SVNStatusType.STATUS_MODIFIED) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: New branch root directory may not have a status of " +
+                    branchRootDirStatusType + ".\nPath" + branchRootDir), SVNLogType.CLIENT);
+        }
+        logEnd("Validating working copy directory status");
 
         //Don't allow the user to convert a working copy to a new branch if there are uncommitted changes, unless:
         //1. The force flag is enabled AND
@@ -114,15 +149,19 @@ public class CreateBranch extends SAVCommand {
         if (!env.isForce() || !_userBranch) {
             logStart("Looking for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
-            SVNStatusClient statusClient = env.getClientManager().getStatusClient();
-            statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.UNDEFINED,
+            statusClient.doStatus(branchRootDir, SVNRevision.UNDEFINED,
                     SVNDepth.INFINITY, false, true, false, false, statusHandler, null);
             logEnd("Looking for local changes");
             if (statusHandler.isChanged()) {
-                //TODO: Just list the changes here rather than making the user run 'svn status'
                 String errorMessage =
                         "ERROR: Cannot create a new branch while the working copy has local changes." +
-                        "\nRun 'svn status' to find changes";
+                        "\nRun 'svn status' to find changes or retry with --force";
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+            if (statusHandler.isSwitched()) {
+                String errorMessage =
+                        "ERROR: Cannot create a new branch while a subdirectory or file is switched relative to the root." +
+                        "\nRun 'sav info -R' to find nested workspaces or retry with --force";
                 SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
             }
         }
@@ -130,19 +169,34 @@ public class CreateBranch extends SAVCommand {
         //Get the project name from the working copy
         String projectName = wcProps.getProjectName();
 
-        //Get the branch type
+        //Get the branch type for the new branch
         BranchType branchType = _userBranch ? BranchType.USER_BRANCH : BranchType.RELEASE_BRANCH;
-
-        //Get the source path of the new branch based on the current working copy.
-        //WC=TRUNK          ==> SOURCE=TRUNK (Branch path of working copy)
-        //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
-        //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
-        String sourcePath = wcProps.getBranchTreeRootPath();
 
         //Get the branch path for the new branch
         String branchPath = _userBranch ?
-                            wcProps.getUserBranchPath(branchName) :
-                            wcProps.getReleaseBranchPath(branchName);
+                wcProps.getUserBranchPath(branchName) :
+                wcProps.getReleaseBranchPath(branchName);
+
+        //Get the source root and subpath of the new branch based on the current working copy.
+        //WC=TRUNK          ==> SOURCE=TRUNK (Branch path of working copy)
+        //WC=RELEASE BRANCH ==> SOURCE=RELEASE BRANCH (Branch path of working copy)
+        //WC=USER BRANCH    ==> SOURCE=SOURCE OF USER BRANCH (Source path of working copy)
+        String sourceRoot;
+        String sourceSubpath;
+        if (wcProps.getBranchType() == BranchType.USER_BRANCH) {
+            sourceRoot = wcProps.getSourceRoot();
+            sourceSubpath = wcProps.getSourceSubpath();
+        } else {
+            sourceRoot = wcProps.getBranchPath();
+            sourceSubpath = "";
+        }
+        //Append the path from the working copy root down to the new branch root to the new source subpath
+        sourceSubpath = SVNPathUtil.append(sourceSubpath, relativeSubpathFromWC);
+
+        //The new branch is a copy starting at the source root plus the source subpath.
+        String sourcePath = SVNPathUtil.append(sourceRoot, sourceSubpath);
+
+        String sourceMetadataFilePath = SVNPathUtil.append(sourceRoot, wcProps.getMetadataFileName());
 
         //Make sure the branch doesn't exist
         logStart("Check that the branch doesn't exist");
@@ -162,21 +216,21 @@ public class CreateBranch extends SAVCommand {
 
         //Figure out the paths to the parent dir of the branch and to the metadata file
         String branchParentPath = SVNPathUtil.removeTail(branchPath);
-        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcInfo.getMetadataFile().getName());
-
-        //Figure out which subpaths to the branch are missing
-        List<String> missingPaths = getMissingSubpaths(repository, branchParentPath);
+        String branchMetadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
 
         //Perform the copy
         try {
             long sourceRevision = repository.getLatestRevision();
+
+            //Figure out which subpaths to the branch are missing
+            List<String> missingPaths = getMissingSubpaths(repository, branchParentPath, sourceRevision);
 
             //Create an editor
             logStart("Get commit editor");
             String commitMessage = getCommitMessage(branchName);
             ISVNEditor editor = repository.getCommitEditor(commitMessage, null, false, env.getRevisionProperties(), null);
             SVNEditorHelper editorHelper = new SVNEditorHelper(editor);
-            editor.openRoot(-1);
+            editor.openRoot(sourceRevision);
             logEnd("Get commit editor");
 
             //Create any missing paths
@@ -187,7 +241,7 @@ public class CreateBranch extends SAVCommand {
                 editorHelper.openDir(pathParent);
 
                 //Add the path
-                editor.addDir(path, null, -1);
+                editor.addDir(path, null, sourceRevision);
                 editorHelper.addOpenedDir(path);
             }
             logEnd("Create missing subpaths");
@@ -197,15 +251,23 @@ public class CreateBranch extends SAVCommand {
             editor.addDir(branchPath, sourcePath, sourceRevision);
             editorHelper.addOpenedDir(branchPath);
 
+            //Copy the metdata file if we're copying from a subpath, not the top-level of the source path
+            if (sourceSubpath.length() > 0) {
+                editor.addFile(branchMetadataFilePath, sourceMetadataFilePath, sourceRevision);
+            }
+
             //Update all of the properties on the metadata file
             logStart("Create metadata file");
             editorHelper.openFile(branchMetadataFilePath);
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_PROJECT_NAME, SVNPropertyValue.create(projectName));
-            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_PATH, SVNPropertyValue.create(sourcePath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_PATH, SVNPropertyValue.create(branchPath));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_TYPE, SVNPropertyValue.create(branchType.getKeyword()));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_ROOT, SVNPropertyValue.create(sourceRoot));
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_ROOT_BACKWARD_COMPATIBLE, null);
+            editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_SOURCE_SUBPATH, sourceSubpath.length() > 0 ? SVNPropertyValue.create(sourceSubpath) : null);
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_BRANCH_POINT_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
             editor.changeFileProperty(branchMetadataFilePath, MetadataFile.PROP_LAST_MERGE_REVISION, SVNPropertyValue.create(Long.toString(sourceRevision)));
+            // if new properties are added where the value in the source branch and user branch are different, add them to MetadataFile.PROPS_DO_NOT_SYNC. 
             logEnd("Create metadata file");
 
             //Close and commit all of the edits
@@ -226,21 +288,20 @@ public class CreateBranch extends SAVCommand {
         SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
         SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
         updateClient.setEventHandler(new SVNNotifyPrinter(env));
-        updateClient.doSwitch(wcInfo.getRootDir(), branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD,
-                SVNDepth.INFINITY, false, false);
+        updateClient.doSwitch(branchRootDir, branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
         logEnd("Switch to new branch");
 
-        //Revert the changes to the metadata file
+        //Revert any merged changes to the metadata file
         logStart("Revert metadata file");
         SVNWCClient wcClient = env.getClientManager().getWCClient();
-        wcClient.doRevert(new File[] {wcInfo.getMetadataFile()}, SVNDepth.EMPTY, null);
+        wcClient.doRevert(new File[] {new File(branchRootDir, wcProps.getMetadataFileName())}, SVNDepth.EMPTY, null);
         logEnd("Revert metadata file");
 
-        wcInfo = new WorkingCopyInfo(env.getClientManager());
-        env.getOut().println(wcInfo);
+        wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);
+        wcInfo.println(env.getOut());
     }
 
-    private List<String> getMissingSubpaths(SVNRepository repository, String path)
+    private List<String> getMissingSubpaths(SVNRepository repository, String path, long revision)
             throws SVNException {
         logStart("Get Missing Subpaths");
         List<String> subpaths = PathUtil.getAllSubpaths(path);
@@ -248,7 +309,7 @@ public class CreateBranch extends SAVCommand {
         //Determine which subpaths don't exits
         List<String> missingSubpaths = new ArrayList<String>();
         for (String subpath : subpaths) {
-            if (repository.checkPath(subpath, -1) == SVNNodeKind.NONE) {
+            if (repository.checkPath(subpath, revision) == SVNNodeKind.NONE) {
                 missingSubpaths.add(subpath);
             }
         }

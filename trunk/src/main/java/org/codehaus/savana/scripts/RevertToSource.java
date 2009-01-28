@@ -31,6 +31,7 @@
 package org.codehaus.savana.scripts;
 
 import org.codehaus.savana.MetadataProperties;
+import org.codehaus.savana.PathUtil;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
@@ -46,13 +47,14 @@ import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNCopySource;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
+import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 public class RevertToSource extends SAVCommand {
@@ -63,7 +65,7 @@ public class RevertToSource extends SAVCommand {
 
     @Override
     protected Collection createSupportedOptions() {
-        Collection options = new LinkedList();
+        Collection options = new ArrayList();
         options.add(SVNOption.TARGETS);
         return options;
     }
@@ -83,20 +85,19 @@ public class RevertToSource extends SAVCommand {
         SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
 
         //If there is no source (we are in the trunk)
-        if (wcProps.getSourcePath() == null) {
+        if (wcProps.getSourceRoot() == null) {
             String errorMessage = "Error: No source path found (you are probably in the TRUNK).";
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
         }
 
         //For each target path...
         for (String target : targets) {
-            File path = new File(target);
+            File path = PathUtil.getValidatedAbsoluteFile(target);
 
             logStart("Build paths for " + path);
 
             //Find the relative file path from the working copy root
-            String relativePath = path.getAbsolutePath().substring(wcInfo.getRootDir().getAbsolutePath().length());
-            relativePath = SVNPathUtil.validateFilePath(relativePath);
+            String relativePath = PathUtil.getPathTail(path, wcInfo.getRootDir());
 
             //Find the relative path of the file in both the source and branch
             String relativeSourcePath = SVNPathUtil.append(wcProps.getSourcePath(), relativePath);
@@ -115,7 +116,20 @@ public class RevertToSource extends SAVCommand {
             logStart("Check source exists");
             boolean sourceExists = (repository.checkPath(relativeSourcePath, wcProps.getLastMergeRevision().getNumber()) != SVNNodeKind.NONE);
             logEnd("Check source exists");
-            logStart("Check source exists");
+
+            logStart("Check not a member of a subbranch");
+            SVNWCClient wcClient = env.getClientManager().getWCClient();
+            SVNInfo parentInfo = wcClient.doInfo(path.getParentFile(), SVNRevision.WORKING);
+            SVNURL branchActualURL = parentInfo.getURL().appendPath(path.getName(), false);
+            SVNURL branchExpectedURL = wcInfo.getRepositoryURL(relativeBranchPath);
+            if (!branchExpectedURL.equals(branchActualURL)) {
+                String errorMessage =
+                        "ERROR: Can't revert a file that is switched relative to the working copy." +
+                        "\nExpected Path URL: " + branchExpectedURL +
+                        "\nSwitched URL:      " + branchActualURL;
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+            logEnd("Check not a member of a subbranch");
 
             //Try to revert the working file.
             //We need to run revert for all of these states
@@ -133,7 +147,6 @@ public class RevertToSource extends SAVCommand {
             try {
                 //Revert any changes to the working copy
                 logStart("Do revert");
-                SVNWCClient wcClient = env.getClientManager().getWCClient();
                 wcClient.doRevert(new File[] {path}, SVNDepth.EMPTY, null);
                 logEnd("Do Revert");
             }
@@ -162,7 +175,6 @@ public class RevertToSource extends SAVCommand {
             } else if (!sourceExists && branchExists) {
                 //Delete the file from the branch
                 logStart("Do Delete");
-                SVNWCClient wcClient = env.getClientManager().getWCClient();
                 wcClient.doDelete(path, false, false, false);
                 env.getOut().println("D    " + path);
                 logEnd("Do Delete");
