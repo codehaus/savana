@@ -358,28 +358,28 @@ will apply to all Software in this distribution.
             <name>user</name>
             <subscribe>http://xircles.codehaus.org/lists/user@savana.codehaus.org/subscribe</subscribe>
             <unsubscribe>http://xircles.codehaus.org/lists/user@savana.codehaus.org/unsubscribe</unsubscribe>
-            <archive>http://archive.savana.codehaus.org/user</archive>
+            <archive>http://archive.savana.codehaus.org/lists/org.codehaus.savana.user/browse</archive>
             <post>user@savana.codehaus.org</post>
         </mailingList>
         <mailingList>
             <name>scm</name>
             <subscribe>http://xircles.codehaus.org/lists/scm@savana.codehaus.org/subscribe</subscribe>
             <unsubscribe>http://xircles.codehaus.org/lists/scm@savana.codehaus.org/unsubscribe</unsubscribe>
-            <archive>http://archive.savana.codehaus.org/scm</archive>
+            <archive>http://archive.savana.codehaus.org/lists/org.codehaus.savana.scm/browse</archive>
             <post>scm@savana.codehaus.org</post>
         </mailingList>
         <mailingList>
             <name>announce</name>
             <subscribe>http://xircles.codehaus.org/lists/announce@savana.codehaus.org/subscribe</subscribe>
             <unsubscribe>http://xircles.codehaus.org/lists/announce@savana.codehaus.org/unsubscribe</unsubscribe>
-            <archive>http://archive.savana.codehaus.org/announce</archive>
+            <archive>http://archive.savana.codehaus.org/lists/org.codehaus.savana.announce/browse</archive>
             <post>announce@savana.codehaus.org</post>
         </mailingList>
         <mailingList>
             <name>dev</name>
             <subscribe>http://xircles.codehaus.org/lists/dev@savana.codehaus.org/subscribe</subscribe>
             <unsubscribe>http://xircles.codehaus.org/lists/dev@savana.codehaus.org/unsubscribe</unsubscribe>
-            <archive>http://archive.savana.codehaus.org/dev</archive>
+            <archive>http://archive.savana.codehaus.org/lists/org.codehaus.savana.dev/browse</archive>
             <post>dev@savana.codehaus.org</post>
         </mailingList>
     </mailingLists>
