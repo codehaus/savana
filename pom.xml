@@ -1,39 +1,11 @@
-<!--
-Savana - Transactional Workspaces for Subversion
-Copyright (C) 2006  Bazaarvoice Inc.
-
-This file is part of Savana.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-Third party components of this software are provided or made available only subject
-to their respective licenses. The relevant components and corresponding
-licenses are listed in the "licenses" directory in this distribution. In any event,
-the disclaimer of warranty and limitation of liability provision in this Agreement
-will apply to all Software in this distribution.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.codehaus</groupId>
     <artifactId>savana</artifactId>
     <packaging>jar</packaging>
     <name>savana</name>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <description>
         Savana augments the capabilities of the Subversion version control system by adding the notion of
         Transactional Workspaces. Transactional Workspaces are, in Subversion terms, branches that are
@@ -190,9 +162,8 @@ will apply to all Software in this distribution.
                                      generated-site directory, applying those filters.  this way, the site "commands"
                                      reference file will have the same content as "sav help *", and we can maintain
                                      command documentation in a single place.
-                                <filter filtersfile="src/main/resources/org/codehaus/savana/scripts/commands.properties"/>
-                                <copy file="src/main/resources/org/codehaus/savana/scripts/commands.apt"
-                                      tofile="${project.build.directory}/generated-site/apt/commands.apt" filtering="on"/>
+                                <filter filtersfile="src/main/resources/org/codehaus/savana/scripts/commands.properties" />
+                                <copy file="src/main/resources/org/codehaus/savana/scripts/commands.apt" tofile="${project.build.directory}/generated-site/apt/commands.apt" filtering="on" />
                             </tasks>
                         </configuration>
                         <goals>
@@ -205,7 +176,7 @@ will apply to all Software in this distribution.
                         <inherited>false</inherited>
                         <configuration>
                             <tasks>
-                                <property name="version.dir" value="${project.build.directory}/classes/org/codehaus/savana"/>
+                                <property name="version.dir" value="${project.build.directory}/classes/org/codehaus/savana" />
                                 <mkdir dir="${version.dir}" />
                                 <exec executable="svn" output="${version.dir}/version.properties">
                                     <arg value="info" />
@@ -273,10 +244,10 @@ will apply to all Software in this distribution.
     </reporting>
 
     <scm>
-        <connection>scm:svn:http://svn.codehaus.org/savana/</connection>
-        <developerConnection>scm:svn:https://svn.codehaus.org/savana/</developerConnection>
+        <connection>scm:svn:http://svn.codehaus.org/savana/tags/savana-1.0</connection>
+        <developerConnection>scm:svn:https://svn.codehaus.org/savana/tags/savana-1.0</developerConnection>
         <tag>HEAD</tag>
-        <url>http://fisheye.codehaus.org/browse/savana</url>
+        <url>http://fisheye.codehaus.org/browse/savana/tags/savana-1.0</url>
     </scm>
 
     <developers>
