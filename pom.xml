@@ -5,7 +5,7 @@
     <artifactId>savana</artifactId>
     <packaging>jar</packaging>
     <name>savana</name>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <description>
         Savana augments the capabilities of the Subversion version control system by adding the notion of
         Transactional Workspaces. Transactional Workspaces are, in Subversion terms, branches that are
