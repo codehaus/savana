@@ -34,12 +34,12 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.savana.ListDirEntryHandler;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
+import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -65,7 +65,9 @@ public class ListBranches extends SAVCommand {
 
     @Override
     protected Collection createSupportedOptions() {
-        return new ArrayList();
+        Collection options = new ArrayList();
+        options.add(SVNOption.QUIET);
+        return options;
     }
 
     public void doRun() throws SVNException {
@@ -88,22 +90,21 @@ public class ListBranches extends SAVCommand {
                 wcProps.getReleaseBranchPath(null);
         SVNURL branchesRootURL = wcInfo.getRepositoryURL(branchesRootPath);
 
-        //Make sure the branch exists
-        logStart("Check if path exists");
-        SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
-        if (repository.checkPath(repository.getRepositoryPath(branchesRootPath), -1) != SVNNodeKind.DIR) {
-            String errorMessage =
-                    "ERROR: Could not find project." +
-                    "\nURL: " + branchesRootURL;
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
-        }
-        logEnd("Check if branch exists");
-
         //Find all of the directories at that path
         logStart("List branches");
         ListDirEntryHandler listDirEntryHandler = new ListDirEntryHandler(branchesRootURL);
-        env.getClientManager().getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
-                SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
+        try {
+            env.getClientManager().getLogClient().doList(branchesRootURL, SVNRevision.HEAD, SVNRevision.HEAD, false,
+                    SVNDepth.IMMEDIATES, SVNDirEntry.DIRENT_ALL, listDirEntryHandler);
+        } catch (SVNException e) {
+            //Rethrow with a different error message if the branch root doesn't exist
+            if (e.getErrorMessage() != null && e.getErrorMessage().getErrorCode() == SVNErrorCode.FS_NOT_FOUND) {
+                String errorMessage =
+                        "ERROR: Could not find project." +
+                        "\nURL: " + branchesRootURL;
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, errorMessage), SVNLogType.CLIENT);
+            }
+        }
         logEnd("List branches");
 
         logStart("Get branch names");
@@ -113,11 +114,20 @@ public class ListBranches extends SAVCommand {
         logStart("Filter branch names");
         //Create a regular expression from the branch name filter
         Pattern branchNamePattern = getBranchNamePattern(branchNameFilter);
+        //Get the location of the user and release branches parent
+        String userBranchesPath = wcProps.getUserBranchPath(null);
+        String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
 
-        //Remove any branch names that don't match the pattern
         for (Iterator<String> it = branchNames.iterator(); it.hasNext();) {
             String branchName = it.next();
+            //Remove any branch names that don't match the pattern
             if (!branchNamePattern.matcher(branchName).matches()) {
+                it.remove();
+                continue;
+            }
+            //Remove the release and user branches top-level directory, if they're here
+            String branchPath = SVNPathUtil.append(branchesRootPath, branchName);
+            if (branchPath.equals(releaseBranchesPath) || branchPath.equals(userBranchesPath)) {
                 it.remove();
             }
         }
@@ -125,9 +135,15 @@ public class ListBranches extends SAVCommand {
 
         //For each branch name...
         logStart("Print branch info");
-        if (branchNames.isEmpty()) {
+        if (env.isQuiet()) {
+            for (String branchName : branchNames) {
+                env.getOut().println(branchName);
+            }
+        } else if (branchNames.isEmpty()) {
             env.getOut().println("No branches were found.");
         } else {
+            SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
+
             env.getOut().println("------------------------------------------------------------------------------");
             env.getOut().println(
                     pad("Branch Name", 22) + " " +
@@ -138,15 +154,8 @@ public class ListBranches extends SAVCommand {
 
             env.getOut().println("------------------------------------------------------------------------------");
 
-            String userBranchesPath = wcProps.getUserBranchPath(null);
-            String releaseBranchesPath = wcProps.getReleaseBranchPath(null);
-
             for (String branchName : branchNames) {
-                //Skip the release and user branches top-level directory, if they're here
                 String branchPath = SVNPathUtil.append(branchesRootPath, branchName);
-                if (branchPath.equals(releaseBranchesPath) || branchPath.equals(userBranchesPath)) {
-                    continue;
-                }
 
                 //Get the metadata file
                 String metadataFilePath = SVNPathUtil.append(branchPath, wcProps.getMetadataFileName());
