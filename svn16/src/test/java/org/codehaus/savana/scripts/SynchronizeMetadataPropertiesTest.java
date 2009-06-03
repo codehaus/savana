@@ -77,7 +77,9 @@ public class SynchronizeMetadataPropertiesTest extends AbstractSavanaScriptsTest
         doSetProperty(WC1, MetadataFile.PROP_SAVANA_POLICIES, SVNPropertyValue.create("# generate conflict"));
         assertEquals(
                 "--- Merging r" + (changeset - 1) + " through r" + changeset + " into '.':\n" +
-                " C   .savana",
+                " C   .savana\n" +
+                "Summary of conflicts:\n" +
+                "  Property conflicts: 1",
                 savana(Synchronize.class, "--non-interactive"));
 
         // verify that the metadata file *is* marked conflicted

@@ -49,6 +49,8 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
         assertEquals(
                 "Skipped missing target: '" + new File("src/text/autos.txt") + "'\n" +
                 "Skipped missing target: '" + new File("src/text/animals.txt") + "'\n" +
+                "Summary of conflicts:\n" +
+                "  Skipped paths: 2\n" +
                 "\n" +
                 "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
                 "but have been deleted in the local user branch.  Merge the changes manually:\n" +
