@@ -13,10 +13,11 @@ import java.util.regex.Pattern;
 public class TestSvnUtil {
     private static final Logger _sLog = Logger.getLogger(TestSvnUtil.class.getName());
 
-    public static final int WC_FORMAT;
+    public static final int WC_FORMAT;       // SVNAdminAreaFactory.WC_FORMAT_*
 
-    public static final boolean REPO_PRE14;
-    public static final boolean REPO_PRE15;
+    public static final boolean REPO_PRE14;  // svn 1.3 or older (see SVNAdminClient.doCreateRepository pre14Compatible argument)
+    public static final boolean REPO_PRE15;  // svn 1.4 or older (see SVNAdminClient.doCreateRepository pre15Compatible argument)
+    public static final boolean REPO_PRE16;  // svn 1.5 or older (see SVNAdminClient.doCreateRepository pre16Compatible argument)
 
     static {
         // detect the version of the 'svn' command-line utility so the tests can create
@@ -42,9 +43,13 @@ public class TestSvnUtil {
             _sLog.info("Using svn 1.4-compatible working copy file format");
             WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_14;
 
-        } else {
+        } else if (clientMajor == 1 && clientMinor == 5) {
             _sLog.info("Using svn 1.5-compatible working copy file format");
             WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_15;
+
+        } else {
+            _sLog.info("Using svn 1.6-compatible working copy file format");
+            WC_FORMAT = SVNAdminAreaFactory.WC_FORMAT_16;
         }
 
         // detect the version of the 'svnlook' command-line utility used by the subversion
@@ -69,16 +74,25 @@ public class TestSvnUtil {
             _sLog.info("Using svn 1.3-compatible repository format");
             REPO_PRE14 = true;
             REPO_PRE15 = true;
+            REPO_PRE16 = true;
 
         } else if (serverMajor == 1 && serverMinor == 4) {
             _sLog.info("Using svn 1.4-compatible repository format");
             REPO_PRE14 = false;
             REPO_PRE15 = true;
+            REPO_PRE16 = true;
 
-        } else {
+        } else if (serverMajor == 1 && serverMinor == 5) {
             _sLog.info("Using svn 1.5-compatible repository format");
             REPO_PRE14 = false;
             REPO_PRE15 = false;
+            REPO_PRE16 = true;
+
+        } else {
+            _sLog.info("Using svn 1.6-compatible repository format");
+            REPO_PRE14 = false;
+            REPO_PRE15 = false;
+            REPO_PRE16 = false;
         }
     }
 }
