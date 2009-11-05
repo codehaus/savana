@@ -109,7 +109,6 @@ public class SAV extends AbstractSVNLauncher {
 
         //Savana-specific options
         SVNCommandLine.registerOption(SAVOption.CHANGE_ROOT);
-        SVNCommandLine.registerOption(SAVOption.TOP_LEVEL);
         SVNCommandLine.registerOption(SAVOption.PROJECT_NAME);
         SVNCommandLine.registerOption(SAVOption.TRUNK_PATH);
         SVNCommandLine.registerOption(SAVOption.RELEASE_BRANCHES_PATH);

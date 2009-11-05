@@ -67,9 +67,6 @@ import java.util.List;
 
 public class CreateBranch extends SAVCommand {
 
-    private static final String TOP_LEVEL_CONFLICT_ERROR
-            = "Argument '--topLevel' cannot be provided with a subbranch root argument.";
-
     private final boolean _userBranch;
     private final boolean _allowSubbranches;
 
@@ -88,7 +85,6 @@ public class CreateBranch extends SAVCommand {
     protected Collection createSupportedOptions() {
         Collection options = new ArrayList();
         options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes
-        options.add(SAVOption.TOP_LEVEL); // explicitly indicate that a top-level branch is desired
         options = SVNOption.addLogMessageOptions(options);
         return options;
     }
@@ -117,21 +113,6 @@ public class CreateBranch extends SAVCommand {
         //Get information about the current workspace from the metadata file
         WorkingCopyInfo wcInfo = new WorkingCopyInfo(env.getClientManager(), startingDirectory);
         MetadataProperties wcProps = wcInfo.getMetadataProperties();
-
-        //If the user asks that a branch be top level, but also provides a subbranch path, we can't determine
-        //what they want
-        if (subpathSpecified && env.isTopLevelExplicit()) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_MUTUALLY_EXCLUSIVE_ARGS,
-                                                         TOP_LEVEL_CONFLICT_ERROR),
-                                  SVNLogType.CLIENT);
-        }
-
-        //Validate this branch creation against the savana policies
-        if (wcProps.getSavanaPolicies() != null) {
-            logStart("Validate branch creation");
-            wcProps.getSavanaPolicies().validateCreateBranch(subpathSpecified, env.isTopLevelExplicit());
-            logEnd("Validate branch creation");
-        }
 
         //If creating a subbranch, root the new workspace at the specified argument.  Otherwise root it where .savana lives.
         File branchRootDir = subpathSpecified ? startingDirectory : wcInfo.getRootDir();
