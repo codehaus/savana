@@ -38,6 +38,7 @@ import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
 import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
+import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -74,7 +75,9 @@ public class Synchronize extends SAVCommand {
 
     @Override
     protected Collection createSupportedOptions() {
-        return new ArrayList();
+        Collection options = new ArrayList();
+        options.add(SVNOption.FORCE);
+        return options;
     }
 
     public void doRun() throws SVNException {
@@ -135,7 +138,7 @@ public class Synchronize extends SAVCommand {
             SkipTrackingNotifyPrinter notifyPrinter = new SkipTrackingNotifyPrinter(env);
             diffClient.setEventHandler(notifyPrinter);
             diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
-                    wcInfo.getRootDir(), SVNDepth.INFINITY, true, false, false, false);
+                    wcInfo.getRootDir(), SVNDepth.INFINITY, true, env.isForce(), false, false);
             logEnd("Do merge");
 
             //Update the last merge revision in the metadata file
