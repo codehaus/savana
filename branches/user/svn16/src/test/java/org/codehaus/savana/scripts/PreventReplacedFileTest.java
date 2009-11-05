@@ -85,45 +85,26 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                         branchPointRev),
                 savana(DiffChangesFromSource.class));
 
-        // in WC1 (user branch), sync animals.txt with the parent
+        // in WC1 (user branch), sync animals.txt with the parent.  it should fail with a tree conflict.
+        // (which is a useless error message.  but see http://svnbook.red-bean.com/nightly/en/svn.tour.treeconflicts.html)
+        try {
+            savana(Synchronize.class);
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: Attempt to add tree conflict that already exists at 'src/text/animals.txt'\n", e.getErr());
+        }
+        // let the user continue with --force if they know what they're doing (what are the odds of that?)
         assertEquals(
                 MessageFormat.format(
-                        "Skipped ''src/text/animals.txt''\n" +
                         "--- Merging r{0} through r{1} into ''.'':\n" +
-                        "C    src/text/animals.txt\n" +
-                        "Summary of conflicts:\n" +
-                        "  Text conflicts: 1\n" +
-                        "  Skipped paths: 1\n" +
-                        "\n" +
-                        "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
-                        "but have been deleted in the local user branch.  Merge the changes manually:\n" +
-                        "- src/text/animals.txt",
+                        "R    src/text/animals.txt",
                         branchPointRev + 1,
                         branchPointRev + 4),
-                savana(Synchronize.class));
+                savana(Synchronize.class, "--force"));
 
-        // verify that sync detected the conflict on animals.txt
-        assertEquals(
-                MessageFormat.format(
-                        "Index: src/text/animals.txt\n" +
-                        "===================================================================\n" +
-                        "--- src/text/animals.txt\t(.../{0})\t(revision {2})\n" +
-                        "+++ src/text/animals.txt\t(...{1})\t(working copy)\n" +
-                        "@@ -1 +1,7 @@\n" +
-                        "-grasshopper\n" +
-                        "\\ No newline at end of file\n" +
-                        "+<<<<<<< .working\n" +
-                        "+monkey\n" +
-                        "+dog\n" +
-                        "+rat\n" +
-                        "+dragon\n" +
-                        "+dragonfly=======\n" +
-                        "+grasshopper>>>>>>> .merge-right.r{2}",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
-                        branchPointRev + 4
-                ),
-                savana(DiffChangesFromSource.class));
+        // animals.txt is left in conflict, but with content that matches trunk.  so "sav diff" reports nothing.
+        assertEquals("", savana(DiffChangesFromSource.class));
     }
 
     public void testPromoteReplaced() throws Exception {

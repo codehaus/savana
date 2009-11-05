@@ -1,16 +1,16 @@
 package org.codehaus.savana.scripts;
 
 import org.apache.commons.io.FileUtils;
-import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.BranchType;
+import org.codehaus.savana.MetadataFile;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.wc.SVNPropertyData;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNPropertyData;
 
 import java.io.File;
 
