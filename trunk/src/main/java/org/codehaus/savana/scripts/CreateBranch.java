@@ -108,10 +108,14 @@ public class CreateBranch extends SAVCommand {
         boolean subpathSpecified = targets.size() > 1;
         File startingDirectory = PathUtil.getValidatedAbsoluteFile(subpathSpecified ? targets.get(1) : "");
 
-        //Validate the branch name doesn't have illegal characters
+        //Validate the branch name doesn't have illegal characters and is not 'trunk'
         if (StringUtils.containsAny(branchName, "/\\")) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: Branch name argument may not contain slash characters: " + branchName), SVNLogType.CLIENT);
+        }
+        if (BranchType.TRUNK.getKeyword().equalsIgnoreCase(branchName)) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
+                    "ERROR: Branch name may not be 'trunk'"), SVNLogType.CLIENT);
         }
 
         //Get information about the current workspace from the metadata file
