@@ -5,6 +5,7 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
 
 import java.io.File;
+import java.text.MessageFormat;
 
 /**
  * A Synchronize operation can skip changes where the changed file has been
@@ -26,6 +27,7 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
         String projectName = getClass().getSimpleName().toLowerCase() + "-sync";
         File WC1 = TestRepoUtil.setupProjectWithWC(REPO_URL, projectName, true, true, "test-project");
         File WC2 = TestRepoUtil.createTrunkWC(REPO_URL, projectName);
+        long branchPointRev = SVN.getStatusClient().doStatus(WC1, false).getRevision().getNumber();
 
         // in WC1, create a user branch
         cd(WC1);
@@ -34,26 +36,33 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
         // in WC2 (trunk), change the filet
         FileUtils.writeStringToFile(new File(WC2, "src/text/animals.txt"), "grasshopper");
         FileUtils.writeStringToFile(new File(WC2, "src/text/autos.txt"), "pinto");
-        SVN.getCommitClient().doCommit(
-                new File[]{WC2}, false, "trunk - modified files", null, null, false, false, SVNDepth.INFINITY);
+        long changeset1 = SVN.getCommitClient().doCommit(
+                new File[]{WC2}, false, "trunk - modified files", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
 
 
         // in WC1 (user branch), delete one file in svn and delete the second locally
         SVN.getWCClient().doDelete(new File(WC1, "src/text/animals.txt"), false, false);
-        SVN.getCommitClient().doCommit(
-                new File[]{WC1}, false, "user branch - deleted animals.txt", null, null, false, false, SVNDepth.INFINITY);
+        long changeset2 = SVN.getCommitClient().doCommit(
+                new File[]{WC1}, false, "user branch - deleted animals.txt", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
         new File(WC1, "src/text/autos.txt").delete();
 
         // in WC1 (user branch), sync
         cd(WC1);
         assertEquals(
-                "Skipped missing target: '" + new File("src/text/autos.txt") + "'\n" +
-                "Skipped missing target: '" + new File("src/text/animals.txt") + "'\n" +
-                "\n" +
-                "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
-                "but have been deleted in the local user branch.  Merge the changes manually:\n" +
-                "- " + new File("src/text/animals.txt") + "\n" +
-                "- " + new File("src/text/autos.txt"),
+                MessageFormat.format(
+                        "Skipped missing target: ''src/text/autos.txt''\n" +
+                        "--- Merging r{0} through r{1} into ''.'':\n" +
+                        "   C src/text/animals.txt\n" +
+                        "Summary of conflicts:\n" +
+                        "  Tree conflicts: 1\n" +
+                        "  Skipped paths: 1\n" +
+                        "\n" +
+                        "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
+                        "but have been deleted in the local user branch.  Merge the changes manually:\n" +
+                        "- {2}",
+                        branchPointRev + 1,
+                        branchPointRev + 3,
+                        new File("src/text/autos.txt")),
                 savana(Synchronize.class));
 
         assertEquals(
