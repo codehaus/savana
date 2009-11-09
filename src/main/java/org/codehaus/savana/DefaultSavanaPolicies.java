@@ -51,4 +51,8 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
     public void validateCreateBranch(boolean createSubBranch, boolean explicitTopLevel) throws SVNException {
         new PolicyCreateBranch(_properties).validateCreateBranch(createSubBranch, explicitTopLevel);
     }
+
+    public boolean shouldDeleteSvnMergeProperty() {
+        return new PolicySvnMergeProperty(_properties).shouldDeleteSvnMergeProperty();
+    }
 }
