@@ -61,7 +61,7 @@ public class DiffChangesFromSource extends SAVCommand {
     @Override
     protected Collection createSupportedOptions() {
         ArrayList options = new ArrayList();
-//        options.add(SVNOption.DIFF_CMD);  // doesn't work correctly in SVNKit v1.2.2, throws NPE if changeset has an added file
+        options.add(SVNOption.DIFF_CMD);
         options.add(SVNOption.EXTENSIONS);
         options.add(SVNOption.NO_DIFF_DELETED);
         options.add(SVNOption.FORCE);
@@ -94,10 +94,6 @@ public class DiffChangesFromSource extends SAVCommand {
         SVNDiffClient diffClient = env.getClientManager().getDiffClient();
         final String metadataFile = wcInfo.getMetadataFile().getAbsolutePath();
         DefaultSVNDiffGenerator diffGenerator = new DefaultSVNDiffGenerator() {
-            @Override
-            protected String getExternalDiffCommand() {
-                return null;  // doesn't work correctly in SVNKit v1.2.2, throws NPE if changeset has an added file
-            }
             @Override
             public void displayPropDiff(String path, SVNProperties baseProps, SVNProperties diff, OutputStream result) throws SVNException {
                 // ignore changes in the metadata file since it will be reverted on promote

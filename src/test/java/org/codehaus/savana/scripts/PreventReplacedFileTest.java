@@ -15,6 +15,13 @@ import java.text.MessageFormat;
  * - history on the replaced files is lost.
  * - synchronizing replaced files into a user workspace can get unexpected merge
  *   results that effectively throw away changes.
+ *
+ * UPDATE 2009-06-03: In initial tests it appears that SVNKit 1.3.0 (and Subversion 1.6)
+ * fix the underlying problem that required preventing replaced files: sav sync/svn merge
+ * now appears to sync changes in replaced files correctly.  So we may be able to remove
+ * the special handling around replaced files.  TODO: verify that the fix works with all
+ * versions of the Subversion server, ie. updating to SVNKit 1.3.0 is sufficient and
+ * doesn't require upgrading the server to SVN 1.6.
  */
 public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
 
@@ -78,10 +85,25 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                         branchPointRev),
                 savana(DiffChangesFromSource.class));
 
-        // in WC1 (user branch), sync animals.txt with the parent
-        savana(Synchronize.class);
+        // in WC1 (user branch), sync animals.txt with the parent.  it should fail with a tree conflict.
+        // (which is a useless error message.  but see http://svnbook.red-bean.com/nightly/en/svn.tour.treeconflicts.html)
+        try {
+            savana(Synchronize.class);
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: Attempt to add tree conflict that already exists at 'src/text/animals.txt'\n", e.getErr());
+        }
+        // let the user continue with --force if they know what they're doing (what are the odds of that?)
+        assertEquals(
+                MessageFormat.format(
+                        "--- Merging r{0} through r{1} into ''.'':\n" +
+                        "R    src/text/animals.txt",
+                        branchPointRev + 1,
+                        branchPointRev + 4),
+                savana(Synchronize.class, "--force"));
 
-        // verify that sync (incorrectly) threw away the addition of 'dragonfly'
+        // animals.txt is left in conflict, but with content that matches trunk.  so "sav diff" reports nothing.
         assertEquals("", savana(DiffChangesFromSource.class));
     }
 
