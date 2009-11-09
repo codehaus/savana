@@ -27,7 +27,7 @@
             included libraries - it has the standard maven layout, so once we have
             the dependencies available in a real repository, we can remove them from
             the source distribution, and remove this repository declaration.  The lib
-            files are from http://www.svnkit.com/org.tmatesoft.svn_1.3.0.maven.zip.
+            files are from http://www.svnkit.com/org.tmatesoft.svn_1.3.1.maven.zip.
             Sources can be installed to the local repository using these commands:
                mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit/1.3.1.6109/svnkit-1.3.1.6109-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit/1.3.1.6109/svnkit-1.3.1.6109.pom -Dclassifier=sources
                mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.1.6109/svnkit-cli-1.3.1.6109-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.1.6109/svnkit-cli-1.3.1.6109.pom -Dclassifier=sources
