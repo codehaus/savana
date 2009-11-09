@@ -38,7 +38,10 @@ public abstract class TestSavanaUtil {
         String scriptName = scriptClass.newInstance().getName();
         args = (String[]) ArrayUtils.addAll(new String[]{scriptName}, args);
         //Ignore the user's local subversion configuration files
-        args = (String[]) ArrayUtils.addAll(args, new String[]{"--config-dir", TestRepoUtil.SUBVERSION_CONFIG_DIR.getPath()});
+        args = (String[]) ArrayUtils.addAll(args, new String[]{
+                "--config-dir", TestRepoUtil.SUBVERSION_CONFIG_DIR.getPath(),
+                "--non-interactive",
+        });
 
         //Run the command
         savana.setOut(new PrintStream(bufOut, true));
