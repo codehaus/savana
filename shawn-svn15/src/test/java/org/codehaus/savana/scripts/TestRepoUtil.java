@@ -81,7 +81,7 @@ public abstract class TestRepoUtil {
         File repoDir = TestDirUtil.createTempDir(nextRepositoryName());
         SVNAdminClient adminClient = SVN.getAdminClient();
         SVNURL repoUrl = adminClient.doCreateRepository(repoDir, null, false, true,
-                TestSvnUtil.REPO_PRE14, TestSvnUtil.REPO_PRE15);
+                TestSvnUtil.REPO_PRE14, TestSvnUtil.REPO_PRE15, TestSvnUtil.REPO_PRE16);
 
         // install savana preferred subversion hooks into the test repository
         if (installHooks) {
