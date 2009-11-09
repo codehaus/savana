@@ -43,4 +43,6 @@ public interface ISavanaPolicies {
     void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException;
 
     void validateCreateBranch(boolean createSubBranch, boolean explicitTopLevel) throws SVNException;
+
+    boolean shouldDeleteSvnMergeProperty();
 }

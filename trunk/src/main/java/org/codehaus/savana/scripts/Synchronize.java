@@ -141,6 +141,13 @@ public class Synchronize extends SAVCommand {
                     wcInfo.getRootDir(), SVNDepth.INFINITY, true, env.isForce(), false, false);
             logEnd("Do merge");
 
+            //Remove subversion 1.5 svn:mergeinfo since Savana does its own merge tracking
+            if (wcProps.getSavanaPolicies() != null && wcProps.getSavanaPolicies().shouldDeleteSvnMergeProperty()) {
+                logStart("Remove svn:mergeinfo property");
+                wcClient.doSetProperty(wcInfo.getRootDir(), "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
+                logEnd("Remove svn:mergeinfo property");
+            }
+
             //Update the last merge revision in the metadata file
             logStart("Update last merge revision");
             wcClient.doSetProperty(wcInfo.getMetadataFile(), MetadataFile.PROP_LAST_MERGE_REVISION,

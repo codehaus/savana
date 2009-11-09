@@ -1,8 +1,9 @@
 package org.codehaus.savana;
 
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.apache.commons.lang.BooleanUtils;
 import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -29,7 +30,7 @@ public class PolicyCreateBranch {
 
     public void validateCreateBranch(boolean createSubBranch, boolean explicitTopLevel) throws SVNException {
         if (!createSubBranch && !explicitTopLevel
-                && "true".equalsIgnoreCase(_properties.getProperty("createbranch.toplevel_must_be_explicit"))) {
+                && BooleanUtils.toBoolean(_properties.getProperty("createbranch.toplevel_must_be_explicit"))) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS,
                                                          TOP_LEVEL_MISSING_ERROR),
                                   SVNLogType.CLIENT);
