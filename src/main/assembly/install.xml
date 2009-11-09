@@ -61,6 +61,11 @@ will apply to all Software in this distribution.
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>src/main/etc</directory>
+            <outputDirectory>/etc</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>src/main/svn-hooks</directory>
             <outputDirectory>/svn-hooks</outputDirectory>
             <fileMode>0755</fileMode>
