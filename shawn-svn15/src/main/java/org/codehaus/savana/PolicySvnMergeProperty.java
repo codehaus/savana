@@ -8,7 +8,7 @@ import java.util.Properties;
  * Since Savana keeps track of merge history within user branches, the
  * "svn:mergeinfo" property added in Subversion 1.5 isn't strictly required,
  * and with the amount of merging that can happen in a project with
- * lost of user branch and promote activity the changes to "svn:mergeinfo"
+ * lots of user branch and promote activity the changes to "svn:mergeinfo"
  * can get distracting when viewing changesets or synchronizing changes.
  * <p>
  * Turning on this policy tells Savana to delete "svn:mergeinfo" at the
