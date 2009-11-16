@@ -58,6 +58,7 @@ import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -65,6 +66,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class Synchronize extends SAVCommand {
@@ -111,7 +113,7 @@ public class Synchronize extends SAVCommand {
         //Get metadata properties on the source to check the Savana Policies on the source
         logStart("Get metadata for the source branch");
         SVNRepository repository = env.getClientManager().createRepository(wcInfo.getRepositoryURL(), false);
-        new MetadataProperties(repository, wcProps.getSourceMetadataFilePath(), -1);
+        MetadataProperties sourceProps = new MetadataProperties(repository, wcProps.getSourceMetadataFilePath(), -1);
         logEnd("Get metadata for the source branch");
 
         //Find the revision for the HEAD of the repository
@@ -135,16 +137,20 @@ public class Synchronize extends SAVCommand {
             env.setConflictHandler(new SynchronizeConflictHandler(env.getConflictHandler(), wcInfo.getMetadataFile()));
             SVNDiffClient diffClient = env.getClientManager().getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-            SkipTrackingNotifyPrinter notifyPrinter = new SkipTrackingNotifyPrinter(env);
+            SyncNotifyPrinter notifyPrinter = new SyncNotifyPrinter(env);
             diffClient.setEventHandler(notifyPrinter);
             diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
                     wcInfo.getRootDir(), SVNDepth.INFINITY, true, env.isForce(), false, false);
             logEnd("Do merge");
 
             //Remove subversion 1.5 svn:mergeinfo since Savana does its own merge tracking
-            if (wcProps.getSavanaPolicies() != null && wcProps.getSavanaPolicies().shouldDeleteSvnMergeProperty()) {
+            if (sourceProps.getSavanaPolicies() != null && sourceProps.getSavanaPolicies().shouldDeleteSvnMergeProperty()) {
                 logStart("Remove svn:mergeinfo property");
-                wcClient.doSetProperty(wcInfo.getRootDir(), "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
+                deleteSvnMergeInfo(wcClient, wcInfo.getRootDir());
+                // for files that had changed properties, some might have been svn:mergeinfo properties, so delete them just in case.
+                for (File file : notifyPrinter.getPropertiesChangedFiles()) {
+                    deleteSvnMergeInfo(wcClient, file);
+                }
                 logEnd("Remove svn:mergeinfo property");
             }
 
@@ -173,18 +179,30 @@ public class Synchronize extends SAVCommand {
         }
     }
 
+    private void deleteSvnMergeInfo(SVNWCClient wcClient, File file) throws SVNException {
+        if (wcClient.doGetProperty(file, "svn:mergeinfo", SVNRevision.WORKING, SVNRevision.WORKING) != null) {
+            log("Deleting svn:mergeinfo property on file: " + file);
+            wcClient.doSetProperty(file, "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
+        }
+    }
+
     /**
      * Extends the standard SVNNotifyPrinter and keeps a list of skipped files.
      */
-    private static class SkipTrackingNotifyPrinter extends SVNNotifyPrinter {
+    private static class SyncNotifyPrinter extends SVNNotifyPrinter {
         private final List<File> _skippedFiles = new ArrayList<File>();
+        private final Collection<File> _propertiesChangedFiles = new LinkedHashSet<File>();
 
-        private SkipTrackingNotifyPrinter(SVNCommandEnvironment env) {
+        private SyncNotifyPrinter(SVNCommandEnvironment env) {
             super(env);
         }
 
         public List<File> getSkippedFiles() {
             return _skippedFiles;
+        }
+
+        public Collection<File> getPropertiesChangedFiles() {
+            return _propertiesChangedFiles;
         }
 
         @Override
@@ -193,6 +211,11 @@ public class Synchronize extends SAVCommand {
 
             if (event.getAction() == SVNEventAction.SKIP) {
                 _skippedFiles.add(event.getFile());
+            }
+            if (event.getPropertiesStatus() != SVNStatusType.UNKNOWN &&
+                event.getPropertiesStatus() != SVNStatusType.UNCHANGED &&
+                event.getPropertiesStatus() != SVNStatusType.INAPPLICABLE) {
+                _propertiesChangedFiles.add(event.getFile());
             }
         }
     }
