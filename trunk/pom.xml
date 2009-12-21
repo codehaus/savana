@@ -5,7 +5,7 @@
     <artifactId>savana</artifactId>
     <packaging>jar</packaging>
     <name>savana</name>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <description>
         Savana augments the capabilities of the Subversion version control system by adding the notion of
         Transactional Workspaces. Transactional Workspaces are, in Subversion terms, branches that are
@@ -244,9 +244,9 @@
     </reporting>
 
     <scm>
-        <connection>scm:svn:http://svn.codehaus.org/savana/tags/savana-1.1</connection>
-        <developerConnection>scm:svn:https://svn.codehaus.org/savana/tags/savana-1.1</developerConnection>
-        <url>http://fisheye.codehaus.org/browse/savana/tags/savana-1.1</url>
+        <connection>scm:svn:http://svn.codehaus.org/savana/tags/savana-1.0</connection>
+        <developerConnection>scm:svn:https://svn.codehaus.org/savana/tags/savana-1.0</developerConnection>
+        <url>http://fisheye.codehaus.org/browse/savana/tags/savana-1.0</url>
     </scm>
 
     <developers>
