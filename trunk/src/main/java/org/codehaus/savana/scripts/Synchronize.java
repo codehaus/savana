@@ -180,7 +180,7 @@ public class Synchronize extends SAVCommand {
     }
 
     private void deleteSvnMergeInfo(SVNWCClient wcClient, File file) throws SVNException {
-        if (wcClient.doGetProperty(file, "svn:mergeinfo", SVNRevision.WORKING, SVNRevision.WORKING) != null) {
+        if (file.exists() && wcClient.doGetProperty(file, "svn:mergeinfo", SVNRevision.WORKING, SVNRevision.WORKING) != null) {
             log("Deleting svn:mergeinfo property on file: " + file);
             wcClient.doSetProperty(file, "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
         }
