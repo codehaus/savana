@@ -6,6 +6,14 @@ Download Project Artifacts
 
 * Release Versions
 
+  * <<1.1>>
+
+    * {{{http://repository.codehaus.org/org/codehaus/savana/1.1/savana-1.1-install.tar.gz}installer}}
+      ({{{http://repository.codehaus.org/org/codehaus/savana/1.1/savana-1.1-install.tar.gz.md5}MD5}})
+
+    * {{{http://repository.codehaus.org/org/codehaus/savana/1.1/savana-1.1.jar}jar}}
+      ({{{http://repository.codehaus.org/org/codehaus/savana/1.1/savana-1.1.jar.md5}MD5}})
+
   * <<1.0>>
 
     * {{{http://repository.codehaus.org/org/codehaus/savana/1.0/savana-1.0-install.tar.gz}installer}}
@@ -21,29 +29,15 @@ Download Project Artifacts
 
 * Snapshot Versions
 
-  * <<1.0-SNAPSHOT>>
+The bleeding edge of development can be downloaded as the most recent SNAPSHOT version:
 
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.0-SNAPSHOT/savana-1.0-SNAPSHOT-install.tar.gz}installer}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.0-SNAPSHOT/savana-1.0-SNAPSHOT-install.tar.gz.md5}MD5}})
+  * <<1.2-SNAPSHOT>>
 
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.0-SNAPSHOT/savana-1.0-SNAPSHOT.jar}jar}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.0-SNAPSHOT/savana-1.0-SNAPSHOT.jar.md5}MD5}})
+    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.2-SNAPSHOT/savana-1.2-SNAPSHOT-install.tar.gz}installer}}
+      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.2-SNAPSHOT/savana-1.2-SNAPSHOT-install.tar.gz.md5}MD5}})
 
-  * <<0.9.1-SNAPSHOT>>
-
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9.1-SNAPSHOT/savana-0.9.1-SNAPSHOT-install.tar.gz}installer}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9.1-SNAPSHOT/savana-0.9.1-SNAPSHOT-install.tar.gz.md5}MD5}})
-
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9.1-SNAPSHOT/savana-0.9.1-SNAPSHOT.jar}jar}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9.1-SNAPSHOT/savana-0.9.1-SNAPSHOT.jar.md5}MD5}})
-
-  * <<0.9-SNAPSHOT>>
-
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT-install.tar.gz}installer}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT-install.tar.gz.md5}MD5}})
-
-    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT.jar}jar}}
-      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/0.9-SNAPSHOT/savana-0.9-SNAPSHOT.jar.md5}MD5}})
+    * {{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.2-SNAPSHOT/savana-1.2-SNAPSHOT.jar}jar}}
+      ({{{http://snapshots.repository.codehaus.org/org/codehaus/savana/1.2-SNAPSHOT/savana-1.2-SNAPSHOT.jar.md5}MD5}})
 
   []
 
