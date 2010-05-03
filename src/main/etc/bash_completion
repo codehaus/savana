@@ -96,7 +96,7 @@ _sav()
 				_filedir -d
 				return 0;
 				;;
-			-@(F|-file|-targets))
+			-F|--file|--targets)
 				_filedir
 				return 0;
 				;;
@@ -106,7 +106,7 @@ _sav()
 					-- "$cur" ) )
 				return 0;
 				;;
-			--@(editor|diff|diff3)-cmd)
+			--editor-cmd|--diff-cmd|--diff3-cmd)
 				COMP_WORDS=(COMP_WORDS[0] $cur)
 				COMP_CWORD=1
 				_command
@@ -119,47 +119,47 @@ _sav()
 		if [[ "$cur" == -* ]]; then
 			# possible options for the command
 			case $command in
-			    @(createmetadatafile|bootstrap))
+			    createmetadatafile|bootstrap)
 			        options='--projectName --savanaPoliciesFile \
 			            --trunkPath --releaseBranchesPath --userBranchesPath \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 			        ;;
-				@(createreleasebranch|crb|createuserbranch|cb|cub))
+				createreleasebranch|crb|createuserbranch|cb|cub)
 				    options='--force -m --message -F --file \
 				        --force-log --editor-cmd --encoding --with-revprop \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 					;;
-				@(deleteuserbranch|promote))
+				deleteuserbranch|promote)
 				    options='-m --message -F --file \
 				        --force-log --editor-cmd --encoding --with-revprop \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 					;;
-		        @(diffchangesfromsource|diff))
+		        diffchangesfromsource|diff)
 		            options='-X --extensions --no-diff-deleted --force \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
 		        help)
 		            options=''
 		            ;;
-		        @(listchangesfromsource|lc))
+		        listchangesfromsource|lc)
 		            options='--username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
-		        @(listreleasebranches|lrb|listuserbranches|lb|lub))
+		        listreleasebranches|lrb|listuserbranches|lb|lub)
 		            options='--quiet \
 		                --username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
-		        @(listworkingcopyinfo|wci|info))
+		        listworkingcopyinfo|wci|info)
 		            options='-R --recursive --targets --depth --config-dir'
 		            ;;
-		        @(reverttosource|rs|revert))
+		        reverttosource|rs|revert)
 		            options='--targets \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
-		        @(setbranch|sb))
+		        setbranch|sb)
 		            options='--force --changeRoot \
 					    --username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
-		        @(synchronize|sync))
+		        synchronize|sync)
 		            options='--force \
 		                --username --password --no-auth-cache --non-interactive --config-dir'
 		            ;;
