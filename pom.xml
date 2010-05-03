@@ -18,24 +18,21 @@
             <!--
             The following dependencies:
                GROUPID          ARTIFACTID      VERSIONS
-               org.tmatesoft    svnkit          1.3.1.6109
-               org.tmatesoft    svnkit-cli      1.3.1.6109
-               com.sun.jna      jna             3.1.0
-               com.trilead      trilead-ssh2    build213-svnkit-1.3-patch
+               org.tmatesoft    svnkit-cli      1.3.2
             are not available through any public repo, so we have included them here
             in a "lib" directory, and declared that directory as a repository for
             included libraries - it has the standard maven layout, so once we have
             the dependencies available in a real repository, we can remove them from
-            the source distribution, and remove this repository declaration.  The lib
-            files are from http://www.svnkit.com/org.tmatesoft.svn_1.3.1.maven.zip.
+            the source distribution, and remove this repository declaration.
             Sources can be installed to the local repository using these commands:
-               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit/1.3.1.6109/svnkit-1.3.1.6109-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit/1.3.1.6109/svnkit-1.3.1.6109.pom -Dclassifier=sources
-               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.1.6109/svnkit-cli-1.3.1.6109-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.1.6109/svnkit-cli-1.3.1.6109.pom -Dclassifier=sources
-               mvn install:install-file -Dfile=lib/com/sun/jna/jna/3.1.0/jna-3.1.0-sources.jar -DpomFile=lib/com/sun/jna/jna/3.1.0/jna-3.1.0.pom -Dclassifier=sources
-               mvn install:install-file -Dfile=lib/com/trilead/trilead-ssh2/build213-svnkit-1.3-patch/trilead-ssh2-build213-svnkit-1.3-patch-sources.jar -DpomFile=lib/com/trilead/trilead-ssh2/build213-svnkit-1.3-patch/trilead-ssh2-build213-svnkit-1.3-patch.pom -Dclassifier=sources
+               mvn install:install-file -Dfile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.2/svnkit-cli-1.3.2-sources.jar -DpomFile=lib/org/tmatesoft/svnkit/svnkit-cli/1.3.2/svnkit-cli-1.3.2.pom -Dclassifier=sources
             -->
             <id>included-libraries</id>
             <url>file://lib</url>
+        </repository>
+        <repository>
+            <id>svnkit.com</id>
+            <url>http://maven.svnkit.com/maven2/</url>
         </repository>
     </repositories>
 
@@ -43,26 +40,14 @@
         <dependency>
             <groupId>org.tmatesoft.svnkit</groupId>
             <artifactId>svnkit</artifactId>
-            <version>1.3.1.6109</version>
+            <version>1.3.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.tmatesoft.svnkit</groupId>
             <artifactId>svnkit-cli</artifactId>
-            <version>1.3.1.6109</version>
+            <version>1.3.2</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>3.1.0</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.trilead</groupId>
-            <artifactId>trilead-ssh2</artifactId>
-            <version>build213-svnkit-1.3-patch</version>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
