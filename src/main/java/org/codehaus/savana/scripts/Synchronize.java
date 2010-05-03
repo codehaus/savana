@@ -32,12 +32,11 @@ package org.codehaus.savana.scripts;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.codehaus.savana.BranchType;
+import org.codehaus.savana.MergeNotifyPrinter;
 import org.codehaus.savana.MetadataFile;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.cli.svn.SVNCommandEnvironment;
-import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -54,11 +53,8 @@ import org.tmatesoft.svn.core.wc.SVNConflictChoice;
 import org.tmatesoft.svn.core.wc.SVNConflictDescription;
 import org.tmatesoft.svn.core.wc.SVNConflictResult;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
-import org.tmatesoft.svn.core.wc.SVNEvent;
-import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -66,7 +62,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 public class Synchronize extends SAVCommand {
@@ -137,7 +132,7 @@ public class Synchronize extends SAVCommand {
             env.setConflictHandler(new SynchronizeConflictHandler(env.getConflictHandler(), wcInfo.getMetadataFile()));
             SVNDiffClient diffClient = env.getClientManager().getDiffClient();
             diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-            SyncNotifyPrinter notifyPrinter = new SyncNotifyPrinter(env);
+            MergeNotifyPrinter notifyPrinter = new MergeNotifyPrinter(env);
             diffClient.setEventHandler(notifyPrinter);
             diffClient.doMerge(sourceURL, wcProps.getLastMergeRevision(), sourceURL, latestRevision,
                     wcInfo.getRootDir(), SVNDepth.INFINITY, true, env.isForce(), false, false);
@@ -183,40 +178,6 @@ public class Synchronize extends SAVCommand {
         if (file.exists() && wcClient.doGetProperty(file, "svn:mergeinfo", SVNRevision.WORKING, SVNRevision.WORKING) != null) {
             log("Deleting svn:mergeinfo property on file: " + file);
             wcClient.doSetProperty(file, "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
-        }
-    }
-
-    /**
-     * Extends the standard SVNNotifyPrinter and keeps a list of skipped files.
-     */
-    private static class SyncNotifyPrinter extends SVNNotifyPrinter {
-        private final List<File> _skippedFiles = new ArrayList<File>();
-        private final Collection<File> _propertiesChangedFiles = new LinkedHashSet<File>();
-
-        private SyncNotifyPrinter(SVNCommandEnvironment env) {
-            super(env);
-        }
-
-        public List<File> getSkippedFiles() {
-            return _skippedFiles;
-        }
-
-        public Collection<File> getPropertiesChangedFiles() {
-            return _propertiesChangedFiles;
-        }
-
-        @Override
-        public void handleEvent(SVNEvent event, double progress) throws SVNException {
-            super.handleEvent(event, progress);
-
-            if (event.getAction() == SVNEventAction.SKIP) {
-                _skippedFiles.add(event.getFile());
-            }
-            if (event.getPropertiesStatus() != SVNStatusType.UNKNOWN &&
-                event.getPropertiesStatus() != SVNStatusType.UNCHANGED &&
-                event.getPropertiesStatus() != SVNStatusType.INAPPLICABLE) {
-                _propertiesChangedFiles.add(event.getFile());
-            }
         }
     }
 

@@ -33,10 +33,10 @@ package org.codehaus.savana.scripts;
 import org.codehaus.savana.BranchType;
 import org.codehaus.savana.FilteredStatusHandler;
 import org.codehaus.savana.LocalChangeStatusHandler;
+import org.codehaus.savana.MergeNotifyPrinter;
 import org.codehaus.savana.MetadataProperties;
 import org.codehaus.savana.WorkingCopyInfo;
 import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.cli.svn.SVNNotifyPrinter;
 import org.tmatesoft.svn.cli.svn.SVNOption;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -195,7 +195,8 @@ public class Promote extends SAVCommand {
         logStart("Do merge");
         SVNDiffClient diffClient = env.getClientManager().getDiffClient();
         diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
-        diffClient.setEventHandler(new SVNNotifyPrinter(env));
+        MergeNotifyPrinter notifyPrinter = new MergeNotifyPrinter(env);
+        diffClient.setEventHandler(notifyPrinter);
         diffClient.doMerge(sourceURL, lastMergeRevision, branchURL, lastBranchCommitRevision,
                 wcInfo.getRootDir(), SVNDepth.INFINITY, true, false, false, false);
         logEnd("Do merge");
@@ -203,7 +204,11 @@ public class Promote extends SAVCommand {
         //Remove subversion 1.5 svn:mergeinfo since Savana does its own merge tracking
         if (sourceProps.getSavanaPolicies() != null && sourceProps.getSavanaPolicies().shouldDeleteSvnMergeProperty()) {
             logStart("Remove svn:mergeinfo property");
-            wcClient.doSetProperty(wcInfo.getRootDir(), "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
+            deleteSvnMergeInfo(wcClient, wcInfo.getRootDir());
+            // for files that had changed properties, some might have been svn:mergeinfo properties, so delete them just in case.
+            for (File file : notifyPrinter.getPropertiesChangedFiles()) {
+                deleteSvnMergeInfo(wcClient, file);
+            }
             logEnd("Remove svn:mergeinfo property");
         }
 
@@ -257,5 +262,12 @@ public class Promote extends SAVCommand {
         SVNCommitItem commitItem = new SVNCommitItem(null, null, null, null, null, null, false, false, false, false, false, false);
         commitItem.setPath(message);
         return commitItem;
+    }
+
+    private void deleteSvnMergeInfo(SVNWCClient wcClient, File file) throws SVNException {
+        if (file.exists() && wcClient.doGetProperty(file, "svn:mergeinfo", SVNRevision.WORKING, SVNRevision.WORKING) != null) {
+            log("Deleting svn:mergeinfo property on file: " + file);
+            wcClient.doSetProperty(file, "svn:mergeinfo", null, false, SVNDepth.EMPTY, null, null);
+        }
     }
 }
