@@ -45,4 +45,12 @@ public abstract class AbstractSavanaScriptsTestCase extends TestCase {
     protected File createTempDir(String tempDirName) {
         return TestDirUtil.createTempDir(tempDirName);
     }
+
+    public static void assertEqualsNormalized(java.lang.String expected, java.lang.String actual) {
+        assertEquals(normalize(expected), normalize(actual));
+    }
+
+    public static String normalize(String s) {
+        return s.replace("\\", "/");
+    }
 }
