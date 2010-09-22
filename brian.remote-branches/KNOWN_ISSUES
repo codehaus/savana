@@ -1,4 +1,0 @@
-- projects that don't live at the root of the repo (i.e. http://repo/subdir/project as opposed to
-  http://repo/project) aren't handled properly when their user branches are created.
-- should use commons CLI to handle command-line params
-- need to add ability to specify commit message for "create branch" commands
