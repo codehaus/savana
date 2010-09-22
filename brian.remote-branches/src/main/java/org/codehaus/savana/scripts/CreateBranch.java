@@ -89,7 +89,7 @@ public class CreateBranch extends SAVCommand {
         Collection options = new ArrayList();
         options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes
         options.add(SAVOption.TOP_LEVEL); // explicitly indicate that a top-level branch is desired
-        options.add(SAVOption.REMOTE); // create the branch on the server side, but don't update the working copy
+        options.add(SAVOption.REMOTE); // create the branch on the server, but don't update the working copy
         options = SVNOption.addLogMessageOptions(options);
         return options;
     }
@@ -170,7 +170,7 @@ public class CreateBranch extends SAVCommand {
         //Don't allow the user to convert a working copy to a new branch if there are uncommitted changes, unless:
         //1. The force flag is enabled AND The new branch will be a user branch
         //2. OR the branch is being created remotely
-        if (env.isRemote() || (!env.isForce() || !_userBranch)) {
+        if (!env.isRemote() && (!env.isForce() || !_userBranch)) {
             logStart("Looking for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
             statusClient.doStatus(branchRootDir, SVNRevision.UNDEFINED,
