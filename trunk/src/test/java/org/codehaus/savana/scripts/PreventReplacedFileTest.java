@@ -65,7 +65,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                 new File[]{WC1}, false, "user branch - modify animals.txt", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
 
         SVNURL trunkUrl = REPO_URL.appendPath(projectName, false).appendPath("trunk", false);
-        assertEquals(
+        assertEqualsNormalized(
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
@@ -86,7 +86,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                 savana(DiffChangesFromSource.class));
 
         // in WC1 (user branch), sync animals.txt with the parent.  animals.txt is left in conflict.
-        assertEquals(
+        assertEqualsNormalized(
                 MessageFormat.format(
                         "--- Merging r{0} through r{1} into ''.'':\n" +
                         "   C src/text/animals.txt\n" +
@@ -97,7 +97,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                 savana(Synchronize.class));
 
         // "sav diff" correctly reports the diff between the trunk and user branch.
-        assertEquals(
+        assertEqualsNormalized(
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
