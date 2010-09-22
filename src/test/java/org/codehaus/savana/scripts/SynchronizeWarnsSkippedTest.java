@@ -48,7 +48,7 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
 
         // in WC1 (user branch), sync
         cd(WC1);
-        assertEquals(
+        assertEqualsNormalized(
                 MessageFormat.format(
                         "Skipped missing target: ''src/text/autos.txt''\n" +
                         "--- Merging r{0} through r{1} into ''.'':\n" +

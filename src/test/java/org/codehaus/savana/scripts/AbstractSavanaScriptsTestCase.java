@@ -45,4 +45,31 @@ public abstract class AbstractSavanaScriptsTestCase extends TestCase {
     protected File createTempDir(String tempDirName) {
         return TestDirUtil.createTempDir(tempDirName);
     }
+
+    /**
+     * Asserts that the the normalized version of two strings are equal
+     * Normalization accounts for OS and file system differences such as '/' vs '\' in paths
+     *
+     * @param expected the expected value
+     * @param actual the actual value
+	 */
+    public static void assertEqualsNormalized(String expected, String actual) {
+        assertEqualsNormalized(null, expected, actual);
+    }
+
+    /**
+     * Asserts that the the normalized version of two strings are equal
+     * Normalization accounts for OS and file system differences such as '/' vs '\' in paths
+     *
+     * @param message the message to be printed if the values don't match
+     * @param expected the expected value
+     * @param actual the actual value
+	 */
+    public static void assertEqualsNormalized(String message, String expected, String actual) {
+        assertEquals(message, normalize(expected), normalize(actual));
+    }
+
+    private static String normalize(String s) {
+        return s.replace("\\", "/");
+    }
 }

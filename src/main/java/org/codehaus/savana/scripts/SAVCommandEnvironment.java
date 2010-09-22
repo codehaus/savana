@@ -54,6 +54,7 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
     private SVNCommandLine _commandLine;
     private boolean _changeRoot;
+    private boolean _remote;
     private boolean _topLevelExplicit;
     private String _projectName;
     private String _trunkPath = BranchType.TRUNK.getDefaultPath();
@@ -77,6 +78,8 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
             _changeRoot = true;
         } else if (option == SAVOption.TOP_LEVEL) {
             _topLevelExplicit = true;
+        } if (option == SAVOption.REMOTE) {
+            _remote = true;
         } else if (option == SAVOption.PROJECT_NAME) {
             _projectName = optionValue.getValue();
         } else if (option == SAVOption.TRUNK_PATH) {
@@ -139,6 +142,10 @@ public class SAVCommandEnvironment extends SVNCommandEnvironment {
 
     public boolean isChangeRoot() {
         return _changeRoot;
+    }
+
+    public boolean isRemote() {
+        return _remote;
     }
 
     public boolean isTopLevelExplicit() {
