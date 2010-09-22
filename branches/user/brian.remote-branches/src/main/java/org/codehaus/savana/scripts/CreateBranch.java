@@ -89,6 +89,7 @@ public class CreateBranch extends SAVCommand {
         Collection options = new ArrayList();
         options.add(SVNOption.FORCE); // force the branch to be created even if 'svn status' reports changes
         options.add(SAVOption.TOP_LEVEL); // explicitly indicate that a top-level branch is desired
+        options.add(SAVOption.REMOTE); // create the branch on the server side, but don't update the working copy
         options = SVNOption.addLogMessageOptions(options);
         return options;
     }
@@ -167,9 +168,9 @@ public class CreateBranch extends SAVCommand {
         logEnd("Validating working copy directory status");
 
         //Don't allow the user to convert a working copy to a new branch if there are uncommitted changes, unless:
-        //1. The force flag is enabled AND
-        //2. The new branch will be a user branch
-        if (!env.isForce() || !_userBranch) {
+        //1. The force flag is enabled AND The new branch will be a user branch
+        //2. OR the branch is being created remotely
+        if (env.isRemote() || (!env.isForce() || !_userBranch)) {
             logStart("Looking for local changes");
             LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
             statusClient.doStatus(branchRootDir, SVNRevision.UNDEFINED,
@@ -307,21 +308,26 @@ public class CreateBranch extends SAVCommand {
         }
 
         //Switch the working copy
-        logStart("Switch to new branch");
-        SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
-        SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
-        updateClient.setEventHandler(new SVNNotifyPrinter(env));
-        updateClient.doSwitch(branchRootDir, branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
-        logEnd("Switch to new branch");
+        if(!env.isRemote()) {
+            logStart("Switch to new branch");
+            SVNURL branchURL = wcInfo.getRepositoryURL(branchPath);
+            SVNUpdateClient updateClient = env.getClientManager().getUpdateClient();
+            updateClient.setEventHandler(new SVNNotifyPrinter(env));
+            updateClient.doSwitch(branchRootDir, branchURL, SVNRevision.UNDEFINED, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
+            logEnd("Switch to new branch");
 
-        //Revert any merged changes to the metadata file
-        logStart("Revert metadata file");
-        SVNWCClient wcClient = env.getClientManager().getWCClient();
-        wcClient.doRevert(new File[] {new File(branchRootDir, wcProps.getMetadataFileName())}, SVNDepth.EMPTY, null);
-        logEnd("Revert metadata file");
+            //Revert any merged changes to the metadata file
+            logStart("Revert metadata file");
+            SVNWCClient wcClient = env.getClientManager().getWCClient();
+            wcClient.doRevert(new File[] {new File(branchRootDir, wcProps.getMetadataFileName())}, SVNDepth.EMPTY, null);
+            logEnd("Revert metadata file");
 
-        wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);
-        wcInfo.println(env.getOut());
+            wcInfo = new WorkingCopyInfo(env.getClientManager(), branchRootDir);
+            wcInfo.println(env.getOut());
+        } else {
+            MetadataProperties metadata = new MetadataProperties(repository, branchMetadataFilePath, -1);
+            env.getOut().println(metadata);
+        }
     }
 
     private List<String> getMissingSubpaths(SVNRepository repository, String path, long revision)

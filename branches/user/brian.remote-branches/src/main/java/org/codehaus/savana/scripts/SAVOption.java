@@ -38,6 +38,7 @@ public class SAVOption extends AbstractSVNOption {
 
     public static final SAVOption CHANGE_ROOT = new SAVOption("changeRoot");
     public static final SAVOption TOP_LEVEL = new SAVOption("topLevel");
+    public static final SAVOption REMOTE = new SAVOption("remote");
 
     public static final SAVOption PROJECT_NAME = new SAVOption("projectName", false);
     public static final SAVOption TRUNK_PATH = new SAVOption("trunkPath", false);
