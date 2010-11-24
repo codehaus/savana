@@ -115,6 +115,7 @@ public class Promote extends SAVCommand {
         logStart("Check for local changes");
         LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
+        statusClient.setIgnoreExternals(true);
         statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
                 true, true, false, false, statusHandler, null);
         if (statusHandler.isChanged()) {
