@@ -8,10 +8,10 @@
 # Adjust these variable values to match your local system:
 
 # location of org.tmatesoft.svn_N.M.L.standalone.zip, unzipped
-SVNKIT_NEW_DIST=/opt/svnkit-1.3.2.6267
+SVNKIT_NEW_DIST=/opt/svnkit-1.3.5.7406
 
-SVNKIT_OLD_VERSION=1.3.1
-SVNKIT_NEW_VERSION=1.3.2
+SVNKIT_OLD_VERSION=1.3.2
+SVNKIT_NEW_VERSION=1.3.5
 
 
 # UPDATE THE SVNKIT-CLI FILES
