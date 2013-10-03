@@ -40,7 +40,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root." +
+            assertEquals("svn: E200009: ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root." +
                          "\nRun 'sav info -R' to find nested workspaces or retry with --force\n", e.getErr());
         }
 
@@ -54,7 +54,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a branch that's not a child or parent of the current directory." +
+            assertEquals("svn: E200009: ERROR: Can't switch to a branch that's not a child or parent of the current directory." +
                          "\nCurrent Directory: " + new File(WC1, "animal") +
                          "\nBranch Root:       " + new File(WC1, "plant") + "\n", e.getErr());
         }
@@ -69,7 +69,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a directory outside of the working copy." +
+            assertEquals("svn: E200009: ERROR: Can't switch to a directory outside of the working copy." +
                          "\nWorking Copy Root: <project>/animal" +
                          "\nBranch Root:       <project>/plant\n", e.getErr());
         }
@@ -85,7 +85,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+            assertEquals("svn: E200009: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
                          "\nWorking Copy Root: <project>/animal" +
                          "\nBranch Root:       <project>/\n", e.getErr());
         }
@@ -104,7 +104,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+            assertEquals("svn: E200009: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
                          "\nWorking Copy Root: <project>/animal/mammal/dog" +
                          "\nBranch Root:       <project>/\n", e.getErr());
         }
@@ -114,7 +114,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
+            assertEquals("svn: E200009: ERROR: Can't switch a subbranch to a top-level branch other than trunk." +
                          "\nWorking Copy Root: <project>/animal/mammal/dog" +
                          "\nBranch Root:       <project>/animal\n", e.getErr());
         }
@@ -125,7 +125,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root.\n" +
+            assertEquals("svn: E200009: ERROR: Cannot switch branches while a subdirectory or file is switched relative to the root.\n" +
                          "Run 'sav info -R' to find nested workspaces or retry with --force\n", e.getErr());
         }
         // ... but it's ok if the user passes --force
@@ -137,7 +137,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Can't switch to a subbranch that's not based on the working copy." +
+            assertEquals("svn: E200009: ERROR: Can't switch to a subbranch that's not based on the working copy." +
                          "\nBranch Source: " + projectName + "/trunk" +
                          "\nWorking Copy:  " + projectName + "/branches/user/user-root\n", e.getErr());
         }
@@ -153,7 +153,8 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: '" + new File("animal/mammal/dog") + "' is not a working copy\n", e.getErr());
+            assertEquals("svn: E200009: ERROR: Branch root directory may not have a status of missing.\n" +
+                         "Path: " + new File(WC1, "animal/mammal/dog") + "\n", e.getErr());
         }
         // can't switch to a subbranch if its root dir is missing
         FileUtils.deleteDirectory(new File(WC1, "animal"));
@@ -162,7 +163,7 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Branch root directory may not have a status of missing." +
+            assertEquals("svn: E200009: ERROR: Branch root directory may not have a status of missing." +
                          "\nPath: " + new File(WC1, "animal") + "\n", e.getErr());
         }
         // ...or it exists but isn't versioned...
@@ -172,20 +173,20 @@ public class SetSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Directory '" + new File("animal/.svn") + "' containing working copy admin area is missing\n", e.getErr());
+            assertEquals("svn: E200009: ERROR: Cannot switch branches while the working copy has local changes.\n" +
+                         "Run 'svn status' to find changes or retry with --force\n", e.getErr());
         }
         new File(WC1, "animal").delete();
         // ...or it exists but is deleted in the working copy (restore via 'svn update' then 'svn delete')
         SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
         SVN.getWCClient().doDelete(new File(WC1, "animal"), false, true, false);
-        assertTrue(new File(WC1, "animal").exists());
         new File(WC1, "animal").mkdir();
         try {
             savana(SetBranch.class, "user-animal");
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Branch root directory may not have a status of deleted." +
+            assertEquals("svn: E200009: ERROR: Branch root directory may not have a status of deleted." +
                          "\nPath: " + new File(WC1, "animal") + "\n", e.getErr());
         }
     }

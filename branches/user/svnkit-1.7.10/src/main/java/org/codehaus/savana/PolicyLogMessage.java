@@ -21,13 +21,20 @@ public class PolicyLogMessage {
             "Commit message does not match the required message pattern: @pattern" +
                     "\n  workspace: @branchName\n  commit comment: @logMessage";
 
+    private static final String DEFAULT_CODE_FREEZE_ERROR =
+            "The @projectName @branchName workspace is currently under code freeze. " +
+                    "Please try again when code freeze is lifted.";
+
+    private static final String DEFAULT_CODE_FREEZE_BREAK_PATTERN =
+            ".*?code freeze break$";
+
     private final Properties _properties;
 
     public PolicyLogMessage(Properties properties) throws SVNException {
         _properties = properties;
     }
 
-    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException {
+    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties, boolean codeFrozen) throws SVNException {
         // each branch type has its own regular expression that messages must match
         String prefix = "logmessage." + metadataProperties.getBranchType().name().toLowerCase() + ".";
 
@@ -51,6 +58,21 @@ public class PolicyLogMessage {
             error = replace(error, "@pattern", pattern);
             error = replace(error, "@logMessage", logMessage);
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_BAD_LOG_MESSAGE, error), SVNLogType.CLIENT);
+        }
+
+        if (!codeFrozen) {
+            return;
+        }
+
+        // check the log message against the code freeze break pattern
+        pattern = _properties.getProperty(prefix + "codefreezebreakpattern", DEFAULT_CODE_FREEZE_BREAK_PATTERN);
+        if (!Pattern.compile(pattern, Pattern.DOTALL).matcher(logMessage).matches()) {
+            // get the error message template and expand variables
+            String error = _properties.getProperty(prefix + "codefreezeerror", DEFAULT_CODE_FREEZE_ERROR);
+            error = replaceBranchKeywords(metadataProperties, error);
+            error = replace(error, "@pattern", pattern);
+            error = replace(error, "@logMessage", logMessage);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CANCELLED, error), SVNLogType.CLIENT);
         }
     }
 

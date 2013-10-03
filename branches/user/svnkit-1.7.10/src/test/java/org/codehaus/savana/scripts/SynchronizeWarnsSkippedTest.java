@@ -5,7 +5,6 @@ import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
 
 import java.io.File;
-import java.text.MessageFormat;
 
 /**
  * A Synchronize operation can skip changes where the changed file has been
@@ -48,28 +47,16 @@ public class SynchronizeWarnsSkippedTest extends AbstractSavanaScriptsTestCase {
 
         // in WC1 (user branch), sync
         cd(WC1);
-        assertEqualsNormalized(
-                MessageFormat.format(
-                        "Skipped missing target: ''src/text/autos.txt''\n" +
-                        "--- Merging r{0} through r{1} into ''.'':\n" +
-                        "   C src/text/animals.txt\n" +
-                        "Summary of conflicts:\n" +
-                        "  Tree conflicts: 1\n" +
-                        "  Skipped paths: 1\n" +
-                        "\n" +
-                        "WARNING: The following files were not synchronized!  They have changes in trunk\n" +
-                        "but have been deleted in the local user branch.  Merge the changes manually:\n" +
-                        "- {2}",
-                        branchPointRev + 1,
-                        branchPointRev + 3,
-                        new File("src/text/autos.txt")),
-                savana(Synchronize.class));
+        try {
+            savana(Synchronize.class);
+            assertTrue("we expected an exception to be thrown", false);
+        } catch (SavanaScriptsTestException e) {
+            // we expect this exception to be thrown, with this error message
+            assertEquals("svn: E195016: Merge tracking not allowed with missing subtrees; try restoring these items first:\n" +
+                         "src/text/autos.txt\n\n", e.getErr());
+        }
 
         assertEquals(
-                "Modified Files:\n" +
-                "-------------------------------------------------\n" +
-                "src/text/autos.txt\n" +
-                "\n" +
                 "Deleted Files:\n" +
                 "-------------------------------------------------\n" +
                 "src/text/animals.txt",

@@ -71,8 +71,8 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- src/text/animals.txt\t(.../{0})\t(revision {2})\n" +
-                        "+++ src/text/animals.txt\t(...{1})\t(working copy)\n" +
+                        "--- src/text/animals.txt\t(revision {0})\n" +
+                        "+++ src/text/animals.txt\t(working copy)\n" +
                         "@@ -1,4 +1,4 @@\n" +
                         "-monkey\n" +
                         "+mongoose\n" +
@@ -80,8 +80,6 @@ public class BasicWorkspaceSessionTest extends AbstractSavanaScriptsTestCase {
                         " rat\n" +
                         " dragon\n" +
                         "\\ No newline at end of file",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev),
                 savana(DiffChangesFromSource.class));
 

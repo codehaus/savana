@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -127,6 +127,11 @@ public class MetadataProperties {
     private SVNRevision _branchPointRevision;
 
     /**
+     * Is the "trunk" under code freeze.
+     */
+    private boolean _codeFrozen;
+
+    /**
      * The revision when changes in the source path were last pulled down into this branch
      * (using the 'synchronize' operation).  Null for the 'trunk' branch.
      */
@@ -221,6 +226,11 @@ public class MetadataProperties {
         SVNPropertyValue lastMergeRevisionProps = properties.getSVNPropertyValue(MetadataFile.PROP_LAST_MERGE_REVISION);
         if (lastMergeRevisionProps != null) {
             _lastMergeRevision = SVNRevision.create(Long.parseLong(SVNPropertyValue.getPropertyAsString(lastMergeRevisionProps)));
+        }
+
+        SVNPropertyValue codeFrozenProps = properties.getSVNPropertyValue(MetadataFile.PROP_CODE_FROZEN);
+        if (codeFrozenProps != null) {
+            _codeFrozen = Boolean.parseBoolean(SVNPropertyValue.getPropertyAsString(codeFrozenProps));
         }
     }
 
@@ -329,6 +339,10 @@ public class MetadataProperties {
 
     public SVNRevision getLastMergeRevision() {
         return _lastMergeRevision;
+    }
+
+    public boolean isCodeFrozen() {
+        return _codeFrozen;
     }
 
     public ISavanaPolicies getSavanaPolicies() {

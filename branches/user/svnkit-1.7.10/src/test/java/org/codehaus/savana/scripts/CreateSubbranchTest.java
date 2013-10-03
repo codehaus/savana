@@ -77,8 +77,8 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 MessageFormat.format(
                         "Index: text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- text/animals.txt\t(.../{0}/src)\t(revision {2})\n" +
-                        "+++ text/animals.txt\t(...{1}/src)\t(working copy)\n" +
+                        "--- text/animals.txt\t(revision {0})\n" +
+                        "+++ text/animals.txt\t(working copy)\n" +
                         "@@ -1,4 +1,4 @@\n" +
                         "-monkey\n" +
                         "+mongoose\n" +
@@ -86,8 +86,6 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " rat\n" +
                         " dragon\n" +
                         "\\ No newline at end of file",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev1),
                 savana(DiffChangesFromSource.class));
 
@@ -103,8 +101,11 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
         rev++;
 
         // assert that sync brings in changes
-        assertEquals(
-                "U    text" + File.separatorChar + "drinks.txt",
+        SVN.getUpdateClient().doUpdate(WC1_src, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
+        assertEquals("" +
+                "U    text" + File.separatorChar + "drinks.txt\n" +
+                "--- Recording mergeinfo for merge of r" + (rev - 2) + " through r" + rev + " into '.':\n" +
+                " U   .",
                 savana(Synchronize.class).replaceAll("^---.*?\n", ""));
 
         // commit.  we have to update first for some reason related to the svn:mergeinfo property
@@ -137,8 +138,8 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                 MessageFormat.format(
                         "Index: text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- text/animals.txt\t(.../{0}/src)\t(revision {2})\n" +
-                        "+++ text/animals.txt\t(...{1}/src)\t(working copy)\n" +
+                        "--- text/animals.txt\t(revision {0})\n" +
+                        "+++ text/animals.txt\t(working copy)\n" +
                         "@@ -1,4 +1,4 @@\n" +
                         "-monkey\n" +
                         "+mongoose\n" +
@@ -146,8 +147,6 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
                         " rat\n" +
                         " dragon\n" +
                         "\\ No newline at end of file",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         lastMergeRev1),
                 savana(DiffChangesFromSource.class));
 
@@ -159,7 +158,7 @@ public class CreateSubbranchTest extends AbstractSavanaScriptsTestCase {
             assertTrue("we expected an exception to be thrown", false);
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot create a user branch in a subdirectory of another user branch." +
+            assertEquals("svn: E200009: ERROR: Cannot create a user branch in a subdirectory of another user branch." +
                          "\nSwitch to 'trunk' or a release branch before creating the new branch.\n", e.getErr());
         }
         savana(SetBranch.class, "trunk");

@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -159,7 +159,7 @@ public class CreateBranch extends SAVCommand {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: New branch root must be a versioned directory.\nPath: " + branchRootDir), SVNLogType.CLIENT);
         }
-        SVNStatusType branchRootDirStatusType = branchRootDirStatus.getContentsStatus();
+        SVNStatusType branchRootDirStatusType = branchRootDirStatus.getCombinedNodeAndContentsStatus();
         if (branchRootDirStatusType != SVNStatusType.STATUS_NORMAL && branchRootDirStatusType != SVNStatusType.STATUS_MODIFIED) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET,
                     "ERROR: New branch root directory may not have a status of " +

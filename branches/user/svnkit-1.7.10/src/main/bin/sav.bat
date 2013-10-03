@@ -38,7 +38,7 @@ for %%J in ("%SAVANA_HOME%\lib\*.jar") do set SAVANA_CLASSPATH=!SAVANA_CLASSPATH
 endlocal & set SAVANA_CLASSPATH=%SAVANA_CLASSPATH:~1%
 
 set SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
-set SAVANA_OPTIONS=-Xms128M -Xmx1024M -Djava.util.logging.config.file="%SAVANA_HOME%/logging.properties"
+set SAVANA_OPTIONS=-Xms128M -Xmx1024M -Djava.awt.headless=true -Djava.util.logging.config.file="%SAVANA_HOME%/logging.properties"
 
 java %SAVANA_OPTIONS% -cp "%SAVANA_CLASSPATH%" %SAVANA_MAINCLASS% %*
 
