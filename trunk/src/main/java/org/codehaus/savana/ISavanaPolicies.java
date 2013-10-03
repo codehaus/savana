@@ -40,7 +40,7 @@ public interface ISavanaPolicies {
 
     void validateSavanaVersion() throws SVNException;
 
-    void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException;
+    void validateLogMessage(String logMessage, MetadataProperties metadataProperties, boolean codeFrozen) throws SVNException;
 
     void validateCreateBranch(boolean createSubBranch, boolean explicitTopLevel) throws SVNException;
 

@@ -3,6 +3,7 @@ package org.codehaus.savana.scripts;
 import org.apache.commons.io.FileUtils;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -63,14 +64,14 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
         appendStringToFile(new File(WC1, "src/text/animals.txt"), "\ndragonfly");
         long changeset = SVN.getCommitClient().doCommit(
                 new File[]{WC1}, false, "user branch - modify animals.txt", null, null, false, false, SVNDepth.INFINITY).getNewRevision();
+        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 
-        SVNURL trunkUrl = REPO_URL.appendPath(projectName, false).appendPath("trunk", false);
         assertEqualsNormalized(
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- src/text/animals.txt\t(.../{0})\t(revision {2})\n" +
-                        "+++ src/text/animals.txt\t(...{1})\t(working copy)\n" +
+                        "--- src/text/animals.txt\t(revision {0})\n" +
+                        "+++ src/text/animals.txt\t(working copy)\n" +
                         "@@ -1,4 +1,5 @@\n" +
                         " monkey\n" +
                         " dog\n" +
@@ -80,18 +81,16 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                         "+dragon\n" +
                         "+dragonfly\n" +
                         "\\ No newline at end of file",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         branchPointRev),
                 savana(DiffChangesFromSource.class));
 
         // in WC1 (user branch), sync animals.txt with the parent.  animals.txt is left in conflict.
         assertEqualsNormalized(
-                MessageFormat.format(
+                MessageFormat.format("" +
                         "--- Merging r{0} through r{1} into ''.'':\n" +
                         "   C src/text/animals.txt\n" +
-                        "Summary of conflicts:\n" +
-                        "  Tree conflicts: 1",
+                        "--- Recording mergeinfo for merge of r{0} through r{1} into ''.'':\n" +
+                        " U   .",
                         branchPointRev + 1,
                         branchPointRev + 4),
                 savana(Synchronize.class));
@@ -101,8 +100,8 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                 MessageFormat.format(
                         "Index: src/text/animals.txt\n" +
                         "===================================================================\n" +
-                        "--- src/text/animals.txt\t(.../{0})\t(revision {2})\n" +
-                        "+++ src/text/animals.txt\t(...{1})\t(working copy)\n" +
+                        "--- src/text/animals.txt\t(revision {0})\n" +
+                        "+++ src/text/animals.txt\t(working copy)\n" +
                         "@@ -1 +1,5 @@\n" +
                         "-grasshopper\n" +
                         "\\ No newline at end of file\n" +
@@ -112,8 +111,6 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
                         "+dragon\n" +
                         "+dragonfly\n" +
                         "\\ No newline at end of file",
-                        trunkUrl.toString(),
-                        TestDirUtil.toSvnkitAbsolutePath(WC1),
                         changeset),
                 savana(DiffChangesFromSource.class));
     }
@@ -150,7 +147,7 @@ public class PreventReplacedFileTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot promote branch user1 while there are replaced files:\n" +
+            assertEquals("svn: E195016: ERROR: Cannot promote branch user1 while there are replaced files:\n" +
                          "- " + new File("src/text/animals.txt") + "\n" +
                          "- " + new File("src/text/autos.txt") + "\n", e.getErr());
         }

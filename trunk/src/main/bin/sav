@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Savana - Transactional Workspaces for Subversion
-# Copyright (C) 2006-2009  Bazaarvoice Inc.
+# Copyright (C) 2006-2013  Bazaarvoice Inc.
 # 
 # This file is part of Savana.
 #
@@ -71,7 +71,7 @@ if $cygwin ; then
   SAVANA_CP=`cygpath --windows --path "$SAVANA_CP"`
 fi
 
-SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false"
+SAVANA_VM_OPTIONS="-Xms128M -Xmx1024M -Dsun.io.useCanonCaches=false -Djava.awt.headless=true"
 
 SAVANA_MAINCLASS=org.codehaus.savana.scripts.SAV
 java $SAVANA_VM_OPTIONS -cp "$SAVANA_CP" -Djava.util.logging.config.file="$SAVANA_HOME/logging.properties" $SAVANA_MAINCLASS "$@"

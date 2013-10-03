@@ -58,9 +58,11 @@ public class SynchronizeMetadataPropertiesTest extends AbstractSavanaScriptsTest
 
         // in WC1 (user branch), sync
         cd(WC1);
-        assertEquals(
+        assertEquals("" +
                 "--- Merging r" + (changeset - 1) + " through r" + changeset + " into '.':\n" +
-                " U   .savana",
+                " U   .savana\n" +
+                "--- Recording mergeinfo for merge of r" + (changeset - 1) + " through r" + changeset + " into '.':\n" +
+                " U   .",
                 savana(Synchronize.class, "--non-interactive"));
 
         // verify that the metadata file is not marked conflicted
@@ -78,8 +80,8 @@ public class SynchronizeMetadataPropertiesTest extends AbstractSavanaScriptsTest
         assertEquals(
                 "--- Merging r" + (changeset - 1) + " through r" + changeset + " into '.':\n" +
                 " C   .savana\n" +
-                "Summary of conflicts:\n" +
-                "  Property conflicts: 1",
+                "--- Recording mergeinfo for merge of r" + (changeset - 1) + " through r" + changeset + " into '.':\n" +
+                        " U   .",
                 savana(Synchronize.class, "--non-interactive"));
 
         // verify that the metadata file *is* marked conflicted

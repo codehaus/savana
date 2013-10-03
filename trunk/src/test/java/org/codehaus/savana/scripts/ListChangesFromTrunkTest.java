@@ -22,7 +22,7 @@ public class ListChangesFromTrunkTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Error: No source path found (you are probably in the TRUNK).\n", e.getErr());
+            assertEquals("svn: E200009: Error: No source path found (you are probably in the TRUNK).\n", e.getErr());
         }
     }
 
