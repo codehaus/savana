@@ -1,6 +1,5 @@
 package org.codehaus.savana.scripts;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -67,10 +66,9 @@ public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
         cd(new File(WC1, "animal/mammal/dog"));
         assertDeleteSucceeds("user-plant");
 
-        // we can avoid the delete error by deleting the working copy too, not just setbranch away 
+        // delete the last branch, verify everything cleans up ok
         cd(WC1);
-        assertDeleteFails("user-canine", new File(WC1, "animal/mammal/dog"));
-        FileUtils.deleteDirectory(new File(WC1, "animal/mammal"));
+        savana(SetBranch.class, "trunk", "--force");
         assertDeleteSucceeds("user-canine");
 
         assertEquals("No branches were found.", savana(ListUserBranches.class));
@@ -87,7 +85,7 @@ public class DeleteSubbranchTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Use 'sav setbranch' to switch away from the branch before deleting it." +
+            assertEquals("svn: E200009: ERROR: Use 'sav setbranch' to switch away from the branch before deleting it." +
                          "\nBranch Path: " + branchDir + "\n", e.getErr());
         }
     }

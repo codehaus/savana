@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -113,7 +113,7 @@ public class Promote extends SAVCommand {
 
         //Make sure all changes are committed first
         logStart("Check for local changes");
-        LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler();
+        LocalChangeStatusHandler statusHandler = new LocalChangeStatusHandler(wcInfo.getRootDir());
         SVNStatusClient statusClient = env.getClientManager().getStatusClient();
         statusClient.doStatus(wcInfo.getRootDir(), SVNRevision.HEAD, SVNDepth.INFINITY,
                 true, true, false, false, statusHandler, null);
@@ -178,7 +178,7 @@ public class Promote extends SAVCommand {
         //Validate the commit comment against the branch name before we make any changes
         if (sourceProps.getSavanaPolicies() != null) {
             logStart("Validate commit comment");
-            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps);
+            sourceProps.getSavanaPolicies().validateLogMessage(commitMessage, sourceProps, sourceProps.isCodeFrozen());
             logEnd("Validate commit comment");
         }
 

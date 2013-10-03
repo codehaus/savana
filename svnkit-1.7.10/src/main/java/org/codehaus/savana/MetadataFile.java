@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -50,6 +50,7 @@ public class MetadataFile extends File {
     public static final String PROP_RELEASE_BRANCHES_PATH = "BRANCHES_PATH";
     public static final String PROP_USER_BRANCHES_PATH = "USER_BRANCHES_PATH";
     public static final String PROP_SAVANA_POLICIES = "SAVANA_POLICIES";
+    public static final String PROP_CODE_FROZEN = "CODE_FROZEN";
 
     /** Properties that should not be merged into a user branch if they change in the source. */
     public static final String[] PROPS_DO_NOT_SYNC = {

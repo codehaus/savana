@@ -52,19 +52,21 @@ import subprocess
 IGNORE_PATH_PREFIXES = []
 
 # define regular expressions for each of the branch types, with a group with the branch name
-RE_TRUNK =   r"^[^/]+/(trunk)/"
-RE_RELEASE = r"^[^/]+/branches/([^/]+)/"
-RE_USER =    r"^[^/]+/branches/user/([^/]+)/"
+RE_TRUNK =   r"^(?P<project>[^/]+)/(?P<name>trunk)/"
+RE_RELEASE = r"^(?P<project>[^/]+)/branches/(?P<name>[^/]+)/"
+RE_USER =    r"^(?P<project>[^/]+)/branches/user/(?P<name>[^/]+)/"
 
 # define regular expressions for the expected commit messages for each commit ("branch admin" is handled separately)
 RE_LOGMSG_TRUNK =   r"^%s(\s.*|)$"
 RE_LOGMSG_RELEASE = r"^%s(\s.*|)$"
 RE_LOGMSG_USER =    r"^(user branch.*|%s(\s.*|))$"
+RE_LOGMSG_CODE_FREEZE_BREAK = r".*?code freeze break$"
 
 # define the error messages when the commit messages don't match the expected patterns
-ER_LOGMSG_TRUNK =   "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
-ER_LOGMSG_RELEASE = "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
-ER_LOGMSG_USER =    "The subversion commit comment must start with \"user branch\" or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_TRUNK =       "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_RELEASE =     "The subversion commit comment must start with the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_USER =        "The subversion commit comment must start with \"user branch\" or the name of the modified workspace:\n  workspace: %s\n  commit comment: %s\n"
+ER_LOGMSG_CODE_FREEZE = "The %s %s workspace is currently under code freeze. Please try again when code freeze is lifted."
 
 # define constants for the types of workspaces
 WS_TRUNK =   "trunk"
@@ -73,6 +75,8 @@ WS_USER =    "user branch"
 WS_FILE =    "file"
 
 METADATA_FILES = ['.savana', '.svnscripts']
+
+CODE_FROZEN_PROP_NAME = "CODE_FROZEN"
 
 def should_ignore_file(file):
     for path in IGNORE_PATH_PREFIXES:
@@ -86,7 +90,7 @@ def svnlook_output(subcmd, svnlook_cmd_opts, subcmd_opts=[]):
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = process.communicate()
     if process.returncode != 0:
-        raise Exception, stderr
+        raise Exception, stderr + " %d" % process.returncode
     return stdout
 
 def commit_comment(svnlook_cmd_opts):
@@ -114,7 +118,7 @@ def files_changed(svnlook_cmd_opts):
 
 def workspaces_changed(changed_files):
     """ Returns a list of unique tuples that were modified by the svn transaction:
-  [(workspace-type, workspace-name, workspace-description), ...]
+  [(workspace-type, workspace-project, workspace-name, workspace-description), ...]
 
 Each file belongs to a workspace as determined by one of the following patterns:
   <project>/trunk/...                      - workspace type is 'trunk', name is 'trunk'
@@ -131,7 +135,7 @@ Each file belongs to a workspace as determined by one of the following patterns:
         for (type, pattern, format) in workspace_type_format_pattern:
             m = pattern.match(fname)
             if m:
-               return (type, m.group(1), format % m.group(1))
+               return (type, m.group("project"), m.group("name"), format % m.group("name"))
         # unknown workspace type, use the filename for the workspace name
         return (WS_FILE, fname, "file: %s" % fname)
 
@@ -141,6 +145,21 @@ Each file belongs to a workspace as determined by one of the following patterns:
     workspaces = unique_workspaces.keys()
     workspaces.sort()
     return workspaces
+
+
+def check_code_freeze_flag(ws_name, ws_type, ws_project, svnlook_cmd_opts):
+    for filename in METADATA_FILES:
+        try:
+            if ws_type == WS_TRUNK:
+                return "true" == svnlook_output("propget", svnlook_cmd_opts, [CODE_FROZEN_PROP_NAME, "%s/trunk/%s" % (ws_project, filename)])
+            if ws_type == WS_RELEASE:
+                return "true" == svnlook_output("propget", svnlook_cmd_opts, [CODE_FROZEN_PROP_NAME, "%s/branches/%s/%s" % (ws_project, ws_name, filename)])
+        except:
+            svnlook_error_msg = str(sys.exc_info()[1]).strip()
+            if svnlook_error_msg.startswith("svnlook: Path") and svnlook_error_msg.endswith("does not exist"):
+                return False
+    # if we get here, the property doesn't exist so return False
+    return False
 
 def check_permissible_file_changes(svnlook_cmd_opts):
     """ Check that all files modified by the svn transaction belong to the expected workspace.
@@ -177,7 +196,7 @@ The requirements depend on the first words of the commit comment:
         return 0
 
     # we've validated that exactly one workspace was modified.  get its type, name and description.
-    (ws_type, ws_name, ws_description) = workspaces[0]
+    (ws_type, ws_project, ws_name, ws_description) = workspaces[0]
 
     # if we couldn't determine the workspace type, fail.  must use 'branch admin' for these commits
     if ws_type == WS_FILE:
@@ -205,6 +224,10 @@ The requirements depend on the first words of the commit comment:
         sys.stderr.write(ER_LOGMSG_USER % (ws_name, comment))
         return 1
 
+    # make sure there isn't a code freeze on
+    if check_code_freeze_flag(ws_name, ws_type, ws_project, svnlook_cmd_opts) and not(re.match(RE_LOGMSG_CODE_FREEZE_BREAK, comment, re.DOTALL)):
+        sys.stderr.write(ER_LOGMSG_CODE_FREEZE % (ws_project, ws_type))
+        return 1
     return 0
 
 

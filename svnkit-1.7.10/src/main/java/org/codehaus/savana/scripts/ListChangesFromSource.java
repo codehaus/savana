@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -104,7 +104,9 @@ public class ListChangesFromSource extends SAVCommand {
             out.println(title);
             out.println("-------------------------------------------------");
             for (String path : paths) {
-                if (workingCopyPath.length() != path.length()) {
+                if (!path.startsWith(workingCopyPath)) {
+                    out.println(path);
+                } else if (workingCopyPath.length() != path.length()) {
                     out.println(path.substring(workingCopyPath.length() + 1));
                 } else {
                     out.println(".");

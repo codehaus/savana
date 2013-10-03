@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -36,6 +36,9 @@ import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
+
+import java.io.File;
+
 import static org.tmatesoft.svn.core.wc.SVNStatusType.MERGED;
 import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_ADDED;
 import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_CONFLICTED;
@@ -47,12 +50,17 @@ import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_OBSTRUCTED;
 import static org.tmatesoft.svn.core.wc.SVNStatusType.STATUS_REPLACED;
 
 public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHandler {
+    private final File _wcRoot;
     private boolean _changed;
     private boolean _switched;
     private boolean _outOfDate;
 
     public LocalChangeStatusHandler() {
-        _changed = false;
+        this(null);
+    }
+
+    public LocalChangeStatusHandler(File wcRoot) {
+        _wcRoot = wcRoot;
     }
 
     public boolean isChanged() {
@@ -69,17 +77,17 @@ public class LocalChangeStatusHandler implements ISVNStatusHandler, ISVNEventHan
 
     public void handleStatus(SVNStatus status) {
         //Check the status of the file and its properties
-        if (isChanged(status.getContentsStatus()) || isChanged(status.getPropertiesStatus())) {
+        if (isChanged(status.getCombinedNodeAndContentsStatus()) || isChanged(status.getPropertiesStatus())) {
             _changed = true;
         }
 
         //Check whether the file belongs to a different branch
-        if (status.isSwitched()) {
+        if (status.isSwitched() && !status.getFile().equals(_wcRoot)) {
             _switched = true;
         }
 
         //Check whether there are updates that haven't been pulled down by an 'svn update'
-        if (isChanged(status.getRemoteContentsStatus()) || isChanged(status.getRemotePropertiesStatus())) {
+        if (isChanged(status.getCombinedRemoteNodeAndContentsStatus()) || isChanged(status.getRemotePropertiesStatus())) {
             _outOfDate = true;
         }
     }

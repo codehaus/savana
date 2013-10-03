@@ -44,8 +44,8 @@ public class DefaultSavanaPolicies implements ISavanaPolicies {
         new PolicySavanaVersion(_properties).validateSavanaVersion();
     }
 
-    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties) throws SVNException {
-        new PolicyLogMessage(_properties).validateLogMessage(logMessage, metadataProperties);
+    public void validateLogMessage(String logMessage, MetadataProperties metadataProperties, boolean codeFrozen) throws SVNException {
+        new PolicyLogMessage(_properties).validateLogMessage(logMessage, metadataProperties, codeFrozen);
     }
 
     public void validateCreateBranch(boolean createSubBranch, boolean explicitTopLevel) throws SVNException {

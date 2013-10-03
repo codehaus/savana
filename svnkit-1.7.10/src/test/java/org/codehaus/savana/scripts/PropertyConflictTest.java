@@ -8,6 +8,7 @@ import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNMerger;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.SVNDiffConflictChoiceStyle;
 import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
 import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
 import org.tmatesoft.svn.core.wc.ISVNMerger;
@@ -69,6 +70,7 @@ public class PropertyConflictTest extends TestCase {
         SVN.getCommitClient().doCommit(new File[]{file}, false, "user branch - prop3", null, null, false, false, SVNDepth.EMPTY);
 
         //Merge the trunk change into the branch.  This will throw a NullPointerException if SVNKit issue #295 isn't fixed.
+        SVN.getUpdateClient().doUpdate(WC1, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
         SVNDiffClient diffClient = SVN.getDiffClient();
         diffClient.setDiffGenerator(new DefaultSVNDiffGenerator());
         DefaultSVNOptions svnOptions = new DefaultSVNOptions(TestRepoUtil.SUBVERSION_CONFIG_DIR, true);
@@ -90,7 +92,7 @@ public class PropertyConflictTest extends TestCase {
                 public SVNConflictResult handleConflict(SVNConflictDescription conflictDescription) throws SVNException {
                     return new SVNConflictResult(SVNConflictChoice.POSTPONE, null);
                 }
-            });
+            }, SVNDiffConflictChoiceStyle.CHOOSE_MODIFIED_LATEST);
         }
     }
 }

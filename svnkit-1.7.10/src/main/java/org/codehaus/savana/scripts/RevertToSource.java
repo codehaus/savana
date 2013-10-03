@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -159,7 +159,7 @@ public class RevertToSource extends SAVCommand {
                 logStart("Do merge");
                 SVNDiffClient diffClient = env.getClientManager().getDiffClient();
                 diffClient.setEventHandler(new SVNNotifyPrinter(env));
-                diffClient.doMerge(path, SVNRevision.HEAD, sourceURL, wcProps.getLastMergeRevision(), path,
+                diffClient.doMerge(branchActualURL, SVNRevision.HEAD, sourceURL, wcProps.getLastMergeRevision(), path,
                         SVNDepth.FILES, false, false, false, false);
                 logEnd("Do merge");
             } else if (sourceExists && !branchExists) {

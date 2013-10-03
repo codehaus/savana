@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -55,7 +55,7 @@ public class FilteredStatusHandler implements ISVNStatusHandler, ISVNEventHandle
     public void handleStatus(SVNStatus status) {
 
         //Status of the file
-        SVNStatusType contentsStatus = status.getContentsStatus();
+        SVNStatusType contentsStatus = status.getCombinedNodeAndContentsStatus();
 
         //Status of the file's properties
         SVNStatusType propertiesStatus = status.getPropertiesStatus();
