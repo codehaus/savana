@@ -79,7 +79,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
+            assertEquals("svn: E204900: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
                          "minimum version of 9.8.7.6543.  Please upgrade Savana.\n", e.getErr());
         }
     }
@@ -100,7 +100,7 @@ public class VersionNumberPoliciesTest extends AbstractSavanaScriptsTestCase {
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
             String versionString = StringUtils.join(ArrayUtils.toObject(versionNumbers), '.');
-            assertEquals("svn: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
+            assertEquals("svn: E204900: ERROR: Savana is version " + Version.VERSION_SHORT + " but the project requires a\n" +
                          "minimum version of " + versionString + ".  Please upgrade Savana.\n", e.getErr());
         }
     }

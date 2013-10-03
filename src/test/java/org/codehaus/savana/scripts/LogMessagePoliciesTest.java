@@ -109,8 +109,9 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
             SVN.getCommitClient().doCommit(new File[]{WC}, false, "user branch commit", null, null, false, false, SVNDepth.INFINITY);
             assertTrue("we expected an exception to be thrown", false);
         } catch (SVNException e) {
-            assertEquals("svn: Commit failed (details follow):\n" +
-                    "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
+            assertEquals("" +
+                    "svn: E165001: Commit failed (details follow):\n" +
+                    "svn: E165001: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The changeset may not modify Savana metadata files in the trunk or in a release branch:" +
                     "\n  workspace: trunk\n  metadata file: " + projectName + "/trunk/.savana",
                     e.getMessage().replace(System.getProperty("line.separator"), "\n").trim());
@@ -129,8 +130,9 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: Commit failed (details follow):\n" +
-                    "svn: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
+            assertEquals("" +
+                    "svn: E165001: Commit failed (details follow):\n" +
+                    "svn: E165001: Commit blocked by pre-commit hook (exit code 1) with output:\n" +
                     "The subversion commit comment must start with the name of the modified workspace:" +
                     "\n  workspace: trunk\n  commit comment: blah blah blah",
                     e.getErr().trim());
@@ -144,7 +146,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
+            assertEquals("svn: E205008: The commit comment must start with the name of the modified workspace:\n" +
                     "  workspace: trunk\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
@@ -164,7 +166,7 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: The commit comment must start with the name of the modified workspace:\n" +
+            assertEquals("svn: E205008: The commit comment must start with the name of the modified workspace:\n" +
                     "  workspace: b3.3.x\n  commit comment: " + logMessage + "\n", e.getErr());
         }
     }
@@ -180,18 +182,18 @@ public class LogMessagePoliciesTest extends AbstractSavanaScriptsTestCase {
     private void assertUserBranchPromoteFails(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
         try {
-            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
+            wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, false);
             assertTrue("we expected an exception to be thrown", false);
 
         } catch (SVNException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: The commit comment must start with \"user branch\" or the name of the modified workspace:\n" +
+            assertEquals("svn: E205008: The commit comment must start with \"user branch\" or the name of the modified workspace:\n" +
                     "  workspace: user1\n  commit comment: " + logMessage, e.getMessage());
         }
     }
 
     private void assertUserBranchPromoteSucceeds(String logMessage) throws Exception {
         MetadataProperties wcProps = new WorkingCopyInfo(SVN).getMetadataProperties();
-        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps);
+        wcProps.getSavanaPolicies().validateLogMessage(logMessage, wcProps, false);
     }
 }

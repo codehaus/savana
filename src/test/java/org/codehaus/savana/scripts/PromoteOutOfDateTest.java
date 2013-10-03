@@ -43,7 +43,7 @@ public class PromoteOutOfDateTest extends AbstractSavanaScriptsTestCase {
 
         } catch (SavanaScriptsTestException e) {
             // we expect this exception to be thrown, with this error message
-            assertEquals("svn: ERROR: Cannot promote while the working copy is out-of-date." +
+            assertEquals("svn: E200009: ERROR: Cannot promote while the working copy is out-of-date." +
                          "\nRun 'svn update' to update the working copy\n", e.getErr());
         }
 

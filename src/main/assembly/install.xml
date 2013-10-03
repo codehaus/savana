@@ -1,6 +1,6 @@
 <!--
 Savana - Transactional Workspaces for Subversion
-Copyright (C) 2006-2009  Bazaarvoice Inc.
+Copyright (C) 2006-2013  Bazaarvoice Inc.
 
 This file is part of Savana.
 
@@ -34,7 +34,9 @@ will apply to all Software in this distribution.
     <dependencySets>
         <dependencySet>
             <outputDirectory>/lib</outputDirectory>
-            <outputFileNameMapping>${artifactId}.${extension}</outputFileNameMapping>
+            <includes>
+                <include>${project.artifact}</include>
+            </includes>
         </dependencySet>
     </dependencySets>
 

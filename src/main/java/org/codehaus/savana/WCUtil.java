@@ -1,6 +1,6 @@
 /*
  * Savana - Transactional Workspaces for Subversion
- * Copyright (C) 2006-2009  Bazaarvoice Inc.
+ * Copyright (C) 2006-2013  Bazaarvoice Inc.
  * <p/>
  * This file is part of Savana.
  * <p/>
@@ -53,6 +53,8 @@ public class WCUtil {
         try {
             SVNAdminArea adminArea = wcAccess.open(versionedDir, false, false, false, 0, Level.FINEST);
             return adminArea.getWorkingCopyFormatVersion();
+        } catch (SVNException e) {
+            return -1; // Unknown
         } finally {
             wcAccess.close();
         }

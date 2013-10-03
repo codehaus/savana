@@ -4,6 +4,14 @@
 
 Releases
 
+* 1.7.0 (October 3, 2013)
+
+  * Support for code freeze policy enforcement
+
+  * Upgrade to SVNKit v1.7.10
+
+  * Support for Subversion 1.7
+
 * 1.2 (September 22, 2010)
 
   * Support for remote branch creation

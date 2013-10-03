@@ -78,7 +78,7 @@ public class Version {
             VERSION_MAJOR = Integer.parseInt(versionFields[0]);
             VERSION_MINOR = Integer.parseInt(versionFields[1]);
             VERSION_PATCH = (versionFields.length > 2) ? Integer.parseInt(versionFields[2]) : 0; // patch is optional
-            VERSION_REVISION = Long.parseLong(revisionString);
+            VERSION_REVISION = (revisionString != null) ? Long.parseLong(revisionString) : 0;
             VERSION_SHORT = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_PATCH + "." + VERSION_REVISION;  
             VERSION_LONG = VERSION_MAJOR + "." + VERSION_MINOR +
                       (VERSION_PATCH != 0 ? "." + VERSION_PATCH : "") +
