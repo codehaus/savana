@@ -34,7 +34,9 @@ will apply to all Software in this distribution.
     <dependencySets>
         <dependencySet>
             <outputDirectory>/lib</outputDirectory>
-            <outputFileNameMapping>${artifactId}.${extension}</outputFileNameMapping>
+            <includes>
+                <include>${project.artifact}</include>
+            </includes>
         </dependencySet>
     </dependencySets>
 
